@@ -13,31 +13,26 @@
     "crates/earl-core": {
       "release-type": "rust",
       "package-name": "earl-core",
-      "include-component-in-tag": false,
       "include-v-in-tag": true
     },
     "crates/earl-protocol-http": {
       "release-type": "rust",
       "package-name": "earl-protocol-http",
-      "include-component-in-tag": false,
       "include-v-in-tag": true
     },
     "crates/earl-protocol-grpc": {
       "release-type": "rust",
       "package-name": "earl-protocol-grpc",
-      "include-component-in-tag": false,
       "include-v-in-tag": true
     },
     "crates/earl-protocol-bash": {
       "release-type": "rust",
       "package-name": "earl-protocol-bash",
-      "include-component-in-tag": false,
       "include-v-in-tag": true
     },
     "crates/earl-protocol-sql": {
       "release-type": "rust",
       "package-name": "earl-protocol-sql",
-      "include-component-in-tag": false,
       "include-v-in-tag": true
     }
   },
