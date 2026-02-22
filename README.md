@@ -4,6 +4,10 @@
 [![Crates.io](https://img.shields.io/crates/v/earl)](https://crates.io/crates/earl)
 [![docs.rs](https://img.shields.io/docsrs/earl)](https://docs.rs/earl)
 [![License: MIT](https://img.shields.io/crates/l/earl)](LICENSE)
+[![Rust](https://img.shields.io/badge/Rust-000000?logo=rust&logoColor=white)](#)
+[![macOS](https://img.shields.io/badge/macOS-000000?logo=apple&logoColor=white)](https://github.com/brwse/earl/releases/latest)
+[![Linux](https://img.shields.io/badge/Linux-FCC624?logo=linux&logoColor=black)](https://github.com/brwse/earl/releases/latest)
+[![Windows](https://img.shields.io/badge/Windows-0078D4?logo=windows&logoColor=white)](https://github.com/brwse/earl/releases/latest)
 
 AI-safe CLI for AI agents. Earl sits between your agent and external
 services, ensuring secrets stay in the OS keychain, requests follow reviewed

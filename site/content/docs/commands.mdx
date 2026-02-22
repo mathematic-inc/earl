@@ -12,9 +12,9 @@ from `./templates/` (local, relative to cwd) and `~/.config/earl/templates/`
 
 ### Environment Variables
 
-| Variable   | Description |
-| ---------- | ----------- |
-| `RUST_LOG`  | Controls log verbosity. Defaults to `warn`. Set to `debug` or `trace` for detailed diagnostics. |
+| Variable   | Description                                                                                     |
+| ---------- | ----------------------------------------------------------------------------------------------- |
+| `RUST_LOG` | Controls log verbosity. Defaults to `warn`. Set to `debug` or `trace` for detailed diagnostics. |
 
 ```bash
 RUST_LOG=debug earl call github.search_issues --query "test"
@@ -22,9 +22,9 @@ RUST_LOG=debug earl call github.search_issues --query "test"
 
 ### Exit Codes
 
-| Code | Meaning |
-| ---- | ------- |
-| `0`  | Success. |
+| Code | Meaning                                                                                                             |
+| ---- | ------------------------------------------------------------------------------------------------------------------- |
+| `0`  | Success.                                                                                                            |
 | `1`  | Error (invalid config, network failure, missing secret, template error, or `earl doctor` found one or more issues). |
 
 ---
@@ -41,10 +41,10 @@ The first argument is the command key in `provider.command` form. Remaining
 arguments are passed as `--key value` pairs that bind to the template's declared
 parameters.
 
-| Flag     | Default | Description |
-| -------- | ------- | ----------- |
+| Flag     | Default | Description                                                                 |
+| -------- | ------- | --------------------------------------------------------------------------- |
 | `--yes`  | off     | Auto-approve write-mode commands (skip the `Type YES to continue:` prompt). |
-| `--json` | off     | Print structured JSON output instead of the rendered text template. |
+| `--json` | off     | Print structured JSON output instead of the rendered text template.         |
 
 Write-mode commands prompt for explicit confirmation unless `--yes` is passed.
 
@@ -75,11 +75,11 @@ List all loaded template commands.
 earl templates list [--category <category>] [--mode read|write] [--json]
 ```
 
-| Flag         | Description |
-| ------------ | ----------- |
+| Flag         | Description                                             |
+| ------------ | ------------------------------------------------------- |
 | `--category` | Filter by category tag (e.g., `--category monitoring`). |
-| `--mode`     | Filter by mode: `read` or `write`. |
-| `--json`     | Output as JSON array instead of table. |
+| `--mode`     | Filter by mode: `read` or `write`.                      |
+| `--json`     | Output as JSON array instead of table.                  |
 
 ```bash
 # List all templates
@@ -98,9 +98,9 @@ model by default; optionally backed by a remote search endpoint if configured.
 earl templates search '<query>' [--limit <n>] [--json]
 ```
 
-| Flag      | Default | Description |
-| --------- | ------- | ----------- |
-| `--limit` | `10`    | Maximum number of results to return. |
+| Flag      | Default | Description                            |
+| --------- | ------- | -------------------------------------- |
+| `--limit` | `10`    | Maximum number of results to return.   |
 | `--json`  | off     | Output as JSON array instead of table. |
 
 ```bash
@@ -132,10 +132,10 @@ Import a template from a local file path or a direct HTTP(S) URL to a `.hcl` fil
 earl templates import <source> [--scope local|global] [--json]
 ```
 
-| Flag      | Default | Description |
-| --------- | ------- | ----------- |
+| Flag      | Default | Description                                                                         |
+| --------- | ------- | ----------------------------------------------------------------------------------- |
 | `--scope` | `local` | Import destination: `local` (./templates/) or `global` (~/.config/earl/templates/). |
-| `--json`  | off     | Output import result as JSON. |
+| `--json`  | off     | Output import result as JSON.                                                       |
 
 ```bash
 # Import from local file
@@ -189,8 +189,8 @@ Store a secret value. Prompts interactively for the value by default.
 earl secrets set <key> [--stdin]
 ```
 
-| Flag      | Description |
-| --------- | ----------- |
+| Flag      | Description                                                        |
+| --------- | ------------------------------------------------------------------ |
 | `--stdin` | Read the secret value from stdin instead of an interactive prompt. |
 
 ```bash
@@ -286,12 +286,12 @@ template command is exposed as an MCP tool.
 earl mcp [stdio|http] [--listen <addr>] [--mode full|discovery] [--yes]
 ```
 
-| Flag              | Default           | Description |
-| ----------------- | ----------------- | ----------- |
-| `stdio` / `http`  | `stdio`          | Transport protocol. `stdio` communicates over stdin/stdout; `http` starts an HTTP server. |
-| `--listen <addr>` | `127.0.0.1:8977` | Bind address for the HTTP transport. Ignored when using stdio. |
+| Flag              | Default          | Description                                                                                          |
+| ----------------- | ---------------- | ---------------------------------------------------------------------------------------------------- |
+| `stdio` / `http`  | `stdio`          | Transport protocol. `stdio` communicates over stdin/stdout; `http` starts an HTTP server.            |
+| `--listen <addr>` | `127.0.0.1:8977` | Bind address for the HTTP transport. Ignored when using stdio.                                       |
 | `--mode <mode>`   | `full`           | `full` exposes one MCP tool per template command. `discovery` exposes search and call wrapper tools. |
-| `--yes`           | off              | Auto-approve write-mode tool calls. Without this flag, write-mode tools are rejected at runtime. |
+| `--yes`           | off              | Auto-approve write-mode tool calls. Without this flag, write-mode tools are rejected at runtime.     |
 
 ### Examples
 
@@ -302,8 +302,10 @@ earl mcp [stdio|http] [--listen <addr>] [--mode full|discovery] [--yes]
 earl mcp
 
 # stdio with write-mode tools enabled
+
 earl mcp stdio --yes
-```
+
+````
 </Tab>
 <Tab value="HTTP">
 ```bash
@@ -312,14 +314,15 @@ earl mcp http
 
 # HTTP on custom address with discovery mode
 earl mcp http --listen 0.0.0.0:9000 --mode discovery --yes
-```
+````
+
 </Tab>
 </Tabs>
 
 <Callout type="warn">
   Write-mode tools are blocked by default. If an AI agent calls a write-mode
-  tool without `--yes`, the server returns an error:
-  `tool 'X' is write-mode; restart the MCP server with --yes to enable write tools`.
+  tool without `--yes`, the server returns an error: `tool 'X' is write-mode;
+  restart the MCP server with --yes to enable write tools`.
 </Callout>
 
 ---
@@ -333,23 +336,23 @@ summary report.
 earl doctor [--json]
 ```
 
-| Flag     | Description |
-| -------- | ----------- |
+| Flag     | Description                                                                |
+| -------- | -------------------------------------------------------------------------- |
 | `--json` | Output the full report as structured JSON (checks array + summary counts). |
 
 ### Checks Performed
 
-| Check ID              | What it verifies |
-| --------------------- | ---------------- |
+| Check ID              | What it verifies                                                              |
+| --------------------- | ----------------------------------------------------------------------------- |
 | `config_file`         | Config file exists at `~/.config/earl/config.toml` and parses without errors. |
-| `network_allowlist`   | Reports configured `[[network.allow]]` rule count. |
-| `templates`           | Template files are discovered in local and global directories. |
-| `template_validation` | All discovered templates pass schema validation. |
-| `commands`            | At least one command is loadable from templates. |
-| `required_secrets`    | All secrets referenced by templates are present in the keychain. |
-| `oauth_profiles`      | All OAuth profiles referenced by templates are defined and valid in config. |
-| `remote_search`       | Remote semantic search configuration is complete (if enabled). |
-| `bash`                | Bash sandbox tool is available (only when compiled with the `bash` feature). |
+| `network_allowlist`   | Reports configured `[[network.allow]]` rule count.                            |
+| `templates`           | Template files are discovered in local and global directories.                |
+| `template_validation` | All discovered templates pass schema validation.                              |
+| `commands`            | At least one command is loadable from templates.                              |
+| `required_secrets`    | All secrets referenced by templates are present in the keychain.              |
+| `oauth_profiles`      | All OAuth profiles referenced by templates are defined and valid in config.   |
+| `remote_search`       | Remote semantic search configuration is complete (if enabled).                |
+| `bash`                | Bash sandbox tool is available (only when compiled with the `bash` feature).  |
 
 ```bash
 # Human-readable report
@@ -372,10 +375,10 @@ tools.
 earl web [--listen <addr>] [--no-open]
 ```
 
-| Flag              | Default         | Description |
-| ----------------- | --------------- | ----------- |
-| `--listen <addr>` | `127.0.0.1:0`  | Bind address. Port `0` selects a random available port. |
-| `--no-open`       | off             | Do not automatically open the browser. |
+| Flag              | Default       | Description                                             |
+| ----------------- | ------------- | ------------------------------------------------------- |
+| `--listen <addr>` | `127.0.0.1:0` | Bind address. Port `0` selects a random available port. |
+| `--no-open`       | off           | Do not automatically open the browser.                  |
 
 The server prints its URL and a bearer token on startup. Press Ctrl+C to stop.
 

@@ -30,7 +30,9 @@ Search for GitHub issues and pull requests using GitHub's search syntax.
 Use this command to find issues matching a natural-language query.
 
 ```
+
 earl call github.search_issues --query "is:open label:bug"
+
 ```
 EOF
 
@@ -84,12 +86,12 @@ For a complete field-by-field reference, see the [Template Schema Reference](/do
 
 ### Root Fields
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `version` | `integer` | Yes | Must be `1`. |
-| `provider` | `string` | Yes | Namespace for commands (e.g., `github`). |
-| `categories` | `string[]` | No | Provider-level categories applied to all commands. |
-| `command` | block(s) | Yes | One or more named command blocks. |
+| Field        | Type       | Required | Description                                        |
+| ------------ | ---------- | -------- | -------------------------------------------------- |
+| `version`    | `integer`  | Yes      | Must be `1`.                                       |
+| `provider`   | `string`   | Yes      | Namespace for commands (e.g., `github`).           |
+| `categories` | `string[]` | No       | Provider-level categories applied to all commands. |
+| `command`    | block(s)   | Yes      | One or more named command blocks.                  |
 
 ### Command Blocks
 
@@ -132,14 +134,15 @@ annotations {
 
 Template strings use Jinja2 syntax (`{{ ... }}`) rendered by minijinja with strict undefined behavior. Two context objects are available during operation rendering:
 
-| Variable | Available In | Description |
-|----------|-------------|-------------|
-| `args.*` | operation, result | Bound parameter values. |
-| `secrets.*` | operation only | Plaintext secret values (dotted keys are nested). |
-| `result` | result.output only | Decoded (and optionally extracted) response. |
+| Variable    | Available In       | Description                                       |
+| ----------- | ------------------ | ------------------------------------------------- |
+| `args.*`    | operation, result  | Bound parameter values.                           |
+| `secrets.*` | operation only     | Plaintext secret values (dotted keys are nested). |
+| `result`    | result.output only | Decoded (and optionally extracted) response.      |
 
 <Callout type="warn">
-`secrets.*` is only available in operation rendering -- never in `result.output`. This prevents secrets from leaking through command output.
+  `secrets.*` is only available in operation rendering -- never in
+  `result.output`. This prevents secrets from leaking through command output.
 </Callout>
 
 <Callout type="info">
@@ -150,11 +153,11 @@ HCL is parsed **before** template expressions are rendered. This means `{{ }}` e
 
 Template HCL files support built-in functions for loading external content:
 
-| Function | Description |
-|----------|-------------|
-| `file("path")` | Read a file relative to the template directory. Path must be relative and must not contain `..`. |
-| `base64encode("value")` | Base64-encode a string. |
-| `trimspace("value")` | Trim leading and trailing whitespace. |
+| Function                | Description                                                                                      |
+| ----------------------- | ------------------------------------------------------------------------------------------------ |
+| `file("path")`          | Read a file relative to the template directory. Path must be relative and must not contain `..`. |
+| `base64encode("value")` | Base64-encode a string.                                                                          |
+| `trimspace("value")`    | Trim leading and trailing whitespace.                                                            |
 
 Functions can be composed: `trimspace(file("query.sql"))`.
 
@@ -325,7 +328,9 @@ command "check" {
 ```
 
 <Callout type="info">
-For gRPC, `auth.api_key.location` must be `header`. The `transport.proxy_profile` and `transport.tls.min_version` options are not supported for gRPC.
+  For gRPC, `auth.api_key.location` must be `header`. The
+  `transport.proxy_profile` and `transport.tls.min_version` options are not
+  supported for gRPC.
 </Callout>
 
 </Tab>
@@ -419,7 +424,8 @@ command "recent_orders" {
 ```
 
 <Callout type="warn">
-The `sql.connection_secret` must be declared in `annotations.secrets`. Earl validates this at load time.
+  The `sql.connection_secret` must be declared in `annotations.secrets`. Earl
+  validates this at load time.
 </Callout>
 
 </Tab>
@@ -478,6 +484,7 @@ earl secrets set github.token
 </Steps>
 
 **Requirements:**
+
 - The source must be a `.hcl` file.
 - Remote sources must use `http://` or `https://`.
 - Import fails if the destination file already exists.
@@ -508,6 +515,7 @@ earl templates validate                    # Validate all template files
 ```
 
 Validation checks:
+
 - HCL syntax is correct
 - Schema fields match expected types
 - Required fields are present (title, summary, description, output)

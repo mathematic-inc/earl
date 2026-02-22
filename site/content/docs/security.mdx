@@ -60,37 +60,37 @@ Earl blocks requests to private, reserved, and metadata IP addresses to prevent 
 
 ### Blocked IPv4 Ranges
 
-| Range | Description |
-| --- | --- |
-| `10.0.0.0/8` | RFC 1918 private |
-| `172.16.0.0/12` | RFC 1918 private |
-| `192.168.0.0/16` | RFC 1918 private |
-| `127.0.0.0/8` | Loopback |
-| `169.254.0.0/16` | Link-local |
-| `224.0.0.0/4` | Multicast |
-| `255.255.255.255` | Broadcast |
-| `0.0.0.0` | Unspecified |
-| `240.0.0.0/4` | Reserved (former Class E) |
-| `198.51.100.0/24`, `203.0.113.0/24`, `192.0.2.0/24` | Documentation (RFC 5737) |
-| `100.64.0.0/10` | Shared address space (RFC 6598) |
-| `198.18.0.0/15` | Benchmarking (RFC 2544) |
-| `192.0.0.0/24` | IETF protocol assignments |
-| `169.254.169.254` | Cloud instance metadata endpoint |
-| `100.100.100.200` | Cloud metadata (Alibaba) |
+| Range                                               | Description                      |
+| --------------------------------------------------- | -------------------------------- |
+| `10.0.0.0/8`                                        | RFC 1918 private                 |
+| `172.16.0.0/12`                                     | RFC 1918 private                 |
+| `192.168.0.0/16`                                    | RFC 1918 private                 |
+| `127.0.0.0/8`                                       | Loopback                         |
+| `169.254.0.0/16`                                    | Link-local                       |
+| `224.0.0.0/4`                                       | Multicast                        |
+| `255.255.255.255`                                   | Broadcast                        |
+| `0.0.0.0`                                           | Unspecified                      |
+| `240.0.0.0/4`                                       | Reserved (former Class E)        |
+| `198.51.100.0/24`, `203.0.113.0/24`, `192.0.2.0/24` | Documentation (RFC 5737)         |
+| `100.64.0.0/10`                                     | Shared address space (RFC 6598)  |
+| `198.18.0.0/15`                                     | Benchmarking (RFC 2544)          |
+| `192.0.0.0/24`                                      | IETF protocol assignments        |
+| `169.254.169.254`                                   | Cloud instance metadata endpoint |
+| `100.100.100.200`                                   | Cloud metadata (Alibaba)         |
 
 ### Blocked IPv6 Addresses
 
-| Range | Description |
-| --- | --- |
-| `::1` | Loopback |
-| `::` | Unspecified |
-| `ff00::/8` | Multicast |
-| `fe80::/10` | Link-local |
-| `fc00::/7` | Unique local |
-| `fec0::/10` | Site-local (deprecated) |
-| `2001:db8::/32` | Documentation |
-| `fd00:ec2::254` | AWS EC2 IPv6 metadata |
-| `::ffff:169.254.169.254` | IPv4-mapped metadata |
+| Range                    | Description             |
+| ------------------------ | ----------------------- |
+| `::1`                    | Loopback                |
+| `::`                     | Unspecified             |
+| `ff00::/8`               | Multicast               |
+| `fe80::/10`              | Link-local              |
+| `fc00::/7`               | Unique local            |
+| `fec0::/10`              | Site-local (deprecated) |
+| `2001:db8::/32`          | Documentation           |
+| `fd00:ec2::254`          | AWS EC2 IPv6 metadata   |
+| `::ffff:169.254.169.254` | IPv4-mapped metadata    |
 
 IPv6-mapped IPv4 addresses (e.g., `::ffff:127.0.0.1`) are recursively checked against the IPv4 blocklist.
 
@@ -119,6 +119,7 @@ Every Bash script runs inside an OS-level sandbox. Earl requires a sandbox tool 
     - **Network isolation** (`--unshare-net`) by default -- templates must explicitly set `sandbox.network = true` to allow network access
     - **`--die-with-parent`** ensures child processes are killed if earl exits
     - **Working directory** is mounted read-only; only paths listed in `sandbox.writable_paths` get read-write mounts
+
   </Tab>
   <Tab value="macos" label="macOS (sandbox-exec)">
     On macOS, earl uses `sandbox-exec` with a dynamically generated Seatbelt profile:
@@ -130,6 +131,7 @@ Every Bash script runs inside an OS-level sandbox. Earl requires a sandbox tool 
     - **File writes** denied except for `/dev/null`, `/dev/tty`, and paths listed in `sandbox.writable_paths`
     - **Mach IPC** scoped to a curated list of system services (`com.apple.system.logger`, `com.apple.SecurityServer`, etc.)
     - **`sysctl-read`** allowed for basic system queries
+
   </Tab>
 </Tabs>
 

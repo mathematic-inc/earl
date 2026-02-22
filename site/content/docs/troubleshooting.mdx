@@ -57,6 +57,7 @@ The command key does not match any loaded template. Templates are loaded from
 `./templates/` and `~/.config/earl/templates/`.
 
 **Fix:**
+
 1. Check available commands: `earl templates list`
 2. Verify the template file exists and is valid: `earl templates validate`
 3. Ensure the command key matches `provider.command` format exactly.
@@ -118,11 +119,11 @@ scopes = ["read"]
 
 `earl doctor` reports specific issues with OAuth profile configuration:
 
-| Error | Fix |
-| ----- | --- |
-| `client_id is empty` | Set `client_id` in the profile section. |
-| `missing token_url (or issuer for discovery)` | Set `token_url` or `issuer` for OpenID Connect discovery. |
-| `missing authorization_url (or issuer for discovery)` | Required for `auth_code_pkce` flow. Set `authorization_url` or `issuer`. |
+| Error                                                        | Fix                                                                          |
+| ------------------------------------------------------------ | ---------------------------------------------------------------------------- |
+| `client_id is empty`                                         | Set `client_id` in the profile section.                                      |
+| `missing token_url (or issuer for discovery)`                | Set `token_url` or `issuer` for OpenID Connect discovery.                    |
+| `missing authorization_url (or issuer for discovery)`        | Required for `auth_code_pkce` flow. Set `authorization_url` or `issuer`.     |
 | `missing device_authorization_url (or issuer for discovery)` | Required for `device_code` flow. Set `device_authorization_url` or `issuer`. |
 
 ---
@@ -173,36 +174,36 @@ The TLS minimum version setting is not recognized.
 
 Run `earl templates validate` to check all templates. Common validation errors:
 
-| Error | Fix |
-| ----- | --- |
-| `template root must be an object` | Ensure the `.hcl` file has a valid top-level structure. |
+| Error                                                           | Fix                                                                                 |
+| --------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `template root must be an object`                               | Ensure the `.hcl` file has a valid top-level structure.                             |
 | `template must define either 'commands' or 'command', not both` | Use one form: a single `command` block or a `commands` block with multiple entries. |
-| `template provider must not be empty` | Set the `provider` field at the top of the template file. |
-| `provider X defines no commands` | Add at least one `command` block. |
-| `command X has empty title` | Every command needs a non-empty `title`. |
-| `command X has empty summary` | Every command needs a non-empty `summary`. |
-| `command X has empty description` | Every command needs a non-empty `description`. |
-| `command X has empty result.output` | The `result` block must define an `output` template. |
-| `command X has parameter with empty name` | Every `param` block needs a `name`. |
+| `template provider must not be empty`                           | Set the `provider` field at the top of the template file.                           |
+| `provider X defines no commands`                                | Add at least one `command` block.                                                   |
+| `command X has empty title`                                     | Every command needs a non-empty `title`.                                            |
+| `command X has empty summary`                                   | Every command needs a non-empty `summary`.                                          |
+| `command X has empty description`                               | Every command needs a non-empty `description`.                                      |
+| `command X has empty result.output`                             | The `result` block must define an `output` template.                                |
+| `command X has parameter with empty name`                       | Every `param` block needs a `name`.                                                 |
 
 ### Install errors
 
-| Error | Fix |
-| ----- | --- |
-| `unsupported template URL scheme` | Only `http://` and `https://` URLs are supported. Local file paths are also accepted. |
-| `template source path '...' was not found or is not a file` | The path does not exist or points to a directory. Pass a path to a `.hcl` file. |
-| `template file must end with .hcl` | Rename the source file to have a `.hcl` extension. |
-| `template destination already exists` | A file with the same name already exists in the target directory. Remove it first or rename the source. |
-| `template from 'url' exceeds maximum size` | Remote templates are limited to 1 MiB. |
+| Error                                                       | Fix                                                                                                     |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `unsupported template URL scheme`                           | Only `http://` and `https://` URLs are supported. Local file paths are also accepted.                   |
+| `template source path '...' was not found or is not a file` | The path does not exist or points to a directory. Pass a path to a `.hcl` file.                         |
+| `template file must end with .hcl`                          | Rename the source file to have a `.hcl` extension.                                                      |
+| `template destination already exists`                       | A file with the same name already exists in the target directory. Remove it first or rename the source. |
+| `template from 'url' exceeds maximum size`                  | Remote templates are limited to 1 MiB.                                                                  |
 
 ### Template function errors
 
-| Error | Fix |
-| ----- | --- |
-| `file() path must be relative` | The `file()` function only accepts relative paths. |
-| `file() path must not contain '..' segments` | Path traversal is not allowed in `file()` calls. |
-| `file() resolves outside the template directory` | The resolved path must stay within the template's directory. |
-| `unknown function 'name'` | Only built-in template functions are supported. Check the template schema docs. |
+| Error                                            | Fix                                                                             |
+| ------------------------------------------------ | ------------------------------------------------------------------------------- |
+| `file() path must be relative`                   | The `file()` function only accepts relative paths.                              |
+| `file() path must not contain '..' segments`     | Path traversal is not allowed in `file()` calls.                                |
+| `file() resolves outside the template directory` | The resolved path must stay within the template's directory.                    |
+| `unknown function 'name'`                        | Only built-in template functions are supported. Check the template schema docs. |
 
 ---
 
@@ -224,6 +225,7 @@ cargo install earl
 ```
 
 The default build includes all protocols.
+
 </Tab>
 <Tab value="Individual">
 ```bash
@@ -258,8 +260,8 @@ in `config.toml` overrides the template setting.
 
 ### gRPC auth errors
 
-| Error | Fix |
-| ----- | --- |
+| Error                                         | Fix                                                                                               |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------- |
 | `gRPC auth must use header-based credentials` | gRPC only supports header-based auth. Query and cookie auth are not supported for gRPC templates. |
 
 ---
@@ -290,13 +292,13 @@ unexpectedly.
 
 These errors occur when a template's `result.extract` step fails on the response.
 
-| Error | Fix |
-| ----- | --- |
-| `json_pointer extraction requires decoded JSON body` | The response was not valid JSON. Check the endpoint returns JSON. |
-| `json_pointer did not match response body` | The JSON pointer path does not exist in the response. Verify the pointer. |
-| `regex pattern did not match response body` | The regex extraction pattern found no match. Check the pattern and response format. |
-| `css_selector extraction requires decoded html/text body` | The response is not HTML/text. Check the endpoint content type. |
-| `xpath extraction requires decoded xml/text body` | The response is not XML/text. Check the endpoint content type. |
+| Error                                                     | Fix                                                                                 |
+| --------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `json_pointer extraction requires decoded JSON body`      | The response was not valid JSON. Check the endpoint returns JSON.                   |
+| `json_pointer did not match response body`                | The JSON pointer path does not exist in the response. Verify the pointer.           |
+| `regex pattern did not match response body`               | The regex extraction pattern found no match. Check the pattern and response format. |
+| `css_selector extraction requires decoded html/text body` | The response is not HTML/text. Check the endpoint content type.                     |
+| `xpath extraction requires decoded xml/text body`         | The response is not XML/text. Check the endpoint content type.                      |
 
 ---
 
@@ -352,6 +354,7 @@ sudo pacman -S bubblewrap
 
 `earl doctor` checks for sandbox tool availability and reports an error if
 `bwrap` is not found.
+
 </Tab>
 <Tab value="macOS">
 Earl uses the native macOS Keychain for secret storage. No additional setup is
@@ -366,6 +369,7 @@ installing bubblewrap via Homebrew:
 ```bash
 brew install bubblewrap
 ```
+
 </Tab>
 <Tab value="Windows">
 Earl uses the native Windows Credential Manager for secret storage. No
@@ -375,5 +379,6 @@ additional setup is required.
 
 The Bash protocol sandbox is not supported on Windows. Bash templates will not
 run on Windows.
+
 </Tab>
 </Tabs>
