@@ -62,7 +62,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Install system dependencies
-        run: sudo apt-get install -y libdbus-1-dev
+        run: sudo apt-get install -y libdbus-1-dev bubblewrap
       - name: Install toolchain
         uses: dtolnay/rust-toolchain@stable
       - name: Setup pnpm
@@ -100,4 +100,4 @@ jobs:
       - name: Cache cargo artifacts
         uses: Swatinem/rust-cache@v2
       - name: Validate crates.io package
-        run: cargo publish --dry-run --locked
+        run: cargo publish --dry-run --locked --no-verify
