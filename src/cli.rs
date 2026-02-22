@@ -196,6 +196,9 @@ pub struct McpArgs {
     /// Auto-approve write-mode templates for MCP tool calls.
     #[arg(long)]
     pub yes: bool,
+    /// Allow unauthenticated access to the MCP HTTP transport (not recommended for production).
+    #[arg(long)]
+    pub allow_unauthenticated: bool,
 }
 
 #[derive(Debug, Args)]
