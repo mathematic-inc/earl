@@ -1,9 +1,13 @@
 [target.x86_64-unknown-linux-musl]
 pre-build = [
-    "apt-get update && apt-get install -y libssl-dev pkg-config perl make",
+    "apt-get update && apt-get install -y libssl-dev pkg-config perl make curl",
+    "curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && apt-get install -y nodejs",
+    "corepack enable && corepack prepare pnpm@10.28.2 --activate",
 ]
 
 [target.aarch64-unknown-linux-gnu]
 pre-build = [
-    "apt-get update && apt-get install -y libssl-dev pkg-config perl make",
+    "apt-get update && apt-get install -y libssl-dev pkg-config perl make curl",
+    "curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && apt-get install -y nodejs",
+    "corepack enable && corepack prepare pnpm@10.28.2 --activate",
 ]
