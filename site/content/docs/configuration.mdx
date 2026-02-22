@@ -1,0 +1,167 @@
+---
+title: Configuration
+description: Config file reference — network policies, OAuth profiles, sandbox, and search
+icon: Settings
+---
+
+Config file: `~/.config/earl/config.toml`. All sections are optional.
+
+## File Locations
+
+| Path                                     | Purpose               |
+| ---------------------------------------- | --------------------- |
+| `~/.config/earl/config.toml`             | Main configuration    |
+| `~/.config/earl/templates/*.hcl`         | Global templates      |
+| `./templates/*.hcl`                      | Workspace templates (override global) |
+| `~/.local/state/earl/secrets-index.json` | Secret metadata index |
+| `~/.cache/earl/search-index-v1.json`     | Search cache          |
+
+## Full Example
+
+```toml
+# --- Network ---
+
+[[network.allow]]
+scheme = "https"
+host = "api.github.com"
+port = 443
+path_prefix = "/"
+
+[network.proxy_profiles.corp]
+url = "https://proxy.corp.example.com:8080"
+
+# --- Auth ---
+
+[auth.profiles.github]
+flow = "device_code"
+client_id = "your-client-id"
+token_url = "https://github.com/login/oauth/access_token"
+device_authorization_url = "https://github.com/login/device/code"
+scopes = ["repo", "read:org"]
+
+# --- Sandbox ---
+
+[sandbox]
+bash_max_time_ms = 30000
+bash_max_output_bytes = 1048576
+bash_allow_network = false
+sql_force_read_only = true
+sql_max_rows = 1000
+sql_connection_allowlist = ["myapp.db_url"]
+
+# --- Search ---
+
+[search]
+top_k = 40
+rerank_k = 10
+
+[search.local]
+embedding_model = "BGESmallENV15Q"
+reranker_model = "JINARerankerV1TurboEn"
+
+[search.remote]
+enabled = true
+base_url = "https://search.example.com"
+api_key_secret = "search.api_key"
+embeddings_path = "/embeddings"
+rerank_path = "/rerank"
+openai_compatible = true
+timeout_ms = 10000
+```
+
+## Network Allowlist
+
+`[[network.allow]]` restricts outbound HTTP traffic. Without any entries, all destinations are allowed. With one or more entries, requests must match at least one rule.
+
+| Field         | Type     | Required | Description                                      |
+| ------------- | -------- | -------- | ------------------------------------------------ |
+| `scheme`      | `string` | Yes      | `https` or `http`                                |
+| `host`        | `string` | Yes      | Exact hostname                                   |
+| `port`        | `u16`    | Yes      | TCP port (usually `443`)                         |
+| `path_prefix` | `string` | Yes      | Only paths starting with this prefix are allowed |
+
+## Proxy Profiles
+
+Named proxy profiles under `[network.proxy_profiles.<name>]`. Templates reference them via `transport.proxy_profile`.
+
+```toml
+[network.proxy_profiles.corp]
+url = "https://proxy.corp.example.com:8080"
+```
+
+## OAuth Profiles
+
+Define profiles under `[auth.profiles.<name>]` and reference them from templates via `auth.kind = "oauth2_profile"`. See [Auth](/docs/auth) for flow details.
+
+| Flow                 | Required Fields                                   |
+| -------------------- | ------------------------------------------------- |
+| `auth_code_pkce`     | `token_url`, `authorization_url`                  |
+| `device_code`        | `token_url`, `device_authorization_url`           |
+| `client_credentials` | `token_url`, `client_secret_key`                  |
+
+All flows require `client_id`. Optional fields: `client_secret_key` (required for `client_credentials`), `redirect_url`, `scopes`, `issuer`, `use_auth_request_body`.
+
+## Sandbox
+
+The `[sandbox]` section controls execution limits for Bash and SQL protocol operations. These settings apply both to direct `earl call` invocations and to tools served through the MCP server.
+
+### Bash
+
+| Key                      | Type            | Default | Description                                    |
+| ------------------------ | --------------- | ------- | ---------------------------------------------- |
+| `bash_max_time_ms`       | `u64` (optional)| —       | Maximum wall-clock time for a Bash command (ms) |
+| `bash_max_output_bytes`  | `u64` (optional)| —       | Maximum stdout/stderr capture size (bytes)      |
+| `bash_allow_network`     | `bool`          | `false` | Allow network access from Bash commands         |
+
+### SQL
+
+| Key                        | Type              | Default | Description                                    |
+| -------------------------- | ----------------- | ------- | ---------------------------------------------- |
+| `sql_force_read_only`      | `bool`            | `true`  | Force all SQL queries to be read-only           |
+| `sql_max_rows`             | `u64` (optional)  | —       | Maximum number of rows returned per query       |
+| `sql_connection_allowlist` | `string[]`        | `[]`    | Secret keys whose values are permitted as connection strings |
+
+The `sql_connection_allowlist` entries refer to secret names managed by `earl secrets`. Only connections whose secret key appears in this list are allowed.
+
+```toml
+[sandbox]
+bash_max_time_ms = 30000
+sql_force_read_only = true
+sql_connection_allowlist = ["myapp.db_url", "analytics.readonly_url"]
+```
+
+## Search
+
+Controls the semantic search engine used by `earl templates search` and MCP discovery mode.
+
+### Global
+
+| Key              | Type   | Default | Description                          |
+| ---------------- | ------ | ------- | ------------------------------------ |
+| `search.top_k`   | `usize`| `40`    | Candidates retrieved from embeddings |
+| `search.rerank_k` | `usize`| `10`   | Results returned after reranking     |
+
+### Local Models
+
+| Key                            | Type     | Default                 | Description                |
+| ------------------------------ | -------- | ----------------------- | -------------------------- |
+| `search.local.embedding_model` | `string` | `BGESmallENV15Q`        | Local embedding model name |
+| `search.local.reranker_model`  | `string` | `JINARerankerV1TurboEn` | Local reranker model name  |
+
+### Remote Backend
+
+Enable a remote search backend for embedding and reranking when local models are not sufficient.
+
+| Key                              | Type     | Default        | Description                             |
+| -------------------------------- | -------- | -------------- | --------------------------------------- |
+| `search.remote.enabled`          | `bool`   | `false`        | Enable remote search backend            |
+| `search.remote.base_url`        | `string` | —              | Base URL of the remote service          |
+| `search.remote.api_key_secret`  | `string` | —              | Secret key name for the API key         |
+| `search.remote.embeddings_path` | `string` | `/embeddings`  | Path appended to base URL for embeddings |
+| `search.remote.rerank_path`     | `string` | `/rerank`      | Path appended to base URL for reranking  |
+| `search.remote.openai_compatible`| `bool`  | `true`         | Use OpenAI-compatible request format     |
+| `search.remote.timeout_ms`      | `u64`    | `10000`        | Request timeout in milliseconds          |
+
+<Callout type="info">
+  Run `earl doctor` to verify your configuration. See [Troubleshooting](/docs/troubleshooting) for common errors.
+</Callout>

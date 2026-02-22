@@ -1,0 +1,424 @@
+---
+title: CLI Reference
+description: Complete command reference for the earl CLI
+icon: Terminal
+---
+
+## Global Behavior
+
+Earl reads configuration from `~/.config/earl/config.toml`. Templates are loaded
+from `./templates/` (local, relative to cwd) and `~/.config/earl/templates/`
+(global). All commands that load templates merge both directories.
+
+### Environment Variables
+
+| Variable   | Description |
+| ---------- | ----------- |
+| `RUST_LOG`  | Controls log verbosity. Defaults to `warn`. Set to `debug` or `trace` for detailed diagnostics. |
+
+```bash
+RUST_LOG=debug earl call github.search_issues --query "test"
+```
+
+### Exit Codes
+
+| Code | Meaning |
+| ---- | ------- |
+| `0`  | Success. |
+| `1`  | Error (invalid config, network failure, missing secret, template error, or `earl doctor` found one or more issues). |
+
+---
+
+## `earl call`
+
+Execute a template command.
+
+```bash
+earl call <provider.command> [--key value ...] [--yes] [--json]
+```
+
+The first argument is the command key in `provider.command` form. Remaining
+arguments are passed as `--key value` pairs that bind to the template's declared
+parameters.
+
+| Flag     | Default | Description |
+| -------- | ------- | ----------- |
+| `--yes`  | off     | Auto-approve write-mode commands (skip the `Type YES to continue:` prompt). |
+| `--json` | off     | Print structured JSON output instead of the rendered text template. |
+
+Write-mode commands prompt for explicit confirmation unless `--yes` is passed.
+
+### Examples
+
+```bash
+# Read-mode call with parameters
+earl call github.search_issues --query "repo:rust-lang/rust is:issue E-easy" --per_page 5
+
+# Write-mode call, auto-approved
+earl call github.create_issue --repo "myorg/myrepo" --title "Bug report" --yes
+
+# JSON output for scripting
+earl call stripe.list_charges --limit 10 --json | jq '.result'
+```
+
+---
+
+## `earl templates`
+
+Work with templates. The `--json` flag is available globally on all subcommands.
+
+### `earl templates list`
+
+List all loaded template commands.
+
+```bash
+earl templates list [--category <category>] [--mode read|write] [--json]
+```
+
+| Flag         | Description |
+| ------------ | ----------- |
+| `--category` | Filter by category tag (e.g., `--category monitoring`). |
+| `--mode`     | Filter by mode: `read` or `write`. |
+| `--json`     | Output as JSON array instead of table. |
+
+```bash
+# List all templates
+earl templates list
+
+# Only write-mode templates, as JSON
+earl templates list --mode write --json
+```
+
+### `earl templates search`
+
+Semantic search over template descriptions and metadata. Uses a local embedding
+model by default; optionally backed by a remote search endpoint if configured.
+
+```bash
+earl templates search '<query>' [--limit <n>] [--json]
+```
+
+| Flag      | Default | Description |
+| --------- | ------- | ----------- |
+| `--limit` | `10`    | Maximum number of results to return. |
+| `--json`  | off     | Output as JSON array instead of table. |
+
+```bash
+earl templates search "list open pull requests" --limit 5
+```
+
+### `earl templates validate`
+
+Validate all template files in local and global template directories. Returns a
+list of validated files, or exits with an error on the first validation failure.
+
+```bash
+earl templates validate [--json]
+```
+
+```bash
+# Human-readable output
+earl templates validate
+
+# JSON list of validated file paths
+earl templates validate --json
+```
+
+### `earl templates install`
+
+Install a template from a local file path or a direct HTTP(S) URL to a `.hcl` file.
+
+```bash
+earl templates install <source> [--scope local|global] [--json]
+```
+
+| Flag      | Default | Description |
+| --------- | ------- | ----------- |
+| `--scope` | `local` | Install destination: `local` (./templates/) or `global` (~/.config/earl/templates/). |
+| `--json`  | off     | Output install result as JSON. |
+
+```bash
+# Install from local file
+earl templates install ./my-provider.hcl
+
+# Install from URL into global scope
+earl templates install https://example.com/templates/slack.hcl --scope global
+```
+
+<Callout type="info">
+  Only `.hcl` files are accepted. The source URL must point directly to the file
+  (no git repos or archives). Maximum download size is 1 MiB.
+</Callout>
+
+### `earl templates generate`
+
+Generate a template by delegating to a coding CLI. Earl builds a structured
+prompt from your description and pipes it into the specified CLI's stdin.
+
+```bash
+earl templates generate -- <cli> [args...]
+```
+
+Everything after `--` is the coding CLI invocation. Earl will interactively ask
+you to describe the template you want before sending the prompt.
+
+```bash
+# Delegate to Claude Code
+earl templates generate -- claude --dangerously-skip-permissions
+
+# Delegate to any coding CLI
+earl templates generate -- my-coding-cli --flag
+```
+
+<Callout type="warn">
+  `earl templates generate` does not support the `--json` flag.
+</Callout>
+
+---
+
+## `earl secrets`
+
+Manage secrets in the OS keychain (macOS Keychain, Windows Credential Manager,
+or Linux Secret Service).
+
+### `earl secrets set`
+
+Store a secret value. Prompts interactively for the value by default.
+
+```bash
+earl secrets set <key> [--stdin]
+```
+
+| Flag      | Description |
+| --------- | ----------- |
+| `--stdin` | Read the secret value from stdin instead of an interactive prompt. |
+
+```bash
+# Interactive prompt (value is hidden)
+earl secrets set github.token
+
+# Pipe from an environment variable
+printf '%s' "$GITHUB_TOKEN" | earl secrets set github.token --stdin
+```
+
+### `earl secrets get`
+
+Show metadata for a stored secret.
+
+```bash
+earl secrets get <key>
+```
+
+<Callout type="info">
+  This command displays metadata only (key name, created/updated timestamps).
+  The plaintext secret value is never printed.
+</Callout>
+
+### `earl secrets list`
+
+List all stored secret keys with their timestamps.
+
+```bash
+earl secrets list
+```
+
+### `earl secrets delete`
+
+Delete a secret from the keychain.
+
+```bash
+earl secrets delete <key>
+```
+
+---
+
+## `earl auth`
+
+Manage OAuth2 authentication profiles. Each `<profile>` argument must match a
+`[auth.profiles.<profile>]` section in `config.toml`.
+
+Supported OAuth flows: `auth_code_pkce`, `device_code`, `client_credentials`.
+
+### `earl auth login`
+
+Start the OAuth login flow for a profile.
+
+```bash
+earl auth login <profile>
+```
+
+```bash
+earl auth login github
+```
+
+### `earl auth status`
+
+Show current token status for a profile (logged in, expiration, scopes).
+
+```bash
+earl auth status <profile>
+```
+
+### `earl auth refresh`
+
+Force an immediate token refresh for a profile.
+
+```bash
+earl auth refresh <profile>
+```
+
+### `earl auth logout`
+
+Delete the stored token for a profile.
+
+```bash
+earl auth logout <profile>
+```
+
+---
+
+## `earl mcp`
+
+Run an MCP (Model Context Protocol) server for AI agent integration. Each
+template command is exposed as an MCP tool.
+
+```bash
+earl mcp [stdio|http] [--listen <addr>] [--mode full|discovery] [--yes]
+```
+
+| Flag              | Default           | Description |
+| ----------------- | ----------------- | ----------- |
+| `stdio` / `http`  | `stdio`          | Transport protocol. `stdio` communicates over stdin/stdout; `http` starts an HTTP server. |
+| `--listen <addr>` | `127.0.0.1:8977` | Bind address for the HTTP transport. Ignored when using stdio. |
+| `--mode <mode>`   | `full`           | `full` exposes one MCP tool per template command. `discovery` exposes search and call wrapper tools. |
+| `--yes`           | off              | Auto-approve write-mode tool calls. Without this flag, write-mode tools are rejected at runtime. |
+
+### Examples
+
+<Tabs items={["stdio", "HTTP"]}>
+<Tab value="stdio">
+```bash
+# Default: stdio transport, full mode
+earl mcp
+
+# stdio with write-mode tools enabled
+earl mcp stdio --yes
+```
+</Tab>
+<Tab value="HTTP">
+```bash
+# HTTP transport on default port
+earl mcp http
+
+# HTTP on custom address with discovery mode
+earl mcp http --listen 0.0.0.0:9000 --mode discovery --yes
+```
+</Tab>
+</Tabs>
+
+<Callout type="warn">
+  Write-mode tools are blocked by default. If an AI agent calls a write-mode
+  tool without `--yes`, the server returns an error:
+  `tool 'X' is write-mode; restart the MCP server with --yes to enable write tools`.
+</Callout>
+
+---
+
+## `earl doctor`
+
+Diagnose configuration and setup issues. Runs a series of checks and prints a
+summary report.
+
+```bash
+earl doctor [--json]
+```
+
+| Flag     | Description |
+| -------- | ----------- |
+| `--json` | Output the full report as structured JSON (checks array + summary counts). |
+
+### Checks Performed
+
+| Check ID              | What it verifies |
+| --------------------- | ---------------- |
+| `config_file`         | Config file exists at `~/.config/earl/config.toml` and parses without errors. |
+| `network_allowlist`   | Reports configured `[[network.allow]]` rule count. |
+| `templates`           | Template files are discovered in local and global directories. |
+| `template_validation` | All discovered templates pass schema validation. |
+| `commands`            | At least one command is loadable from templates. |
+| `required_secrets`    | All secrets referenced by templates are present in the keychain. |
+| `oauth_profiles`      | All OAuth profiles referenced by templates are defined and valid in config. |
+| `remote_search`       | Remote semantic search configuration is complete (if enabled). |
+| `bash`                | Bash sandbox tool is available (only when compiled with the `bash` feature). |
+
+```bash
+# Human-readable report
+earl doctor
+
+# Machine-readable JSON
+earl doctor --json
+```
+
+The command exits with code `1` if any check has `error` status.
+
+---
+
+## `earl web`
+
+Launch a local web server with documentation and a playground for loaded template
+tools.
+
+```bash
+earl web [--listen <addr>] [--no-open]
+```
+
+| Flag              | Default         | Description |
+| ----------------- | --------------- | ----------- |
+| `--listen <addr>` | `127.0.0.1:0`  | Bind address. Port `0` selects a random available port. |
+| `--no-open`       | off             | Do not automatically open the browser. |
+
+The server prints its URL and a bearer token on startup. Press Ctrl+C to stop.
+
+```bash
+# Default: random port, opens browser
+earl web
+
+# Fixed port, no browser
+earl web --listen 127.0.0.1:3000 --no-open
+```
+
+---
+
+## `earl completion`
+
+Generate shell completion scripts.
+
+```bash
+earl completion <shell>
+```
+
+Supported shells: `bash`, `zsh`, `fish`, `powershell`, `elvish`.
+
+<Tabs items={["Bash", "Zsh", "Fish", "PowerShell"]}>
+<Tab value="Bash">
+```bash
+earl completion bash > ~/.local/share/bash-completion/completions/earl
+```
+</Tab>
+<Tab value="Zsh">
+```bash
+earl completion zsh > ~/.zfunc/_earl
+# Ensure ~/.zfunc is in your fpath
+```
+</Tab>
+<Tab value="Fish">
+```bash
+earl completion fish > ~/.config/fish/completions/earl.fish
+```
+</Tab>
+<Tab value="PowerShell">
+```powershell
+earl completion powershell >> $PROFILE
+```
+</Tab>
+</Tabs>

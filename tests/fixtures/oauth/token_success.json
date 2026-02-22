@@ -1,0 +1,7 @@
+{
+  "access_token": "access-123",
+  "refresh_token": "refresh-123",
+  "token_type": "Bearer",
+  "expires_in": 3600,
+  "scope": "repo read:user"
+}

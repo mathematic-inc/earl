@@ -1,0 +1,188 @@
+---
+title: AI Agent Integration (MCP)
+description: Use earl templates as tools in AI agents via the Model Context Protocol
+icon: Bot
+---
+
+Earl implements a [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server (protocol version `2024-11-05`), letting AI agents discover and invoke your API templates as native tools.
+
+```bash
+earl mcp [stdio|http] [--mode full|discovery] [--listen ADDR] [--yes]
+```
+
+## Modes
+
+Earl exposes templates to agents in two modes. Choose the one that fits your template library size and agent capabilities.
+
+### Full Mode
+
+```bash
+earl mcp stdio --mode full
+```
+
+Every template in the catalog becomes a separate MCP tool. The agent sees all tools in its `tools/list` response and can call any of them directly.
+
+Best when you have a small number of templates (under ~30) and want the agent to see everything at once.
+
+### Discovery Mode
+
+```bash
+earl mcp stdio --mode discovery
+```
+
+Instead of exposing every template, discovery mode registers only two meta-tools:
+
+**`earl.tool_search`** — Find matching templates by natural-language query.
+
+| Parameter  | Type      | Required | Default | Description                                       |
+| ---------- | --------- | -------- | ------- | ------------------------------------------------- |
+| `query`    | `string`  | Yes      | —       | Natural-language intent to match against metadata  |
+| `limit`    | `integer` | No       | `10`    | Maximum matches to return (1–50)                   |
+| `mode`     | `string`  | No       | —       | Filter by `read` or `write`                        |
+| `provider` | `string`  | No       | —       | Filter by provider name (e.g., `github`)           |
+| `category` | `string`  | No       | —       | Filter by category                                 |
+
+Returns a ranked list of matching tools with name, score, summary, mode, categories, and the full tool schema.
+
+**`earl.tool_call`** — Execute a discovered template tool.
+
+| Parameter   | Type     | Required | Default | Description                                     |
+| ----------- | -------- | -------- | ------- | ----------------------------------------------- |
+| `name`      | `string` | Yes      | —       | Exact tool name returned by `earl.tool_search`   |
+| `arguments` | `object` | No       | `{}`    | Arguments for the selected template tool         |
+
+In discovery mode, the server also returns an `instructions` field during initialization that guides the agent to use the two-step search-then-call workflow.
+
+### Full vs Discovery Trade-offs
+
+| Concern             | Full                                | Discovery                                |
+| ------------------- | ----------------------------------- | ---------------------------------------- |
+| Context window cost | One tool definition per template    | Always two tool definitions              |
+| Latency             | Single tool call                    | Two calls (search + invoke)              |
+| Scalability         | Degrades with hundreds of templates | Constant overhead regardless of catalog size |
+| Agent compatibility | Works with any MCP client           | Requires agent capable of multi-step tool use |
+
+<Callout type="info">
+  Discovery mode is recommended when your catalog exceeds ~30 templates. The search scoring considers tool names, titles, summaries, descriptions, categories, and parameter names.
+</Callout>
+
+## Claude Desktop
+
+Add earl to your `claude_desktop_config.json`:
+
+- **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+
+<Tabs items={["Full Mode", "Discovery Mode"]}>
+<Tab value="Full Mode">
+```json
+{
+  "mcpServers": {
+    "earl": {
+      "command": "earl",
+      "args": ["mcp", "stdio", "--mode", "full", "--yes"]
+    }
+  }
+}
+```
+</Tab>
+<Tab value="Discovery Mode">
+```json
+{
+  "mcpServers": {
+    "earl": {
+      "command": "earl",
+      "args": ["mcp", "stdio", "--mode", "discovery", "--yes"]
+    }
+  }
+}
+```
+</Tab>
+</Tabs>
+
+If `earl` was installed via `cargo install`, Claude Desktop may not find it on `PATH`. Use the full binary path instead. Find it with `which earl` (macOS/Linux) or `where earl` (Windows):
+
+```json
+{
+  "mcpServers": {
+    "earl": {
+      "command": "/absolute/path/to/earl",
+      "args": ["mcp", "stdio", "--mode", "full", "--yes"]
+    }
+  }
+}
+```
+
+## Claude Code
+
+Add earl as an MCP server in your Claude Code settings (`.claude/settings.json` or `~/.claude/settings.json`):
+
+```json
+{
+  "mcpServers": {
+    "earl": {
+      "command": "earl",
+      "args": ["mcp", "stdio", "--mode", "discovery", "--yes"]
+    }
+  }
+}
+```
+
+Discovery mode is recommended for Claude Code since it keeps the tool list small and avoids consuming the agent's context window.
+
+## Transports
+
+### Stdio
+
+The default transport. Earl reads JSON-RPC requests from stdin and writes responses to stdout.
+
+```bash
+earl mcp stdio --mode full --yes
+```
+
+The stdio transport supports two framing formats:
+
+- **Content-Length framing** — HTTP-style headers (`Content-Length: N\r\n\r\n<body>`). This is the format earl uses when writing responses.
+- **Line-delimited JSON** — One JSON object per line (newline-terminated). Earl accepts this as input for compatibility with simpler clients.
+
+Both formats can be mixed on the input side; earl auto-detects which format each incoming message uses.
+
+### HTTP
+
+For non-stdio integrations, earl can serve MCP over HTTP:
+
+```bash
+earl mcp http --listen 127.0.0.1:8977 --mode full --yes
+```
+
+| Endpoint      | Method | Description                        |
+| ------------- | ------ | ---------------------------------- |
+| `/mcp`        | POST   | JSON-RPC endpoint for MCP requests |
+| `/health`     | GET    | Health check — returns `204 No Content` |
+
+The `--listen` flag defaults to `127.0.0.1:8977`.
+
+## Write-Mode Safety
+
+Write-mode tools (templates with `annotations.mode = "write"`) are **blocked by default**. When a write-mode tool is called without opt-in, the server returns an error:
+
+- **Error code:** `-32603`
+- **Message:** `tool "<name>" is write-mode; restart the MCP server with --yes to enable write tools`
+
+Pass `--yes` when starting the server to allow write-mode tool execution:
+
+```bash
+earl mcp stdio --mode full --yes
+```
+
+This prevents agents from performing destructive actions without explicit operator opt-in.
+
+## Troubleshooting
+
+Run `earl doctor` to validate templates and configuration before starting the MCP server.
+
+Earl logs errors to stderr. To capture logs when running as an MCP server, redirect stderr to a file in your shell before launching, or check your MCP client's server log output.
+
+```bash
+earl mcp stdio --mode full --yes 2>/tmp/earl-mcp.log
+```

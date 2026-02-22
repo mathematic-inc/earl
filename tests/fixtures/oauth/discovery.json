@@ -1,0 +1,5 @@
+{
+  "authorization_endpoint": "https://issuer.example.com/oauth/authorize",
+  "token_endpoint": "https://issuer.example.com/oauth/token",
+  "device_authorization_endpoint": "https://issuer.example.com/oauth/device"
+}

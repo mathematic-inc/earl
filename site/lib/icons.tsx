@@ -1,0 +1,33 @@
+import {
+  BookOpen,
+  Bot,
+  Code,
+  Download,
+  FileCode2,
+  Key,
+  LifeBuoy,
+  Lock,
+  Rocket,
+  Settings,
+  Shield,
+  Stethoscope,
+  Terminal,
+  Wrench,
+} from "lucide-react";
+
+export const icons: Record<string, React.ReactNode> = {
+  Bot: <Bot />,
+  BookOpen: <BookOpen />,
+  Code: <Code />,
+  Download: <Download />,
+  Rocket: <Rocket />,
+  Terminal: <Terminal />,
+  Settings: <Settings />,
+  Key: <Key />,
+  LifeBuoy: <LifeBuoy />,
+  Shield: <Shield />,
+  Lock: <Lock />,
+  Wrench: <Wrench />,
+  FileCode2: <FileCode2 />,
+  Stethoscope: <Stethoscope />,
+};

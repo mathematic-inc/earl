@@ -1,0 +1,379 @@
+---
+title: Troubleshooting
+description: Common errors and platform-specific setup
+icon: LifeBuoy
+---
+
+Start with `earl doctor` -- it catches most configuration issues in one pass:
+
+```bash
+earl doctor
+```
+
+For verbose diagnostic output, enable debug logging:
+
+```bash
+RUST_LOG=debug earl doctor
+```
+
+---
+
+## Configuration Errors
+
+### `Config file not found`
+
+Earl looks for `~/.config/earl/config.toml`. If it does not exist, defaults are
+used but some features (OAuth profiles, network allowlist, remote search) will
+not work.
+
+**Fix:** Create the config file:
+
+```bash
+mkdir -p ~/.config/earl
+touch ~/.config/earl/config.toml
+```
+
+See [Configuration](/docs/configuration) for the full config reference and a complete example.
+
+### `Failed to parse config.toml`
+
+The config file has invalid TOML syntax.
+
+**Fix:** Check syntax, then re-run `earl doctor`:
+
+```bash
+earl doctor
+```
+
+The error message includes the specific parse error to help you locate the issue.
+
+---
+
+## Command Errors
+
+### `unknown command 'provider.command'`
+
+The command key does not match any loaded template. Templates are loaded from
+`./templates/` and `~/.config/earl/templates/`.
+
+**Fix:**
+1. Check available commands: `earl templates list`
+2. Verify the template file exists and is valid: `earl templates validate`
+3. Ensure the command key matches `provider.command` format exactly.
+
+### `write command aborted`
+
+A write-mode command was run without `--yes`, and you did not type `YES` at the
+confirmation prompt.
+
+**Fix:** Either type `YES` when prompted, or pass `--yes` to skip confirmation:
+
+```bash
+earl call provider.command --yes
+```
+
+---
+
+## Secret Errors
+
+### `secret 'key' not found`
+
+The template requires a secret that is not stored in the keychain.
+
+**Fix:**
+
+```bash
+earl secrets set <key>
+```
+
+Use `earl secrets list` to see all stored keys, and `earl doctor` to check which
+secrets are missing.
+
+### `Could not verify keychain secrets`
+
+Earl cannot access the OS keychain.
+
+**Fix:** See [Platform Notes](#platform-notes) below for keychain setup on your OS.
+
+---
+
+## OAuth Errors
+
+### `Authentication profile 'name' not found`
+
+A template references an OAuth2 profile that is not defined in `config.toml`.
+
+**Fix:** Add the profile to your config:
+
+```toml
+[auth.profiles.name]
+flow = "device_code"
+client_id = "your-client-id"
+device_authorization_url = "https://provider.example/device/code"
+token_url = "https://provider.example/oauth/token"
+scopes = ["read"]
+```
+
+### OAuth profile validation errors
+
+`earl doctor` reports specific issues with OAuth profile configuration:
+
+| Error | Fix |
+| ----- | --- |
+| `client_id is empty` | Set `client_id` in the profile section. |
+| `missing token_url (or issuer for discovery)` | Set `token_url` or `issuer` for OpenID Connect discovery. |
+| `missing authorization_url (or issuer for discovery)` | Required for `auth_code_pkce` flow. Set `authorization_url` or `issuer`. |
+| `missing device_authorization_url (or issuer for discovery)` | Required for `device_code` flow. Set `device_authorization_url` or `issuer`. |
+
+---
+
+## Network Errors
+
+### `Request blocked by network allowlist`
+
+The request URL does not match any `[[network.allow]]` rule in your config.
+
+**Fix:** Add an allowlist entry for the target host:
+
+```toml
+[[network.allow]]
+scheme = "https"
+host = "api.github.com"
+port = 443
+path_prefix = "/"
+```
+
+If no `[[network.allow]]` rules are configured, all outbound requests are
+allowed by default. Rules only take effect when at least one entry is present.
+
+### `request URL missing host`
+
+The template rendered a URL without a host component.
+
+**Fix:** Check the template's `operation.url` field uses correct URL syntax
+and that all parameter interpolations produce valid values.
+
+### `proxy profile 'name' has empty url`
+
+A proxy profile referenced in the template's transport section has an empty URL.
+
+**Fix:** Set the `url` in the proxy profile section of `config.toml`.
+
+### `unsupported tls.min_version`
+
+The TLS minimum version setting is not recognized.
+
+**Fix:** Use one of: `1.0`, `1.1`, `1.2`, `1.3`.
+
+---
+
+## Template Errors
+
+### Validation errors
+
+Run `earl templates validate` to check all templates. Common validation errors:
+
+| Error | Fix |
+| ----- | --- |
+| `template root must be an object` | Ensure the `.hcl` file has a valid top-level structure. |
+| `template must define either 'commands' or 'command', not both` | Use one form: a single `command` block or a `commands` block with multiple entries. |
+| `template provider must not be empty` | Set the `provider` field at the top of the template file. |
+| `provider X defines no commands` | Add at least one `command` block. |
+| `command X has empty title` | Every command needs a non-empty `title`. |
+| `command X has empty summary` | Every command needs a non-empty `summary`. |
+| `command X has empty description` | Every command needs a non-empty `description`. |
+| `command X has empty result.output` | The `result` block must define an `output` template. |
+| `command X has parameter with empty name` | Every `param` block needs a `name`. |
+
+### Install errors
+
+| Error | Fix |
+| ----- | --- |
+| `unsupported template URL scheme` | Only `http://` and `https://` URLs are supported. Local file paths are also accepted. |
+| `template source path '...' was not found or is not a file` | The path does not exist or points to a directory. Pass a path to a `.hcl` file. |
+| `template file must end with .hcl` | Rename the source file to have a `.hcl` extension. |
+| `template destination already exists` | A file with the same name already exists in the target directory. Remove it first or rename the source. |
+| `template from 'url' exceeds maximum size` | Remote templates are limited to 1 MiB. |
+
+### Template function errors
+
+| Error | Fix |
+| ----- | --- |
+| `file() path must be relative` | The `file()` function only accepts relative paths. |
+| `file() path must not contain '..' segments` | Path traversal is not allowed in `file()` calls. |
+| `file() resolves outside the template directory` | The resolved path must stay within the template's directory. |
+| `unknown function 'name'` | Only built-in template functions are supported. Check the template schema docs. |
+
+---
+
+## Protocol Errors
+
+### `unsupported protocol (feature not enabled)`
+
+The template uses a protocol that was not compiled into your earl binary.
+
+Earl supports five protocols as compile-time features: **http**, **graphql**,
+**grpc**, **bash**, and **sql**. All are enabled by default.
+
+**Fix:** Reinstall with the required feature:
+
+<Tabs items={["All (default)", "Individual"]}>
+<Tab value="All (default)">
+```bash
+cargo install earl
+```
+
+The default build includes all protocols.
+</Tab>
+<Tab value="Individual">
+```bash
+# Enable specific protocols
+cargo install earl --features "http,graphql,grpc"
+cargo install earl --features bash
+cargo install earl --features sql
+```
+</Tab>
+</Tabs>
+
+### `sql connection_secret not in sandbox.sql_connection_allowlist`
+
+The SQL template references a connection secret that is not in the configured
+allowlist.
+
+**Fix:** Add the secret key to the allowlist in `config.toml`:
+
+```toml
+[sandbox]
+sql_connection_allowlist = ["mydb.connection_url"]
+```
+
+### `SQL sandbox violation: write query blocked`
+
+The template has `sandbox.read_only = true` but the query attempts a write
+operation (INSERT, UPDATE, DELETE, or DDL).
+
+**Fix:** Either change the query to read-only, or set `read_only = false` in the
+template if writes are intended. Note that `sandbox.sql_force_read_only = true`
+in `config.toml` overrides the template setting.
+
+### gRPC auth errors
+
+| Error | Fix |
+| ----- | --- |
+| `gRPC auth must use header-based credentials` | gRPC only supports header-based auth. Query and cookie auth are not supported for gRPC templates. |
+
+---
+
+## MCP Server Errors
+
+### `tool 'X' is write-mode; restart the MCP server with --yes`
+
+The MCP server blocks write-mode tool calls by default.
+
+**Fix:** Restart with `--yes`:
+
+```bash
+earl mcp stdio --yes
+```
+
+### `unexpected EOF while reading stdio headers`
+
+The MCP stdio transport received an incomplete message.
+
+**Fix:** Ensure the MCP client is sending complete messages with proper
+Content-Length headers. This usually indicates the client disconnected
+unexpectedly.
+
+---
+
+## Extraction Errors
+
+These errors occur when a template's `result.extract` step fails on the response.
+
+| Error | Fix |
+| ----- | --- |
+| `json_pointer extraction requires decoded JSON body` | The response was not valid JSON. Check the endpoint returns JSON. |
+| `json_pointer did not match response body` | The JSON pointer path does not exist in the response. Verify the pointer. |
+| `regex pattern did not match response body` | The regex extraction pattern found no match. Check the pattern and response format. |
+| `css_selector extraction requires decoded html/text body` | The response is not HTML/text. Check the endpoint content type. |
+| `xpath extraction requires decoded xml/text body` | The response is not XML/text. Check the endpoint content type. |
+
+---
+
+## Debug Logging
+
+Enable detailed logging with the `RUST_LOG` environment variable:
+
+```bash
+# General debug logging
+RUST_LOG=debug earl call provider.command
+
+# Trace-level for maximum detail
+RUST_LOG=trace earl doctor
+
+# Target specific modules
+RUST_LOG=earl=debug,reqwest=debug earl call provider.command
+```
+
+The default log level is `warn`.
+
+---
+
+## Platform Notes
+
+<Tabs items={["Linux", "macOS", "Windows"]}>
+<Tab value="Linux">
+Earl uses the [Secret Service](https://specifications.freedesktop.org/secret-service/)
+D-Bus API for secret storage. A compatible daemon is required:
+
+- **GNOME:** `gnome-keyring` (usually pre-installed)
+- **KDE:** `kwallet`
+- **Other:** `keepassxc` with Secret Service integration enabled
+
+**Headless environments (servers, CI):**
+
+Start a session D-Bus and unlock the keyring programmatically. Without a running
+Secret Service daemon, `earl secrets` commands will fail.
+
+**Bash sandbox:**
+
+The Bash protocol uses `bwrap` (bubblewrap) for sandboxing on Linux. Install it:
+
+```bash
+# Debian / Ubuntu
+sudo apt install bubblewrap
+
+# Fedora
+sudo dnf install bubblewrap
+
+# Arch
+sudo pacman -S bubblewrap
+```
+
+`earl doctor` checks for sandbox tool availability and reports an error if
+`bwrap` is not found.
+</Tab>
+<Tab value="macOS">
+Earl uses the native macOS Keychain for secret storage. No additional setup is
+required.
+
+**Bash sandbox:**
+
+The Bash protocol uses `sandbox-exec` on macOS, which Apple has deprecated.
+`earl doctor` reports a warning about this. For stronger isolation, consider
+installing bubblewrap via Homebrew:
+
+```bash
+brew install bubblewrap
+```
+</Tab>
+<Tab value="Windows">
+Earl uses the native Windows Credential Manager for secret storage. No
+additional setup is required.
+
+**Bash sandbox:**
+
+The Bash protocol sandbox is not supported on Windows. Bash templates will not
+run on Windows.
+</Tab>
+</Tabs>

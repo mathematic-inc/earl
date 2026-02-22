@@ -1,0 +1,62 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "packages": {
+    ".": {
+      "release-type": "rust",
+      "package-name": "earl",
+      "changelog-path": "CHANGELOG.md",
+      "include-component-in-tag": false,
+      "include-v-in-tag": true,
+      "initial-version": "0.3.0",
+      "pull-request-title-pattern": "chore: release ${version}"
+    },
+    "crates/earl-core": {
+      "release-type": "rust",
+      "package-name": "earl-core",
+      "include-component-in-tag": false,
+      "include-v-in-tag": true
+    },
+    "crates/earl-protocol-http": {
+      "release-type": "rust",
+      "package-name": "earl-protocol-http",
+      "include-component-in-tag": false,
+      "include-v-in-tag": true
+    },
+    "crates/earl-protocol-grpc": {
+      "release-type": "rust",
+      "package-name": "earl-protocol-grpc",
+      "include-component-in-tag": false,
+      "include-v-in-tag": true
+    },
+    "crates/earl-protocol-bash": {
+      "release-type": "rust",
+      "package-name": "earl-protocol-bash",
+      "include-component-in-tag": false,
+      "include-v-in-tag": true
+    },
+    "crates/earl-protocol-sql": {
+      "release-type": "rust",
+      "package-name": "earl-protocol-sql",
+      "include-component-in-tag": false,
+      "include-v-in-tag": true
+    }
+  },
+  "plugins": [
+    {
+      "type": "linked-versions",
+      "groupName": "earl",
+      "components": [
+        "earl",
+        "earl-core",
+        "earl-protocol-http",
+        "earl-protocol-grpc",
+        "earl-protocol-bash",
+        "earl-protocol-sql"
+      ]
+    },
+    {
+      "type": "cargo-workspace",
+      "merge": false
+    }
+  ]
+}

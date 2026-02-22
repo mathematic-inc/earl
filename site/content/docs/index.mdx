@@ -1,0 +1,54 @@
+---
+title: Introduction
+description: AI-safe CLI for AI agents
+icon: BookOpen
+---
+
+Earl is a CLI gate between AI agents and external services. Instead of giving agents raw shell or network access with plaintext credentials, you define allowed operations as HCL templates. Agents invoke those templates by name and nothing else.
+
+```
+┌─────────────┐      ┌──────────────┐      ┌───────────────────┐
+│  AI Agent   │ ───▶ │     earl     │ ───▶ │ External Service  │
+│  (Request)  │      │ (Gate/Policy)│      │ (API, DB, shell…) │
+└─────────────┘      └──────────────┘      └───────────────────┘
+       ▲                    │
+       └──────── Result ────┘
+```
+
+## The Problem
+
+AI agents with broad shell or network access can read secrets in plaintext and make arbitrary API calls. That is an unacceptable default.
+
+## What Earl Does
+
+- **Template-driven requests** — Agents call `earl call provider.command --param value`, not arbitrary `curl` or raw HTTP.
+- **Secrets in the OS keychain** — Credentials are stored via `earl secrets set` and resolved at runtime. They never appear in CLI output.
+- **Network egress control** — Outbound traffic can be locked to specific hosts using `[[network.allow]]` rules in `config.toml`.
+- **SSRF protection** — Private IP ranges are blocked by default.
+- **Protocol support** — HTTP, GraphQL, gRPC, Bash, and SQL, each with protocol-specific safety controls.
+- **Sandboxing** — Bash and SQL commands run in sandboxed environments.
+- **Write confirmation** — Templates marked `mode = "write"` require explicit approval before execution.
+
+<Callout type="warn">
+  Restrict write access to `~/.config/earl/config.toml` and template files — the
+  security model depends on it. See [Security](/docs/security).
+</Callout>
+
+## How It Works
+
+1. **Define** — Write HCL templates that describe operations (API calls, scripts, queries) with typed parameters and declared secrets.
+2. **Store** — Save secrets in the OS keychain with `earl secrets set <key>`.
+3. **Call** — Agents invoke `earl call provider.command --param value`. Earl resolves secrets, applies network rules, and executes the request.
+4. **Enforce** — Unsafe destinations are blocked, secrets are redacted from output, and write operations require confirmation.
+
+## Documentation
+
+<Cards>
+  <Card title="Installation" href="/docs/installation" description="Install earl via script or cargo with optional feature flags." />
+  <Card title="Quick Start" href="/docs/quick-start" description="Your first constrained API call in minutes." />
+  <Card title="Security Model" href="/docs/security" description="How earl protects secrets, enforces policies, and blocks attacks." />
+  <Card title="AI Agent Integration" href="/docs/mcp" description="Expose templates as MCP tools for Claude and other agents." />
+  <Card title="Configuration" href="/docs/configuration" description="Network policies, OAuth profiles, and search settings." />
+  <Card title="Templates" href="/docs/templates" description="Author and manage HCL template files." />
+  <Card title="CLI Reference" href="/docs/commands" description="Complete command reference." />
+</Cards>

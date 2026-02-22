@@ -1,0 +1,27 @@
+/target
+
+# IDE
+.vscode/
+
+# Plans
+docs/plans/
+
+# site (Next.js)
+site/.next/
+site/out/
+site/node_modules/
+site/.source/
+site/public/rustdoc/
+site/next-env.d.ts
+site/tsconfig.tsbuildinfo
+
+# web
+.pnpm-store/
+node_modules/
+web/node_modules/
+.turbo/
+
+# worktrees
+.worktrees/
+dist/
+web/tsconfig.tsbuildinfo
