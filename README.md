@@ -49,9 +49,16 @@ irm https://raw.githubusercontent.com/brwse/earl/main/scripts/install.ps1 | iex
 
 ## Quick start
 
-> **Using a coding agent?** Prompt it to fetch and follow the getting-started skill for an interactive, guided setup:
->
-> _Fetch https://raw.githubusercontent.com/brwse/earl/main/skills/getting-started-with-earl/SKILL.md and any files it references under https://raw.githubusercontent.com/brwse/earl/main/skills/getting-started-with-earl/references/ — then follow the skill to help me get started with Earl._
+Prompt your coding agent:
+
+```
+Fetch https://raw.githubusercontent.com/brwse/earl/main/skills/getting-started-with-earl/SKILL.md
+and any files it references under
+https://raw.githubusercontent.com/brwse/earl/main/skills/getting-started-with-earl/references/
+then follow the skill to help me get started with Earl.
+```
+
+Or manually:
 
 ```bash
 # Import a template
