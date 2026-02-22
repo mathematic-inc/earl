@@ -65,9 +65,6 @@ jobs:
       matrix:
         include:
           - os: macos-15
-            target: x86_64-apple-darwin
-            build_tool: cargo
-          - os: macos-15
             target: aarch64-apple-darwin
             build_tool: cargo
           - os: ubuntu-latest
@@ -107,15 +104,21 @@ jobs:
       - name: Cache cargo artifacts
         uses: Swatinem/rust-cache@v2
 
+      - name: Install system dependencies (Linux native)
+        if: matrix.build_tool == 'cargo' && runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libdbus-1-dev libssl-dev pkg-config
+
       - name: Install cross
         if: matrix.build_tool == 'cross'
         shell: bash
         run: cargo install cross --locked
 
-      - name: Install cargo-xwin
+      - name: Install cargo-xwin and LLVM
         if: matrix.build_tool == 'xwin'
         shell: bash
-        run: cargo install cargo-xwin --locked
+        run: |
+          sudo apt-get update && sudo apt-get install -y llvm
+          cargo install cargo-xwin --locked
 
       - name: Build and package
         shell: bash
