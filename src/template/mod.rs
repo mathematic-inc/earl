@@ -1,5 +1,5 @@
 pub mod catalog;
-pub mod install;
+pub mod import;
 pub mod loader;
 pub mod parser;
 pub mod render;

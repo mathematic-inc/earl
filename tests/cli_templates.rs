@@ -167,14 +167,14 @@ fn templates_generate_rejects_json_mode() {
 }
 
 #[test]
-fn templates_install_rejects_unsupported_url_scheme() {
+fn templates_import_rejects_unsupported_url_scheme() {
     let cwd = tempfile::tempdir().unwrap();
     let home = tempfile::tempdir().unwrap();
 
     let mut cmd = cargo_bin_cmd!("earl");
     cmd.current_dir(cwd.path()).env("HOME", home.path()).args([
         "templates",
-        "install",
+        "import",
         "git://github.com/brwse/earl-core/templates/github.hcl",
     ]);
 
@@ -184,7 +184,7 @@ fn templates_install_rejects_unsupported_url_scheme() {
 }
 
 #[test]
-fn templates_install_from_local_path_installs_template() {
+fn templates_import_from_local_path_imports_template() {
     let cwd = tempfile::tempdir().unwrap();
     let home = tempfile::tempdir().unwrap();
 
@@ -197,24 +197,24 @@ fn templates_install_from_local_path_installs_template() {
     let mut cmd = cargo_bin_cmd!("earl");
     cmd.current_dir(cwd.path()).env("HOME", home.path()).args([
         "templates",
-        "install",
+        "import",
         source_path.to_str().unwrap(),
     ]);
 
     let out = cmd.assert().success().get_output().stdout.clone();
     let stdout = String::from_utf8(out).unwrap();
-    assert!(stdout.contains("Installed template"));
+    assert!(stdout.contains("Imported template"));
     assert!(stdout.contains("No required secrets were declared"));
 
-    let installed_path = cwd.path().join("templates/github.hcl");
-    let installed = fs::read_to_string(installed_path).unwrap();
-    assert!(installed.contains("provider"));
-    assert!(installed.contains("\"demo\""));
-    assert!(installed.contains("command \"ping\""));
+    let imported_path = cwd.path().join("templates/github.hcl");
+    let imported = fs::read_to_string(imported_path).unwrap();
+    assert!(imported.contains("provider"));
+    assert!(imported.contains("\"demo\""));
+    assert!(imported.contains("command \"ping\""));
 }
 
 #[test]
-fn templates_install_with_global_scope_installs_template() {
+fn templates_import_with_global_scope_imports_template() {
     let cwd = tempfile::tempdir().unwrap();
     let home = tempfile::tempdir().unwrap();
 
@@ -227,7 +227,7 @@ fn templates_install_with_global_scope_installs_template() {
     let mut cmd = cargo_bin_cmd!("earl");
     cmd.current_dir(cwd.path()).env("HOME", home.path()).args([
         "templates",
-        "install",
+        "import",
         source_path.to_str().unwrap(),
         "--scope",
         "global",
@@ -235,18 +235,18 @@ fn templates_install_with_global_scope_installs_template() {
 
     let out = cmd.assert().success().get_output().stdout.clone();
     let stdout = String::from_utf8(out).unwrap();
-    assert!(stdout.contains("Installed template"));
+    assert!(stdout.contains("Imported template"));
 
-    let installed_path = home.path().join(".config/earl/templates/github.hcl");
-    assert!(installed_path.exists());
-    let installed = fs::read_to_string(installed_path).unwrap();
-    assert!(installed.contains("provider"));
-    assert!(installed.contains("\"demo\""));
-    assert!(installed.contains("command \"ping\""));
+    let imported_path = home.path().join(".config/earl/templates/github.hcl");
+    assert!(imported_path.exists());
+    let imported = fs::read_to_string(imported_path).unwrap();
+    assert!(imported.contains("provider"));
+    assert!(imported.contains("\"demo\""));
+    assert!(imported.contains("command \"ping\""));
 }
 
 #[test]
-fn templates_install_from_http_url_installs_template() {
+fn templates_import_from_http_url_imports_template() {
     let cwd = tempfile::tempdir().unwrap();
     let home = tempfile::tempdir().unwrap();
 
@@ -261,26 +261,26 @@ fn templates_install_from_http_url_installs_template() {
     let mut cmd = cargo_bin_cmd!("earl");
     cmd.current_dir(cwd.path()).env("HOME", home.path()).args([
         "templates",
-        "install",
+        "import",
         source_url.as_str(),
     ]);
 
     let out = cmd.assert().success().get_output().stdout.clone();
     let stdout = String::from_utf8(out).unwrap();
-    assert!(stdout.contains("Installed template"));
+    assert!(stdout.contains("Imported template"));
     assert!(stdout.contains("templates/github.hcl"));
     template_mock.assert();
 }
 
 #[test]
-fn templates_install_fails_when_local_source_is_missing() {
+fn templates_import_fails_when_local_source_is_missing() {
     let cwd = tempfile::tempdir().unwrap();
     let home = tempfile::tempdir().unwrap();
 
     let mut cmd = cargo_bin_cmd!("earl");
     cmd.current_dir(cwd.path()).env("HOME", home.path()).args([
         "templates",
-        "install",
+        "import",
         "missing/github.hcl",
     ]);
 
@@ -290,7 +290,7 @@ fn templates_install_fails_when_local_source_is_missing() {
 }
 
 #[test]
-fn templates_install_reports_required_secrets_to_user() {
+fn templates_import_reports_required_secrets_to_user() {
     let cwd = tempfile::tempdir().unwrap();
     let home = tempfile::tempdir().unwrap();
 
@@ -300,7 +300,7 @@ fn templates_install_reports_required_secrets_to_user() {
     let mut cmd = cargo_bin_cmd!("earl");
     cmd.current_dir(cwd.path()).env("HOME", home.path()).args([
         "templates",
-        "install",
+        "import",
         source_path.to_str().unwrap(),
     ]);
 
@@ -308,12 +308,12 @@ fn templates_install_reports_required_secrets_to_user() {
     let stdout = String::from_utf8(out).unwrap();
     assert!(stdout.contains("Required secrets:"));
     assert!(stdout.contains("- github.token"));
-    assert!(stdout.contains("Install with:"));
+    assert!(stdout.contains("Set up with:"));
     assert!(stdout.contains("earl secrets set github.token"));
 }
 
 #[test]
-fn templates_install_json_includes_required_secrets() {
+fn templates_import_json_includes_required_secrets() {
     let cwd = tempfile::tempdir().unwrap();
     let home = tempfile::tempdir().unwrap();
 
@@ -323,7 +323,7 @@ fn templates_install_json_includes_required_secrets() {
     let mut cmd = cargo_bin_cmd!("earl");
     cmd.current_dir(cwd.path()).env("HOME", home.path()).args([
         "templates",
-        "install",
+        "import",
         source_path.to_str().unwrap(),
         "--json",
     ]);
@@ -344,7 +344,7 @@ fn templates_install_json_includes_required_secrets() {
 }
 
 #[test]
-fn templates_install_json_global_scope_reports_global_destination() {
+fn templates_import_json_global_scope_reports_global_destination() {
     let cwd = tempfile::tempdir().unwrap();
     let home = tempfile::tempdir().unwrap();
 
@@ -357,7 +357,7 @@ fn templates_install_json_global_scope_reports_global_destination() {
     let mut cmd = cargo_bin_cmd!("earl");
     cmd.current_dir(cwd.path()).env("HOME", home.path()).args([
         "templates",
-        "install",
+        "import",
         source_path.to_str().unwrap(),
         "--scope",
         "global",
@@ -372,7 +372,7 @@ fn templates_install_json_global_scope_reports_global_destination() {
 }
 
 #[test]
-fn templates_install_refuses_to_overwrite_existing_template() {
+fn templates_import_refuses_to_overwrite_existing_template() {
     let cwd = tempfile::tempdir().unwrap();
     let home = tempfile::tempdir().unwrap();
     fs::create_dir_all(cwd.path().join("templates")).unwrap();
@@ -386,7 +386,7 @@ fn templates_install_refuses_to_overwrite_existing_template() {
     let mut cmd = cargo_bin_cmd!("earl");
     cmd.current_dir(cwd.path()).env("HOME", home.path()).args([
         "templates",
-        "install",
+        "import",
         source_path.to_str().unwrap(),
     ]);
 
@@ -396,7 +396,7 @@ fn templates_install_refuses_to_overwrite_existing_template() {
 }
 
 #[test]
-fn templates_install_rejects_non_hcl_file_extension() {
+fn templates_import_rejects_non_hcl_file_extension() {
     let cwd = tempfile::tempdir().unwrap();
     let home = tempfile::tempdir().unwrap();
     let source_path = write_source_template(cwd.path(), "source/github.json", "version = 1\n");
@@ -404,7 +404,7 @@ fn templates_install_rejects_non_hcl_file_extension() {
     let mut cmd = cargo_bin_cmd!("earl");
     cmd.current_dir(cwd.path()).env("HOME", home.path()).args([
         "templates",
-        "install",
+        "import",
         source_path.to_str().unwrap(),
     ]);
 

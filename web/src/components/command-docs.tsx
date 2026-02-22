@@ -234,7 +234,7 @@ function EmptyState() {
           Earl loads commands from your template files.
         </p>
         <pre className="rounded-md bg-muted px-4 py-3 text-left font-mono text-sm">
-          earl templates install &lt;source&gt;
+          earl templates import &lt;source&gt;
         </pre>
         <p className="text-muted-foreground text-sm">
           Or create a{" "}

@@ -124,25 +124,25 @@ earl templates validate
 earl templates validate --json
 ```
 
-### `earl templates install`
+### `earl templates import`
 
-Install a template from a local file path or a direct HTTP(S) URL to a `.hcl` file.
+Import a template from a local file path or a direct HTTP(S) URL to a `.hcl` file.
 
 ```bash
-earl templates install <source> [--scope local|global] [--json]
+earl templates import <source> [--scope local|global] [--json]
 ```
 
 | Flag      | Default | Description |
 | --------- | ------- | ----------- |
-| `--scope` | `local` | Install destination: `local` (./templates/) or `global` (~/.config/earl/templates/). |
-| `--json`  | off     | Output install result as JSON. |
+| `--scope` | `local` | Import destination: `local` (./templates/) or `global` (~/.config/earl/templates/). |
+| `--json`  | off     | Output import result as JSON. |
 
 ```bash
-# Install from local file
-earl templates install ./my-provider.hcl
+# Import from local file
+earl templates import ./my-provider.hcl
 
-# Install from URL into global scope
-earl templates install https://example.com/templates/slack.hcl --scope global
+# Import from URL into global scope
+earl templates import https://example.com/templates/slack.hcl --scope global
 ```
 
 <Callout type="info">

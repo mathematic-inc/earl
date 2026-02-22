@@ -1,4 +1,4 @@
-# Minimal config for template installs.
+# Minimal config for template imports.
 # Copy to ~/.config/earl/config.toml
 
 # Optional: outbound network defaults to allow-all.
