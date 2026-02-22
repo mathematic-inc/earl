@@ -31,23 +31,7 @@ arbitrary API calls. Earl eliminates that risk:
 - Private IPs are blocked to prevent SSRF
 - Bash and SQL execution runs in a sandbox
 
-## Install
-
-```bash
-cargo install earl
-```
-
-Or use the installer scripts:
-
-```bash
-# macOS / Linux
-curl -fsSL https://raw.githubusercontent.com/brwse/earl/main/scripts/install.sh | bash
-
-# Windows (PowerShell)
-irm https://raw.githubusercontent.com/brwse/earl/main/scripts/install.ps1 | iex
-```
-
-## Quick start
+## Quick Start
 
 Prompt your coding agent:
 
@@ -58,9 +42,15 @@ https://raw.githubusercontent.com/brwse/earl/main/skills/getting-started-with-ea
 then follow the skill to help me get started with Earl.
 ```
 
-Or manually:
+Your agent will install Earl, walk you through setup, and build your first template — all from a single prompt.
+
+Or do it manually:
 
 ```bash
+# Install
+curl -fsSL https://raw.githubusercontent.com/brwse/earl/main/scripts/install.sh | bash
+# Or: cargo install earl
+
 # Import a template
 earl templates import ./examples/bash/system.hcl
 

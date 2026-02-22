@@ -1,10 +1,10 @@
 ---
 title: Quick Start
-description: Make your first API call with earl in minutes
+description: Get started with Earl in minutes
 icon: Rocket
 ---
 
-Prompt your coding agent:
+The fastest way to get started is to prompt your AI agent:
 
 ```
 Fetch https://raw.githubusercontent.com/brwse/earl/main/skills/getting-started-with-earl/SKILL.md
@@ -13,9 +13,81 @@ https://raw.githubusercontent.com/brwse/earl/main/skills/getting-started-with-ea
 then follow the skill to help me get started with Earl.
 ```
 
-Or follow the manual steps below. Earl must already be [installed](/docs/installation).
+Your agent will install Earl, walk you through setup, and build your first template — all from a single prompt.
 
-## Part 1: Local Command (No Secrets)
+To do it manually instead, follow the steps below.
+
+---
+
+## Install
+
+Earl is a single binary with no runtime dependencies.
+
+<Tabs items={["macOS / Linux", "Windows (PowerShell)", "Cargo"]}>
+  <Tab value="macOS / Linux">
+    ```bash
+    curl -fsSL https://raw.githubusercontent.com/brwse/earl/main/scripts/install.sh | bash
+    ```
+
+    Options:
+
+    | Flag | Description |
+    | --- | --- |
+    | `--version <version>` | Install a specific version (e.g., `0.2.0` or `v0.2.0`). Default: `latest` |
+    | `--install-dir <path>` | Prefix directory. Binary goes into `<path>/bin` |
+    | `--bin-dir <path>` | Install the binary directly into this directory |
+
+    Default install location: `~/.local/bin` (or `/usr/local/bin` when run as root). Ensure the install directory is on your `PATH`.
+
+  </Tab>
+  <Tab value="Windows (PowerShell)">
+    ```powershell
+    irm https://raw.githubusercontent.com/brwse/earl/main/scripts/install.ps1 | iex
+    ```
+
+    Parameters: `-Version`, `-InstallDir`, `-BinDir`.
+
+    Default install location: `%LOCALAPPDATA%\Programs\earl\bin`.
+
+  </Tab>
+  <Tab value="Cargo">
+    Requires a Rust toolchain and **Node.js + pnpm** (`earl` embeds web playground assets at compile time).
+
+    ```bash
+    cargo install earl
+    ```
+
+    Installs from [crates.io](https://crates.io/crates/earl).
+
+    All protocols are enabled by default. To install with only the protocols you need:
+
+    ```bash
+    cargo install earl --no-default-features --features http,graphql
+    ```
+
+    | Flag      | Description                         | Default |
+    | --------- | ----------------------------------- | ------- |
+    | `http`    | HTTP protocol support               | Yes     |
+    | `graphql` | GraphQL protocol (requires `http`)  | Yes     |
+    | `grpc`    | gRPC protocol support               | Yes     |
+    | `bash`    | Sandboxed Bash script execution     | Yes     |
+    | `sql`     | SQL query execution with sandboxing | Yes     |
+
+    <Callout type="info">
+      The `graphql` feature automatically enables `http` since GraphQL requests are
+      sent over HTTP.
+    </Callout>
+
+  </Tab>
+</Tabs>
+
+Verify the installation:
+
+```bash
+earl --version
+```
+
+## Your First Call
 
 <Steps>
 <Step>
@@ -53,7 +125,7 @@ Earl executes `ls -la /tmp` inside a sandboxed Bash environment and prints the r
 </Step>
 </Steps>
 
-## Part 2: GitHub API Call
+## Adding Secrets (GitHub Example)
 
 <Steps>
 <Step>
@@ -106,17 +178,6 @@ earl call github.search_repos --q "language:rust stars:>1000"
 Earl resolves the `github.token` secret from your keychain, builds the HTTP request from the template, and returns the result.
 
 </Step>
-<Step>
-
-### Try JSON output
-
-```bash
-earl call github.search_repos --q "language:rust stars:>1000" --json
-```
-
-The `--json` flag returns structured JSON instead of rendered text. Secrets are still redacted.
-
-</Step>
 </Steps>
 
 ## What's Next
@@ -126,3 +187,32 @@ The `--json` flag returns structured JSON instead of rendered text. Secrets are 
 - **MCP integration** — Run `earl mcp` to expose your templates as MCP tools for AI agents. See [MCP Integration](/docs/mcp).
 - **Lock it down** — Restrict write access to `~/.config/earl/config.toml` and your template files. See [Security](/docs/security).
 - **Write your own templates** — See [Templates](/docs/templates) for the HCL template format.
+
+## Shell Completions
+
+Generate completion scripts for your shell:
+
+<Tabs items={["Bash", "Zsh", "Fish", "PowerShell"]}>
+  <Tab value="Bash">
+    ```bash
+    earl completion bash > ~/.local/share/bash-completion/completions/earl
+    ```
+  </Tab>
+  <Tab value="Zsh">
+    ```bash
+    earl completion zsh > ~/.zfunc/_earl
+    ```
+  </Tab>
+  <Tab value="Fish">
+    ```bash
+    earl completion fish > ~/.config/fish/completions/earl.fish
+    ```
+  </Tab>
+  <Tab value="PowerShell">
+    ```powershell
+    earl completion powershell >> $PROFILE
+    ```
+  </Tab>
+</Tabs>
+
+Elvish is also supported via `earl completion elvish`.
