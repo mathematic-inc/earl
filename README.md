@@ -40,8 +40,8 @@ irm https://raw.githubusercontent.com/brwse/earl/main/scripts/install.ps1 | iex
 ## Quick start
 
 ```bash
-# Install a template
-earl templates install ./examples/bash/system.hcl
+# Import a template
+earl templates import ./examples/bash/system.hcl
 
 # Call a command defined in the template
 earl call system.disk_usage --path /tmp

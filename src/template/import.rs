@@ -9,18 +9,18 @@ use crate::template::parser::parse_template_hcl;
 use crate::template::schema::TemplateFile;
 
 #[derive(Debug, serde::Serialize)]
-pub struct TemplateInstallResult {
+pub struct TemplateImportResult {
     pub source_ref: String,
     pub source: String,
     pub destination: String,
     pub required_secrets: Vec<String>,
 }
 
-pub async fn install_template_from_source_ref(
+pub async fn import_template_from_source_ref(
     cwd: &Path,
     source_ref: &str,
     destination_dir: &Path,
-) -> Result<TemplateInstallResult> {
+) -> Result<TemplateImportResult> {
     let source = parse_template_source_ref(source_ref)?;
     let source_path = resolve_source_for_display(cwd, &source);
     let file_name = template_file_name(cwd, &source)?;
@@ -43,14 +43,14 @@ pub async fn install_template_from_source_ref(
 
     fs::write(&destination_path, &source_bytes).with_context(|| {
         format!(
-            "failed writing installed template to {}",
+            "failed writing imported template to {}",
             destination_path.display()
         )
     })?;
 
     let required_secrets = scan_required_secrets(&destination_path)?;
 
-    Ok(TemplateInstallResult {
+    Ok(TemplateImportResult {
         source_ref: source_ref.to_string(),
         source: source_path,
         destination: destination_path.display().to_string(),
@@ -212,7 +212,7 @@ fn resolve_local_source_path(cwd: &Path, path: &Path) -> PathBuf {
 fn scan_required_secrets(template_path: &Path) -> Result<Vec<String>> {
     let content = fs::read_to_string(template_path).with_context(|| {
         format!(
-            "failed reading installed template for secret scan {}",
+            "failed reading imported template for secret scan {}",
             template_path.display()
         )
     })?;
@@ -220,7 +220,7 @@ fn scan_required_secrets(template_path: &Path) -> Result<Vec<String>> {
     let template_file: TemplateFile =
         parse_template_hcl(&content, base_dir).with_context(|| {
             format!(
-                "installed template is not valid HCL/schema {}",
+                "imported template is not valid HCL/schema {}",
                 template_path.display()
             )
         })?;

@@ -13,7 +13,7 @@ use crate::auth::oauth2::OAuthManager;
 use crate::cli::{
     AuthSubcommand, Cli, Command, CompletionArgs, CompletionShell, DoctorArgs, McpArgs,
     McpMode as CliMcpMode, McpTransport, SecretsSubcommand, TemplateGenerateArgs,
-    TemplateInstallScope, TemplateMode, TemplateSubcommand, WebArgs,
+    TemplateImportScope, TemplateMode, TemplateSubcommand, WebArgs,
 };
 use crate::config::{self, Config};
 use crate::doctor::{self, DoctorReport, DoctorStatus};
@@ -27,7 +27,7 @@ use crate::protocol::executor::execute_prepared_request;
 use crate::search::service::search_templates;
 use crate::secrets::SecretManager;
 use crate::template::catalog::TemplateScope;
-use crate::template::install::install_template_from_source_ref;
+use crate::template::import::import_template_from_source_ref;
 use crate::template::loader::{load_catalog, validate_all};
 use crate::template::schema::{CommandMode, ParamSpec};
 use crate::web;
@@ -222,29 +222,29 @@ async fn run_templates(command: TemplateSubcommand, json_mode: bool, cfg: Config
                 }
             }
         }
-        TemplateSubcommand::Install(args) => {
+        TemplateSubcommand::Import(args) => {
             let destination_dir = match args.scope {
-                TemplateInstallScope::Local => config::local_templates_dir(&cwd),
-                TemplateInstallScope::Global => config::global_templates_dir(),
+                TemplateImportScope::Local => config::local_templates_dir(&cwd),
+                TemplateImportScope::Global => config::global_templates_dir(),
             };
-            let installed =
-                install_template_from_source_ref(&cwd, &args.source_ref, &destination_dir).await?;
+            let imported =
+                import_template_from_source_ref(&cwd, &args.source_ref, &destination_dir).await?;
             if json_mode {
-                println!("{}", serde_json::to_string_pretty(&installed)?);
+                println!("{}", serde_json::to_string_pretty(&imported)?);
             } else {
                 println!(
-                    "Installed template from `{}` to `{}`.",
-                    installed.source_ref, installed.destination
+                    "Imported template from `{}` to `{}`.",
+                    imported.source_ref, imported.destination
                 );
-                if installed.required_secrets.is_empty() {
+                if imported.required_secrets.is_empty() {
                     println!("No required secrets were declared by this template.");
                 } else {
                     println!("Required secrets:");
-                    for secret in &installed.required_secrets {
+                    for secret in &imported.required_secrets {
                         println!("- {secret}");
                     }
-                    println!("Install with:");
-                    for secret in &installed.required_secrets {
+                    println!("Set up with:");
+                    for secret in &imported.required_secrets {
                         println!("earl secrets set {secret}");
                     }
                 }

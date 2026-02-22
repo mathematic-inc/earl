@@ -65,8 +65,8 @@ pub enum TemplateSubcommand {
     Search(TemplateSearchArgs),
     /// Validate template files.
     Validate,
-    /// Install a template file from a local path or direct HTTP(S) URL.
-    Install(TemplateInstallArgs),
+    /// Import a template file from a local path or direct HTTP(S) URL.
+    Import(TemplateImportArgs),
     /// Generate a template by delegating to a coding CLI.
     Generate(TemplateGenerateArgs),
 }
@@ -95,16 +95,16 @@ pub struct TemplateSearchArgs {
 }
 
 #[derive(Debug, Args)]
-pub struct TemplateInstallArgs {
-    /// Template install source: local file path or direct HTTP(S) URL to a .hcl file.
+pub struct TemplateImportArgs {
+    /// Template import source: local file path or direct HTTP(S) URL to a .hcl file.
     pub source_ref: String,
-    /// Install destination scope.
-    #[arg(long, value_enum, default_value_t = TemplateInstallScope::Local)]
-    pub scope: TemplateInstallScope,
+    /// Import destination scope.
+    #[arg(long, value_enum, default_value_t = TemplateImportScope::Local)]
+    pub scope: TemplateImportScope,
 }
 
 #[derive(Debug, Clone, Copy, ValueEnum)]
-pub enum TemplateInstallScope {
+pub enum TemplateImportScope {
     #[value(name = "local")]
     Local,
     #[value(name = "global")]
