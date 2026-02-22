@@ -1,11 +1,15 @@
+pub mod auth;
+pub mod policy;
+
 use std::net::SocketAddr;
 use std::sync::Arc;
 
 use anyhow::{Context, Result, bail};
 use axum::{
     Json, Router,
-    extract::State,
+    extract::{FromRequest, State},
     http::StatusCode,
+    middleware as axum_middleware,
     response::IntoResponse,
     routing::{get, post},
 };
@@ -17,7 +21,7 @@ use tokio::io::{
 };
 
 use crate::auth::oauth2::OAuthManager;
-use crate::config::Config;
+use crate::config::{Config, PolicyRule};
 use crate::expression::ast::CallExpression;
 use crate::expression::binder::bind_arguments;
 use crate::output::human::render_human_output;
@@ -53,6 +57,7 @@ pub struct McpServerOptions {
     pub listen: SocketAddr,
     pub mode: McpMode,
     pub auto_yes: bool,
+    pub allow_unauthenticated: bool,
 }
 
 #[derive(Clone)]
@@ -61,6 +66,8 @@ struct McpState {
     cfg: Config,
     mode: McpMode,
     auto_yes: bool,
+    jwt: Option<auth::JwtState>,
+    policies: Vec<PolicyRule>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -119,6 +126,13 @@ struct RpcFailure {
 }
 
 impl RpcFailure {
+    fn access_denied(message: impl Into<String>) -> Self {
+        Self {
+            code: -32001,
+            message: message.into(),
+        }
+    }
+
     fn invalid_params(message: impl Into<String>) -> Self {
         Self {
             code: -32602,
@@ -179,11 +193,37 @@ pub async fn run_server(
     catalog: TemplateCatalog,
     cfg: Config,
 ) -> Result<()> {
+    if options.transport == ServerTransport::Http {
+        let has_jwt = cfg.auth.jwt.is_some();
+        if has_jwt && options.allow_unauthenticated {
+            bail!(
+                "conflicting configuration: [auth.jwt] is configured but \
+                 --allow-unauthenticated was also passed; remove one to proceed"
+            );
+        }
+        if !has_jwt && !options.allow_unauthenticated {
+            bail!(
+                "HTTP transport requires authentication: configure [auth.jwt] in your \
+                 config file, or pass --allow-unauthenticated to explicitly opt out \
+                 (not recommended for production)"
+            );
+        }
+    }
+
+    let jwt = match &cfg.auth.jwt {
+        Some(jwt_config) => Some(auth::JwtState::new(jwt_config).await?),
+        None => None,
+    };
+
+    let policies = cfg.policy.clone();
+
     let state = McpState {
         catalog: Arc::new(catalog),
         cfg,
         mode: options.mode,
         auto_yes: options.auto_yes,
+        jwt,
+        policies,
     };
 
     match options.transport {
@@ -207,7 +247,7 @@ async fn run_stdio(state: McpState) -> Result<()> {
             }
         };
 
-        if let Some(response) = handle_request(request, &state).await {
+        if let Some(response) = handle_request(request, &state, None).await {
             write_stdio_frame(&mut writer, &response).await?;
         }
     }
@@ -217,10 +257,24 @@ async fn run_stdio(state: McpState) -> Result<()> {
 }
 
 async fn run_http(state: McpState, listen: SocketAddr) -> Result<()> {
-    let app = Router::new()
-        .route("/mcp", post(handle_http_rpc))
-        .route("/health", get(|| async { StatusCode::NO_CONTENT }))
-        .with_state(state);
+    let app = if let Some(jwt_state) = &state.jwt {
+        let authenticated = Router::new()
+            .route("/mcp", post(handle_http_rpc))
+            .layer(axum_middleware::from_fn_with_state(
+                jwt_state.clone(),
+                auth::require_jwt_auth,
+            ))
+            .with_state(state);
+
+        Router::new()
+            .route("/health", get(|| async { StatusCode::NO_CONTENT }))
+            .merge(authenticated)
+    } else {
+        Router::new()
+            .route("/mcp", post(handle_http_rpc))
+            .route("/health", get(|| async { StatusCode::NO_CONTENT }))
+            .with_state(state)
+    };
 
     let listener = tokio::net::TcpListener::bind(listen)
         .await
@@ -235,15 +289,36 @@ async fn run_http(state: McpState, listen: SocketAddr) -> Result<()> {
 
 async fn handle_http_rpc(
     State(state): State<McpState>,
-    Json(request): Json<JsonRpcRequest>,
+    request: axum::extract::Request,
 ) -> impl IntoResponse {
-    match handle_request(request, &state).await {
+    let subject = request.extensions().get::<auth::Subject>().cloned();
+    if subject.is_none() && state.jwt.is_none() {
+        tracing::warn!(
+            target: "earl::audit",
+            "processing unauthenticated HTTP request (--allow-unauthenticated is active)"
+        );
+    }
+    let body: Json<JsonRpcRequest> = match axum::extract::Json::from_request(request, &state).await
+    {
+        Ok(json) => json,
+        Err(err) => {
+            let response =
+                JsonRpcResponse::error(Value::Null, -32700, format!("parse error: {err}"));
+            return (StatusCode::OK, Json(response)).into_response();
+        }
+    };
+
+    match handle_request(body.0, &state, subject.as_ref()).await {
         Some(response) => (StatusCode::OK, Json(response)).into_response(),
         None => StatusCode::ACCEPTED.into_response(),
     }
 }
 
-async fn handle_request(request: JsonRpcRequest, state: &McpState) -> Option<JsonRpcResponse> {
+async fn handle_request(
+    request: JsonRpcRequest,
+    state: &McpState,
+    subject: Option<&auth::Subject>,
+) -> Option<JsonRpcResponse> {
     let id = request.id.clone();
 
     if request.jsonrpc != JSONRPC_VERSION {
@@ -255,9 +330,9 @@ async fn handle_request(request: JsonRpcRequest, state: &McpState) -> Option<Jso
         "notifications/initialized" => return None,
         "ping" => Ok(json!({})),
         "tools/list" => Ok(json!({
-            "tools": build_tools(state),
+            "tools": build_tools(state, subject),
         })),
-        "tools/call" => handle_tools_call(request.params, state).await,
+        "tools/call" => handle_tools_call(request.params, state, subject).await,
         _ => Err(RpcFailure::method_not_found(format!(
             "method `{}` not found",
             request.method
@@ -311,29 +386,77 @@ with the selected tool name and arguments."
 async fn handle_tools_call(
     params: Option<Value>,
     state: &McpState,
+    subject: Option<&auth::Subject>,
 ) -> std::result::Result<Value, RpcFailure> {
     let params = decode_params::<ToolCallParams>(params)?;
+    let tool_key = params.name.to_ascii_lowercase();
+
     match state.mode {
         McpMode::Full => {
-            let entry = state.catalog.get(&params.name).ok_or_else(|| {
+            let entry = state.catalog.get(&tool_key).ok_or_else(|| {
                 RpcFailure::invalid_params(format!("unknown tool `{}`", params.name))
             })?;
+
+            // When unauthenticated, --yes is the only write gate
+            if entry.mode == CommandMode::Write && !state.auto_yes && subject.is_none() {
+                return Err(RpcFailure::access_denied(
+                    "write-mode tools are disabled on this server instance",
+                ));
+            }
+
+            if let Some(subject) = subject {
+                let decision = policy::evaluate(&state.policies, &subject.0, &tool_key, entry.mode);
+                let jti = subject.1.as_deref().unwrap_or("-");
+                if decision == policy::PolicyDecision::Deny {
+                    tracing::info!(
+                        target: "earl::audit",
+                        subject = %subject,
+                        tool = %tool_key,
+                        jti = jti,
+                        decision = "deny",
+                        "policy denied tool call"
+                    );
+                    return Err(RpcFailure::access_denied(format!(
+                        "access denied: subject is not authorized to call `{}`",
+                        tool_key
+                    )));
+                }
+                tracing::info!(
+                    target: "earl::audit",
+                    subject = %subject,
+                    tool = %tool_key,
+                    jti = jti,
+                    decision = "allow",
+                    "policy allowed tool call"
+                );
+            }
 
             execute_template_tool(entry, params.arguments, state)
                 .await
                 .map_err(RpcFailure::internal)
         }
-        McpMode::Discovery => handle_discovery_tools_call(params, state).await,
+        McpMode::Discovery => {
+            handle_discovery_tools_call(
+                ToolCallParams {
+                    name: params.name,
+                    arguments: params.arguments,
+                },
+                state,
+                subject,
+            )
+            .await
+        }
     }
 }
 
 async fn handle_discovery_tools_call(
     params: ToolCallParams,
     state: &McpState,
+    subject: Option<&auth::Subject>,
 ) -> std::result::Result<Value, RpcFailure> {
     match params.name.as_str() {
-        DISCOVERY_SEARCH_TOOL_NAME => handle_discovery_search(params.arguments, state),
-        DISCOVERY_CALL_TOOL_NAME => handle_discovery_invoke(params.arguments, state).await,
+        DISCOVERY_SEARCH_TOOL_NAME => handle_discovery_search(params.arguments, state, subject),
+        DISCOVERY_CALL_TOOL_NAME => handle_discovery_invoke(params.arguments, state, subject).await,
         _ => Err(RpcFailure::invalid_params(format!(
             "unknown discovery tool `{}`",
             params.name
@@ -344,6 +467,7 @@ async fn handle_discovery_tools_call(
 fn handle_discovery_search(
     arguments: Map<String, Value>,
     state: &McpState,
+    subject: Option<&auth::Subject>,
 ) -> std::result::Result<Value, RpcFailure> {
     let args = decode_argument_map::<DiscoverySearchArgs>(arguments)?;
     let query = args.query.trim();
@@ -379,6 +503,14 @@ fn handle_discovery_search(
                         .categories
                         .iter()
                         .any(|candidate| candidate.to_ascii_lowercase() == *category)
+                })
+                // Access filter: hide tools the subject can't access or write
+                // tools when --yes is off and unauthenticated
+                && (if let Some(sub) = subject {
+                    policy::evaluate(&state.policies, &sub.0, &entry.key, entry.mode)
+                        == policy::PolicyDecision::Allow
+                } else {
+                    state.auto_yes || entry.mode != CommandMode::Write
                 })
         })
         .map(|entry| (entry, discovery_score(query, entry)))
@@ -441,11 +573,47 @@ fn handle_discovery_search(
 async fn handle_discovery_invoke(
     arguments: Map<String, Value>,
     state: &McpState,
+    subject: Option<&auth::Subject>,
 ) -> std::result::Result<Value, RpcFailure> {
     let args = decode_argument_map::<DiscoveryInvokeArgs>(arguments)?;
-    let entry = state.catalog.get(&args.name).ok_or_else(|| {
+    let tool_key = args.name.to_ascii_lowercase();
+    let entry = state.catalog.get(&tool_key).ok_or_else(|| {
         RpcFailure::invalid_params(format!("unknown template tool `{}`", args.name))
     })?;
+
+    // When unauthenticated, --yes is the only write gate
+    if entry.mode == CommandMode::Write && !state.auto_yes && subject.is_none() {
+        return Err(RpcFailure::access_denied(
+            "write-mode tools are disabled on this server instance",
+        ));
+    }
+
+    if let Some(subject) = subject {
+        let decision = policy::evaluate(&state.policies, &subject.0, &tool_key, entry.mode);
+        let jti = subject.1.as_deref().unwrap_or("-");
+        if decision == policy::PolicyDecision::Deny {
+            tracing::info!(
+                target: "earl::audit",
+                subject = %subject,
+                tool = %tool_key,
+                jti = jti,
+                decision = "deny",
+                "policy denied discovery tool call"
+            );
+            return Err(RpcFailure::access_denied(format!(
+                "access denied: subject is not authorized to call `{}`",
+                tool_key
+            )));
+        }
+        tracing::info!(
+            target: "earl::audit",
+            subject = %subject,
+            tool = %tool_key,
+            jti = jti,
+            decision = "allow",
+            "policy allowed discovery tool call"
+        );
+    }
 
     execute_template_tool(entry, args.arguments, state)
         .await
@@ -457,13 +625,6 @@ async fn execute_template_tool(
     arguments: Map<String, Value>,
     state: &McpState,
 ) -> Result<Value> {
-    if entry.mode == CommandMode::Write && !state.auto_yes {
-        bail!(
-            "tool `{}` is write-mode; restart the MCP server with --yes to enable write tools",
-            entry.key
-        );
-    }
-
     let expression = CallExpression {
         provider: entry.provider.clone(),
         command: entry.command.clone(),
@@ -510,9 +671,23 @@ async fn execute_template_tool(
     }))
 }
 
-fn build_tools(state: &McpState) -> Vec<Value> {
+fn build_tools(state: &McpState, subject: Option<&auth::Subject>) -> Vec<Value> {
     match state.mode {
-        McpMode::Full => state.catalog.values().map(tool_from_entry).collect(),
+        McpMode::Full => state
+            .catalog
+            .values()
+            .filter(|entry| {
+                if let Some(sub) = subject {
+                    // Authenticated: filter by policy (which handles mode restrictions)
+                    policy::evaluate(&state.policies, &sub.0, &entry.key, entry.mode)
+                        == policy::PolicyDecision::Allow
+                } else {
+                    // Unauthenticated: hide write tools when --yes is off
+                    state.auto_yes || entry.mode != CommandMode::Write
+                }
+            })
+            .map(tool_from_entry)
+            .collect(),
         McpMode::Discovery => build_discovery_tools(),
     }
 }
@@ -830,6 +1005,7 @@ mod tests {
     use std::path::PathBuf;
 
     use super::*;
+    use crate::config::PolicyEffect;
     use crate::template::catalog::{TemplateScope, TemplateSource};
     use crate::template::schema::{
         Annotations, CommandTemplate, HttpOperationTemplate, OperationTemplate, ResultDecode,
@@ -855,6 +1031,8 @@ mod tests {
             cfg: Config::default(),
             mode,
             auto_yes,
+            jwt: None,
+            policies: Vec::new(),
         }
     }
 
@@ -917,7 +1095,9 @@ mod tests {
             id: Some(json!(1)),
         };
 
-        let response = handle_request(request, &state).await.expect("response");
+        let response = handle_request(request, &state, None)
+            .await
+            .expect("response");
         let result = response.result.expect("result");
 
         assert_eq!(result["serverInfo"]["name"], "earl");
@@ -935,7 +1115,9 @@ mod tests {
             id: Some(json!(1)),
         };
 
-        let response = handle_request(request, &state).await.expect("response");
+        let response = handle_request(request, &state, None)
+            .await
+            .expect("response");
         let result = response.result.expect("result");
 
         assert!(
@@ -972,7 +1154,9 @@ mod tests {
             id: Some(json!("list-1")),
         };
 
-        let response = handle_request(request, &state).await.expect("response");
+        let response = handle_request(request, &state, None)
+            .await
+            .expect("response");
         let result = response.result.expect("result");
         let tools = result["tools"].as_array().expect("tools array");
 
@@ -1004,7 +1188,9 @@ mod tests {
             id: Some(json!("list-2")),
         };
 
-        let response = handle_request(request, &state).await.expect("response");
+        let response = handle_request(request, &state, None)
+            .await
+            .expect("response");
         let result = response.result.expect("result");
         let tools = result["tools"].as_array().expect("tools array");
         let names: Vec<&str> = tools
@@ -1042,7 +1228,9 @@ mod tests {
             id: Some(json!("search-1")),
         };
 
-        let response = handle_request(request, &state).await.expect("response");
+        let response = handle_request(request, &state, None)
+            .await
+            .expect("response");
         let result = response.result.expect("result");
         let matches = result["structuredContent"]["matches"]
             .as_array()
@@ -1072,7 +1260,9 @@ mod tests {
             id: Some(json!(2)),
         };
 
-        let response = handle_request(request, &state).await.expect("response");
+        let response = handle_request(request, &state, None)
+            .await
+            .expect("response");
         let error = response.error.expect("error");
 
         assert_eq!(error.code, -32602);
@@ -1096,7 +1286,9 @@ mod tests {
             id: Some(json!("call-1")),
         };
 
-        let response = handle_request(request, &state).await.expect("response");
+        let response = handle_request(request, &state, None)
+            .await
+            .expect("response");
         let error = response.error.expect("error");
 
         assert_eq!(error.code, -32602);
@@ -1124,11 +1316,13 @@ mod tests {
             id: Some(json!(3)),
         };
 
-        let response = handle_request(request, &state).await.expect("response");
+        let response = handle_request(request, &state, None)
+            .await
+            .expect("response");
         let error = response.error.expect("error");
 
-        assert_eq!(error.code, -32603);
-        assert!(error.message.contains("--yes"));
+        assert_eq!(error.code, -32001);
+        assert!(error.message.contains("write-mode tools are disabled"));
     }
 
     #[tokio::test]
@@ -1163,5 +1357,155 @@ mod tests {
             .expect("frame");
 
         assert_eq!(frame, payload);
+    }
+
+    #[tokio::test]
+    async fn tools_list_filters_by_policy() {
+        let mut state = test_state(
+            vec![
+                sample_entry("github.search_issues", CommandMode::Read, Vec::new()),
+                sample_entry("github.create_issue", CommandMode::Write, Vec::new()),
+                sample_entry("slack.send_message", CommandMode::Write, Vec::new()),
+            ],
+            true,
+        );
+        state.policies = vec![PolicyRule {
+            subjects: vec!["alice".to_string()],
+            tools: vec!["github.*".to_string()],
+            modes: None,
+            effect: PolicyEffect::Allow,
+        }];
+
+        let subject = auth::Subject("alice".to_string(), None);
+        let request = JsonRpcRequest {
+            jsonrpc: "2.0".to_string(),
+            method: "tools/list".to_string(),
+            params: Some(json!({})),
+            id: Some(json!("list-policy")),
+        };
+
+        let response = handle_request(request, &state, Some(&subject))
+            .await
+            .expect("response");
+        let result = response.result.expect("result");
+        let tools = result["tools"].as_array().expect("tools array");
+        let names: Vec<&str> = tools.iter().map(|t| t["name"].as_str().unwrap()).collect();
+        assert!(names.contains(&"github.search_issues"));
+        assert!(names.contains(&"github.create_issue"));
+        assert!(!names.contains(&"slack.send_message"));
+    }
+
+    #[tokio::test]
+    async fn tools_call_denied_by_policy() {
+        let mut state = test_state(
+            vec![sample_entry(
+                "github.create_issue",
+                CommandMode::Write,
+                Vec::new(),
+            )],
+            true,
+        );
+        state.policies = vec![PolicyRule {
+            subjects: vec!["bob".to_string()],
+            tools: vec!["slack.*".to_string()],
+            modes: None,
+            effect: PolicyEffect::Allow,
+        }];
+
+        let subject = auth::Subject("bob".to_string(), None);
+        let request = JsonRpcRequest {
+            jsonrpc: "2.0".to_string(),
+            method: "tools/call".to_string(),
+            params: Some(json!({
+                "name": "github.create_issue",
+                "arguments": {},
+            })),
+            id: Some(json!("call-policy")),
+        };
+
+        let response = handle_request(request, &state, Some(&subject))
+            .await
+            .expect("response");
+        let error = response.error.expect("error");
+        assert_eq!(error.code, -32001);
+        assert!(error.message.contains("access denied"));
+    }
+
+    #[tokio::test]
+    async fn no_subject_means_no_policy_filtering() {
+        let mut state = test_state(
+            vec![
+                sample_entry("github.search_issues", CommandMode::Read, Vec::new()),
+                sample_entry("slack.send_message", CommandMode::Write, Vec::new()),
+            ],
+            true,
+        );
+        state.policies = vec![PolicyRule {
+            subjects: vec!["alice".to_string()],
+            tools: vec!["github.*".to_string()],
+            modes: None,
+            effect: PolicyEffect::Allow,
+        }];
+
+        let request = JsonRpcRequest {
+            jsonrpc: "2.0".to_string(),
+            method: "tools/list".to_string(),
+            params: Some(json!({})),
+            id: Some(json!("list-no-subject")),
+        };
+
+        let response = handle_request(request, &state, None)
+            .await
+            .expect("response");
+        let result = response.result.expect("result");
+        let tools = result["tools"].as_array().expect("tools array");
+        assert_eq!(tools.len(), 2);
+    }
+
+    #[tokio::test]
+    async fn discovery_search_filters_by_policy() {
+        let mut state = test_state_with_mode(
+            vec![
+                sample_entry("github.search_issues", CommandMode::Read, Vec::new()),
+                sample_entry("github.create_issue", CommandMode::Write, Vec::new()),
+                sample_entry("slack.send_message", CommandMode::Write, Vec::new()),
+            ],
+            true,
+            McpMode::Discovery,
+        );
+        state.policies = vec![PolicyRule {
+            subjects: vec!["alice".to_string()],
+            tools: vec!["github.*".to_string()],
+            modes: None,
+            effect: PolicyEffect::Allow,
+        }];
+
+        let subject = auth::Subject("alice".to_string(), None);
+        let request = JsonRpcRequest {
+            jsonrpc: "2.0".to_string(),
+            method: "tools/call".to_string(),
+            params: Some(json!({
+                "name": DISCOVERY_SEARCH_TOOL_NAME,
+                "arguments": {
+                    "query": "send message",
+                    "limit": 10
+                },
+            })),
+            id: Some(json!("search-policy")),
+        };
+
+        let response = handle_request(request, &state, Some(&subject))
+            .await
+            .expect("response");
+        let result = response.result.expect("result");
+        let matches = result["structuredContent"]["matches"]
+            .as_array()
+            .expect("matches");
+        let names: Vec<&str> = matches
+            .iter()
+            .map(|m| m["name"].as_str().unwrap())
+            .collect();
+        // slack.send_message should be filtered out by policy
+        assert!(!names.contains(&"slack.send_message"));
     }
 }

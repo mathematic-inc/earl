@@ -263,6 +263,8 @@ pub fn run_checks(cwd: &Path) -> DoctorReport {
     }
 
     check_remote_search(&cfg, &mut report);
+    check_jwt(&cfg, &mut report);
+    check_policies(&cfg, &mut report);
 
     #[cfg(feature = "bash")]
     check_bash(&mut report);
@@ -467,6 +469,146 @@ fn check_remote_search(cfg: &Config, report: &mut DoctorReport) {
             format!("Could not verify remote search API key secret: {err:#}"),
             Some("Ensure keychain access is available, then run `earl doctor` again.".to_string()),
         ),
+    }
+}
+
+fn check_jwt(cfg: &Config, report: &mut DoctorReport) {
+    let Some(jwt) = &cfg.auth.jwt else {
+        report.add_warning(
+            "jwt_config",
+            "No [auth.jwt] configured. MCP HTTP transport will require --allow-unauthenticated.",
+            Some(
+                "Add [auth.jwt] to ~/.config/earl/config.toml to enable JWT authentication."
+                    .to_string(),
+            ),
+        );
+        return;
+    };
+
+    let has_discovery = jwt.oidc_discovery_url.is_some();
+    let has_manual = jwt.issuer.is_some() || jwt.jwks_uri.is_some();
+    if has_discovery && has_manual {
+        report.add_error(
+            "jwt_config",
+            "Both oidc_discovery_url and issuer/jwks_uri are set. These are mutually exclusive.",
+            Some("Remove either oidc_discovery_url or issuer/jwks_uri.".to_string()),
+        );
+        return;
+    }
+    if !has_discovery && !has_manual {
+        report.add_error(
+            "jwt_config",
+            "Neither oidc_discovery_url nor issuer/jwks_uri are configured.",
+            Some("Set oidc_discovery_url (recommended) or both issuer and jwks_uri.".to_string()),
+        );
+        return;
+    }
+
+    if jwt.audience.trim().is_empty() {
+        report.add_error(
+            "jwt_audience",
+            "JWT audience is empty.",
+            Some("Set audience to a non-empty value in [auth.jwt].".to_string()),
+        );
+    } else {
+        report.add_ok("jwt_audience", format!("JWT audience: {}", jwt.audience));
+    }
+
+    if jwt.algorithms.is_empty() {
+        report.add_warning(
+            "jwt_algorithms",
+            "No JWT algorithms configured.",
+            Some("Add algorithms (e.g., [\"RS256\"]) to [auth.jwt].".to_string()),
+        );
+    } else if jwt.algorithms.iter().all(|a| a.to_uppercase() == "HS256") {
+        report.add_warning(
+            "jwt_algorithms",
+            "Only HS256 is configured. Symmetric HMAC is unusual for external IdP tokens.",
+            Some("Most IdPs use RS256. Verify your IdP's signing algorithm.".to_string()),
+        );
+    } else {
+        report.add_ok(
+            "jwt_algorithms",
+            format!("JWT algorithms: {}", jwt.algorithms.join(", ")),
+        );
+    }
+
+    if jwt.clock_skew_seconds > 300 {
+        report.add_warning(
+            "jwt_config",
+            format!(
+                "clock_skew_seconds is {} (max effective: 300).",
+                jwt.clock_skew_seconds
+            ),
+            Some("Values above 300 are capped. Consider reducing to 30-60.".to_string()),
+        );
+    }
+
+    if let Some(issuer) = &jwt.issuer {
+        if !issuer.starts_with("https://") {
+            report.add_warning(
+                "jwt_issuer",
+                format!("JWT issuer does not use HTTPS: {issuer}"),
+                Some("Use an HTTPS URL for the issuer in production.".to_string()),
+            );
+        } else {
+            report.add_ok("jwt_issuer", format!("JWT issuer: {issuer}"));
+        }
+    }
+
+    if let Some(jwks_uri) = &jwt.jwks_uri {
+        report.add_ok("jwt_jwks", format!("JWT JWKS URI: {jwks_uri}"));
+    } else if let Some(discovery_url) = &jwt.oidc_discovery_url {
+        report.add_ok(
+            "jwt_config",
+            format!("JWT using OIDC discovery: {discovery_url}"),
+        );
+    }
+}
+
+fn check_policies(cfg: &Config, report: &mut DoctorReport) {
+    if cfg.policy.is_empty() {
+        if cfg.auth.jwt.is_some() {
+            report.add_warning(
+                "policies",
+                "JWT authentication is configured but no [[policy]] rules are defined. All tool access will be denied (default deny).",
+                Some("Add [[policy]] rules to config.toml to grant access.".to_string()),
+            );
+        }
+        return;
+    }
+
+    let mut has_issues = false;
+    for (i, rule) in cfg.policy.iter().enumerate() {
+        if rule.subjects.is_empty() {
+            has_issues = true;
+            report.add_warning(
+                "policies",
+                format!(
+                    "Policy rule {} has empty subjects list (matches nothing).",
+                    i + 1
+                ),
+                None,
+            );
+        }
+        if rule.tools.is_empty() {
+            has_issues = true;
+            report.add_warning(
+                "policies",
+                format!(
+                    "Policy rule {} has empty tools list (matches nothing).",
+                    i + 1
+                ),
+                None,
+            );
+        }
+    }
+
+    if !has_issues {
+        report.add_ok(
+            "policies",
+            format!("Loaded {} policy rule(s).", cfg.policy.len()),
+        );
     }
 }
 
