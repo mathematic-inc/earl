@@ -1,0 +1,38 @@
+name: CodeQL
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: codeql-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  analyze:
+    name: Analyze
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: sudo apt-get install -y libdbus-1-dev
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: rust
+
+      - name: Build
+        run: cargo build --all-features
+
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@v3
