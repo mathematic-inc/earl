@@ -46,8 +46,10 @@ keyring = { version = "3.6.3", default-features = false, features = [
     "apple-native",
     "windows-native",
     "linux-native",
-    "sync-secret-service",
+    "async-secret-service",
+    "tokio",
     "crypto-rust",
+    "vendored",
 ] }
 minijinja = { version = "2.15", features = ["json", "loader"] }
 mime_guess = "2.0"
@@ -96,6 +98,9 @@ tonic = { version = "0.14", features = ["transport"] }
 tonic-health = "0.14"
 tonic-reflection = "0.14"
 tower = { version = "0.5", features = ["util"] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+openssl = { version = "0.10", features = ["vendored"] }
 
 [features]
 default = ["http", "graphql", "grpc", "bash", "sql"]
