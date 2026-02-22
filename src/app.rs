@@ -370,6 +370,7 @@ async fn run_mcp(args: McpArgs, cfg: Config) -> Result<()> {
         listen: args.listen,
         mode,
         auto_yes: args.yes,
+        allow_unauthenticated: args.allow_unauthenticated,
     };
 
     mcp::run_server(options, catalog, cfg).await

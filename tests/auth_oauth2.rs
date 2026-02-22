@@ -32,9 +32,13 @@ fn make_config(profile_name: &str, profile: OAuthProfile) -> Config {
     profiles.insert(profile_name.to_string(), profile);
     Config {
         search: Default::default(),
-        auth: AuthConfig { profiles },
+        auth: AuthConfig {
+            profiles,
+            jwt: None,
+        },
         network: Default::default(),
         sandbox: SandboxConfig::default(),
+        policy: vec![],
     }
 }
 

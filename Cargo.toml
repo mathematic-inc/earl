@@ -40,6 +40,7 @@ comfy-table = "7.2"
 directories = "6.0"
 fastembed = { version = "5.11", optional = true }
 earl-protocol-grpc = { version = "0.3.0", path = "crates/earl-protocol-grpc", optional = true }
+jsonwebtoken = "9"
 hcl = { package = "hcl-rs", version = "0.19.5" }
 hickory-resolver = "0.25"
 keyring = { version = "3.6.3", default-features = false, features = [
@@ -80,6 +81,7 @@ sxd-xpath = "0.4"
 thiserror = "2.0"
 tokio = { version = "1", features = ["full"] }
 toml = "1.0.3"
+tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["fmt", "env-filter"] }
 url = "2.5"
 webbrowser = "1.0"
