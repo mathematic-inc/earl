@@ -142,6 +142,10 @@ Template strings use Jinja2 syntax (`{{ ... }}`) rendered by minijinja with stri
 `secrets.*` is only available in operation rendering -- never in `result.output`. This prevents secrets from leaking through command output.
 </Callout>
 
+<Callout type="info">
+HCL is parsed **before** template expressions are rendered. This means `{{ }}` expressions must appear inside valid HCL tokens. For example, in array literals use string-wrapped expressions: `params = ["{{ args.limit }}"]` instead of `params = [{{ args.limit }}]`. Pure expressions like `"{{ args.limit }}"` are automatically parsed as JSON after rendering, so numeric and boolean types are preserved.
+</Callout>
+
 ### HCL Functions
 
 Template HCL files support built-in functions for loading external content:
@@ -399,7 +403,7 @@ command "recent_orders" {
     sql {
       connection_secret = "analytics.database_url"
       query             = "SELECT id, customer, total FROM orders ORDER BY created_at DESC LIMIT ?"
-      params            = [{{ args.limit }}]
+      params            = ["{{ args.limit }}"]
       sandbox {
         read_only = true
         max_rows  = 100
