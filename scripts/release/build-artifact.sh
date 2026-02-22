@@ -38,15 +38,20 @@ fi
 
 rustup target add "$TARGET"
 
+FEATURES_FLAG=""
+if [[ "$TARGET" == *"windows"* ]]; then
+  FEATURES_FLAG="--no-default-features --features http,graphql,grpc,sql"
+fi
+
 case "$BUILD_TOOL" in
   cargo)
-    cargo build --locked --release --target "$TARGET"
+    cargo build --locked --release --target "$TARGET" $FEATURES_FLAG
     ;;
   cross)
-    cross build --locked --release --target "$TARGET"
+    cross build --locked --release --target "$TARGET" $FEATURES_FLAG
     ;;
   xwin)
-    cargo xwin build --locked --release --target "$TARGET"
+    cargo xwin build --locked --release --target "$TARGET" $FEATURES_FLAG
     ;;
   *)
     echo "unsupported build tool: $BUILD_TOOL" >&2
