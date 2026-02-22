@@ -19,6 +19,8 @@ pub struct Config {
     pub network: NetworkConfig,
     #[serde(default)]
     pub sandbox: SandboxConfig,
+    #[serde(default)]
+    pub policy: Vec<PolicyRule>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -95,6 +97,21 @@ impl Default for RemoteSearchConfig {
 pub struct AuthConfig {
     #[serde(default)]
     pub profiles: BTreeMap<String, OAuthProfile>,
+    pub jwt: Option<JwtConfig>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct JwtConfig {
+    pub oidc_discovery_url: Option<String>,
+    pub issuer: Option<String>,
+    pub jwks_uri: Option<String>,
+    pub audience: String,
+    #[serde(default = "default_algorithms")]
+    pub algorithms: Vec<String>,
+    #[serde(default = "default_clock_skew_seconds")]
+    pub clock_skew_seconds: u64,
+    #[serde(default = "default_jwks_cache_max_age_seconds")]
+    pub jwks_cache_max_age_seconds: u64,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, Default)]
@@ -162,6 +179,29 @@ pub enum OAuthFlow {
     AuthCodePkce,
     DeviceCode,
     ClientCredentials,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct PolicyRule {
+    pub subjects: Vec<String>,
+    pub tools: Vec<String>,
+    #[serde(default)]
+    pub modes: Option<Vec<PolicyMode>>,
+    pub effect: PolicyEffect,
+}
+
+#[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum PolicyEffect {
+    Allow,
+    Deny,
+}
+
+#[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum PolicyMode {
+    Read,
+    Write,
 }
 
 pub fn load_config() -> Result<Config> {
@@ -260,9 +300,21 @@ fn default_remote_timeout_ms() -> u64 {
     10_000
 }
 
+fn default_algorithms() -> Vec<String> {
+    vec!["RS256".to_string()]
+}
+
+fn default_clock_skew_seconds() -> u64 {
+    30
+}
+
+fn default_jwks_cache_max_age_seconds() -> u64 {
+    900
+}
+
 #[cfg(test)]
 mod tests {
-    use super::Config;
+    use super::*;
 
     #[test]
     fn deserialize_sandbox_config() {
@@ -301,5 +353,89 @@ url = "https://example.com/templates/github.hcl"
         .unwrap();
         assert_eq!(loaded.search.top_k, 11);
         assert_eq!(loaded.search.rerank_k, 9);
+    }
+
+    #[test]
+    fn deserialize_jwt_config() {
+        let loaded: Config = toml::from_str(
+            r#"
+[auth.jwt]
+audience = "https://api.example.com"
+issuer = "https://accounts.example.com"
+jwks_uri = "https://accounts.example.com/.well-known/jwks.json"
+algorithms = ["RS256", "ES256"]
+clock_skew_seconds = 60
+"#,
+        )
+        .unwrap();
+
+        let jwt = loaded.auth.jwt.expect("jwt config should be present");
+        assert_eq!(jwt.audience, "https://api.example.com");
+        assert_eq!(jwt.issuer.as_deref(), Some("https://accounts.example.com"));
+        assert_eq!(
+            jwt.jwks_uri.as_deref(),
+            Some("https://accounts.example.com/.well-known/jwks.json")
+        );
+        assert_eq!(jwt.algorithms, vec!["RS256", "ES256"]);
+        assert_eq!(jwt.clock_skew_seconds, 60);
+        assert_eq!(jwt.jwks_cache_max_age_seconds, 900); // default
+        assert!(jwt.oidc_discovery_url.is_none());
+    }
+
+    #[test]
+    fn deserialize_jwt_config_defaults() {
+        let loaded: Config = toml::from_str(
+            r#"
+[auth.jwt]
+audience = "my-audience"
+"#,
+        )
+        .unwrap();
+
+        let jwt = loaded.auth.jwt.expect("jwt config should be present");
+        assert_eq!(jwt.audience, "my-audience");
+        assert_eq!(jwt.algorithms, vec!["RS256"]);
+        assert_eq!(jwt.clock_skew_seconds, 30);
+        assert_eq!(jwt.jwks_cache_max_age_seconds, 900);
+    }
+
+    #[test]
+    fn deserialize_policy_rules() {
+        let loaded: Config = toml::from_str(
+            r#"
+[[policy]]
+subjects = ["user:alice", "group:admins"]
+tools = ["github.*"]
+effect = "allow"
+
+[[policy]]
+subjects = ["*"]
+tools = ["github.delete_repo"]
+modes = ["write"]
+effect = "deny"
+"#,
+        )
+        .unwrap();
+
+        assert_eq!(loaded.policy.len(), 2);
+
+        let rule0 = &loaded.policy[0];
+        assert_eq!(rule0.subjects, vec!["user:alice", "group:admins"]);
+        assert_eq!(rule0.tools, vec!["github.*"]);
+        assert_eq!(rule0.effect, PolicyEffect::Allow);
+        assert!(rule0.modes.is_none());
+
+        let rule1 = &loaded.policy[1];
+        assert_eq!(rule1.subjects, vec!["*"]);
+        assert_eq!(rule1.tools, vec!["github.delete_repo"]);
+        assert_eq!(rule1.effect, PolicyEffect::Deny);
+        assert_eq!(rule1.modes.as_ref().unwrap(), &vec![PolicyMode::Write]);
+    }
+
+    #[test]
+    fn default_config_has_no_jwt_and_empty_policies() {
+        let loaded: Config = toml::from_str("").unwrap();
+        assert!(loaded.auth.jwt.is_none());
+        assert!(loaded.policy.is_empty());
     }
 }

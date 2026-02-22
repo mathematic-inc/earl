@@ -56,9 +56,13 @@ async fn resolves_oidc_endpoints_and_client_secret_from_secrets() {
 
     let cfg = Config {
         search: Default::default(),
-        auth: AuthConfig { profiles },
+        auth: AuthConfig {
+            profiles,
+            jwt: None,
+        },
         network: Default::default(),
         sandbox: SandboxConfig::default(),
+        policy: vec![],
     };
 
     let http_client = Client::builder().build().unwrap();
@@ -89,9 +93,13 @@ async fn fails_when_required_auth_code_endpoint_is_missing() {
 
     let cfg = Config {
         search: Default::default(),
-        auth: AuthConfig { profiles },
+        auth: AuthConfig {
+            profiles,
+            jwt: None,
+        },
         network: Default::default(),
         sandbox: SandboxConfig::default(),
+        policy: vec![],
     };
 
     let http_client = Client::builder().build().unwrap();
@@ -115,9 +123,13 @@ async fn fails_when_device_flow_endpoint_missing() {
 
     let cfg = Config {
         search: Default::default(),
-        auth: AuthConfig { profiles },
+        auth: AuthConfig {
+            profiles,
+            jwt: None,
+        },
         network: Default::default(),
         sandbox: SandboxConfig::default(),
+        policy: vec![],
     };
 
     let http_client = Client::builder().build().unwrap();
