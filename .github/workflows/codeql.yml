@@ -38,6 +38,10 @@ jobs:
         if: matrix.build
         run: sudo apt-get install -y libdbus-1-dev
 
+      - name: Cache cargo artifacts
+        if: matrix.build
+        uses: Swatinem/rust-cache@v2
+
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
