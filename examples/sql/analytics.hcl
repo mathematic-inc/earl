@@ -26,7 +26,7 @@ command "recent_orders" {
     sql {
       connection_secret = "analytics.database_url"
       query             = "SELECT id, customer, total FROM orders ORDER BY created_at DESC LIMIT ?"
-      params            = [{{ args.limit }}]
+      params            = ["{{ args.limit }}"]
       sandbox {
         read_only = true
         max_rows  = 100

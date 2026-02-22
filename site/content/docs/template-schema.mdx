@@ -280,7 +280,7 @@ operation {
   sql {
     connection_secret = "analytics.database_url"
     query             = "SELECT id, customer, total FROM orders ORDER BY created_at DESC LIMIT ?"
-    params            = [{{ args.limit }}]
+    params            = ["{{ args.limit }}"]
     sandbox {
       read_only  = true
       max_rows   = 100
@@ -304,7 +304,7 @@ operation {
 |-------|------|----------|---------|-------------|
 | `connection_secret` | `string` | Yes | -- | Secret key containing the database connection URL. Must not be empty. Must be declared in `annotations.secrets`. |
 | `query` | `string` | Yes | -- | SQL query to execute. Use `?` for parameterized values. Must not be empty. Must not contain `{{` or `}}`. |
-| `params` | `any[]` | No | -- | Positional parameters bound to `?` placeholders in the query. Values support template expressions. |
+| `params` | `any[]` | No | -- | Positional parameters bound to `?` placeholders in the query. Values support template expressions. Wrap Jinja expressions in quotes (e.g., `["{{ args.limit }}"]`) so the HCL parser sees valid string tokens. Pure expressions like `"{{ args.limit }}"` are automatically parsed as JSON, so integers and other types are preserved. |
 | `sandbox` | block | No | -- | Sandbox restrictions. |
 
 #### `sql.sandbox` block
