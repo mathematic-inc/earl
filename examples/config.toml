@@ -1,0 +1,37 @@
+# Minimal config for template installs.
+# Copy to ~/.config/earl/config.toml
+
+# Optional: outbound network defaults to allow-all.
+# Add allowlist entries only when you want to restrict destinations.
+# [[network.allow]]
+# scheme = "https"
+# host = "api.github.com"
+# port = 443
+# path_prefix = "/"
+
+# Optional: allow specific local executables for `protocol: cli` operations.
+# [network]
+# allow_cli_commands = ["cargo"]
+#
+# Optional: define named proxy profiles for transport.proxy_profile.
+# [network.proxy_profiles.corp]
+# url = "http://127.0.0.1:8080"
+
+# Optional remote semantic search backend.
+# [search.remote]
+# enabled = true
+# base_url = "https://search.example.com"
+# api_key_secret = "search.api_key"
+# embeddings_path = "/embeddings"
+# rerank_path = "/rerank"
+# openai_compatible = true
+# timeout_ms = 10000
+
+# Optional OAuth profile for templates using `auth.kind = oauth2_profile`.
+# [auth.profiles.example]
+# flow = "device_code"
+# client_id = "your-client-id"
+# token_url = "https://provider.example.com/oauth/token"
+# device_authorization_url = "https://provider.example.com/oauth/device/code"
+# scopes = ["read:items"]
+# use_auth_request_body = false

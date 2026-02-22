@@ -1,0 +1,107 @@
+[workspace]
+members = [".", "crates/*"]
+resolver = "3"
+
+[workspace.package]
+version = "0.2.0"
+edition = "2024"
+license = "MIT"
+repository = "https://github.com/brwse/earl"
+homepage = "https://github.com/brwse/earl"
+documentation = "https://brwse.github.io/earl"
+
+[profile.release]
+lto = "fat"
+codegen-units = 1
+strip = true
+
+[package]
+name = "earl"
+version = "0.2.0"
+edition.workspace = true
+build = "build.rs"
+description = "AI-safe CLI for AI agents"
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation.workspace = true
+readme = "README.md"
+keywords = ["cli", "security", "ai", "http", "templates"]
+categories = ["command-line-utilities", "network-programming"]
+
+[dependencies]
+earl-core = { version = "0.2.0", path = "crates/earl-core" }
+anyhow = "1.0"
+axum = "0.8"
+base64 = "0.22"
+chrono = { version = "0.4", features = ["serde"] }
+clap = { version = "4.5", features = ["derive"] }
+clap_complete = "4.5"
+comfy-table = "7.2"
+directories = "6.0"
+fastembed = "5.11"
+earl-protocol-grpc = { version = "0.2.0", path = "crates/earl-protocol-grpc", optional = true }
+hcl = { package = "hcl-rs", version = "0.19.5" }
+hickory-resolver = "0.25"
+keyring = { version = "3.6.3", default-features = false, features = [
+    "apple-native",
+    "windows-native",
+    "linux-native",
+    "sync-secret-service",
+    "crypto-rust",
+] }
+minijinja = { version = "2.15", features = ["json", "loader"] }
+mime_guess = "2.0"
+oauth2 = { version = "5.0", default-features = false, features = [
+    "reqwest",
+    "rustls-tls",
+    "pkce-plain",
+] }
+regex = "1.12"
+reqwest = { version = "0.13.2", features = [
+    "json",
+    "multipart",
+    "gzip",
+    "brotli",
+    "deflate",
+    "zstd",
+    "rustls",
+    "query",
+    "form",
+] }
+rpassword = "7.4.0"
+secrecy = "0.10"
+scraper = "0.25.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+sxd-document = "0.3"
+sxd-xpath = "0.4"
+thiserror = "2.0"
+tokio = { version = "1", features = ["full"] }
+toml = "1.0.3"
+tracing-subscriber = { version = "0.3", features = ["fmt", "env-filter"] }
+url = "2.5"
+webbrowser = "1.0"
+include_dir = "0.7"
+earl-protocol-http = { version = "0.2.0", path = "crates/earl-protocol-http", optional = true }
+earl-protocol-bash = { version = "0.2.0", path = "crates/earl-protocol-bash", optional = true }
+earl-protocol-sql = { version = "0.2.0", path = "crates/earl-protocol-sql", optional = true }
+
+[dev-dependencies]
+assert_cmd = "2.0"
+httpmock = "0.8"
+insta = { version = "1.43", features = ["yaml"] }
+tempfile = "3.19"
+tokio-stream = { version = "0.1", features = ["net"] }
+tonic = { version = "0.14", features = ["transport"] }
+tonic-health = "0.14"
+tonic-reflection = "0.14"
+tower = { version = "0.5", features = ["util"] }
+
+[features]
+default = ["http", "graphql", "grpc", "bash", "sql"]
+http = ["dep:earl-protocol-http"]
+graphql = ["http"]
+grpc = ["dep:earl-protocol-grpc"]
+bash = ["dep:earl-protocol-bash"]
+sql = ["dep:earl-protocol-sql"]

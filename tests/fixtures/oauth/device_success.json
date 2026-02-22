@@ -1,0 +1,7 @@
+{
+  "device_code": "device-123",
+  "user_code": "ABCD-EFGH",
+  "verification_uri": "https://issuer.example.com/activate",
+  "expires_in": 600,
+  "interval": 1
+}

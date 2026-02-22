@@ -1,0 +1,17 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", "out/**", ".next/**", "public/rustdoc/**"]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "types:check": {
+      "dependsOn": ["^types:check"],
+      "outputs": []
+    }
+  }
+}

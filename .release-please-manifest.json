@@ -1,0 +1,8 @@
+{
+  ".": "0.2.0",
+  "crates/earl-core": "0.2.0",
+  "crates/earl-protocol-http": "0.2.0",
+  "crates/earl-protocol-grpc": "0.2.0",
+  "crates/earl-protocol-bash": "0.2.0",
+  "crates/earl-protocol-sql": "0.2.0"
+}

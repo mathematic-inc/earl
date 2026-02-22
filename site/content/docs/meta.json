@@ -1,0 +1,22 @@
+{
+  "title": "Documentation",
+  "pages": [
+    "index",
+    "---Getting Started---",
+    "installation",
+    "quick-start",
+    "---Core Concepts---",
+    "security",
+    "templates",
+    "template-schema",
+    "secrets",
+    "auth",
+    "---Integration---",
+    "mcp",
+    "configuration",
+    "---Reference---",
+    "commands",
+    "external:[API Reference](/earl/rustdoc/earl/)",
+    "troubleshooting"
+  ]
+}

@@ -1,0 +1,119 @@
+---
+title: Quick Start
+description: Make your first API call with earl in minutes
+icon: Rocket
+---
+
+This guide walks through two examples: a local Bash command (no secrets needed) and a GitHub API call. Earl must already be [installed](/docs/installation).
+
+## Part 1: Local Command (No Secrets)
+
+<Steps>
+<Step>
+
+### Install the example template
+
+```bash
+earl templates install https://raw.githubusercontent.com/brwse/earl/main/examples/bash/system.hcl
+```
+
+Earl copies the template into your local `./templates/` directory. Since `system.hcl` declares no secrets, there is nothing else to configure.
+
+</Step>
+<Step>
+
+### List available commands
+
+```bash
+earl templates list
+```
+
+You should see `system.disk_usage` and `system.list_files` in the output.
+
+</Step>
+<Step>
+
+### Make a call
+
+```bash
+earl call system.list_files --path /tmp
+```
+
+Earl executes `ls -la /tmp` inside a sandboxed Bash environment and prints the result.
+
+</Step>
+</Steps>
+
+## Part 2: GitHub API Call
+
+<Steps>
+<Step>
+
+### Install the GitHub template
+
+```bash
+earl templates install https://raw.githubusercontent.com/brwse/earl/main/templates/github.hcl
+```
+
+Earl prints the required secrets for this template. The GitHub template uses `github.token` for authentication.
+
+</Step>
+<Step>
+
+### Store your token
+
+```bash
+earl secrets set github.token
+```
+
+You will be prompted to enter the value. The token is stored in your OS keychain and never appears in CLI output.
+
+To pipe from an environment variable instead:
+
+```bash
+printf '%s' "$GITHUB_TOKEN" | earl secrets set github.token --stdin
+```
+
+</Step>
+<Step>
+
+### Validate setup
+
+```bash
+earl doctor
+```
+
+Doctor checks that your config file is loadable, templates parse correctly, and required secrets are present.
+
+</Step>
+<Step>
+
+### Search repositories
+
+```bash
+earl call github.search_repos --q "language:rust stars:>1000"
+```
+
+Earl resolves the `github.token` secret from your keychain, builds the HTTP request from the template, and returns the result.
+
+</Step>
+<Step>
+
+### Try JSON output
+
+```bash
+earl call github.search_repos --q "language:rust stars:>1000" --json
+```
+
+The `--json` flag returns structured JSON instead of rendered text. Secrets are still redacted.
+
+</Step>
+</Steps>
+
+## What's Next
+
+- **Browse commands** — Run `earl templates search "what you want to do"` for semantic search across all loaded templates.
+- **Web playground** — Run `earl web` to launch a local web UI for browsing and testing commands.
+- **MCP integration** — Run `earl mcp` to expose your templates as MCP tools for AI agents. See [MCP Integration](/docs/mcp).
+- **Lock it down** — Restrict write access to `~/.config/earl/config.toml` and your template files. See [Security](/docs/security).
+- **Write your own templates** — See [Templates](/docs/templates) for the HCL template format.
