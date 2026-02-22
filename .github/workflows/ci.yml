@@ -63,6 +63,14 @@ jobs:
         uses: actions/checkout@v4
       - name: Install system dependencies
         run: sudo apt-get install -y libdbus-1-dev bubblewrap
+      - name: Allow bwrap unprivileged user namespaces
+        run: |
+          echo 'abi <abi/4.0>,' | sudo tee /etc/apparmor.d/bwrap
+          echo 'include <tunables/global>' | sudo tee -a /etc/apparmor.d/bwrap
+          echo 'profile bwrap /usr/bin/bwrap flags=(unconfined) {' | sudo tee -a /etc/apparmor.d/bwrap
+          echo '  userns,' | sudo tee -a /etc/apparmor.d/bwrap
+          echo '}' | sudo tee -a /etc/apparmor.d/bwrap
+          sudo apparmor_parser -r /etc/apparmor.d/bwrap
       - name: Install toolchain
         uses: dtolnay/rust-toolchain@stable
       - name: Setup pnpm
