@@ -6,13 +6,13 @@ during cross-compilation.
 
 ## Supported Release Targets
 
-| Target | Build Tool | Notes |
-| --- | --- | --- |
-| `aarch64-apple-darwin` | cargo (native) | macOS ARM, built on `macos-15` runner |
-| `x86_64-unknown-linux-gnu` | cargo (native) | Standard Linux, built on `ubuntu-latest` |
-| `aarch64-unknown-linux-gnu` | [cross](https://github.com/cross-rs/cross) | ARM64 Linux, Docker-based cross-compilation |
-| `x86_64-unknown-linux-musl` | [cross](https://github.com/cross-rs/cross) | Static musl binary |
-| `x86_64-pc-windows-msvc` | [cargo-xwin](https://github.com/rust-cross/cargo-xwin) | Windows x86_64, cross-compiled from Linux |
+| Target                      | Build Tool                                             | Notes                                       |
+| --------------------------- | ------------------------------------------------------ | ------------------------------------------- |
+| `aarch64-apple-darwin`      | cargo (native)                                         | macOS ARM, built on `macos-15` runner       |
+| `x86_64-unknown-linux-gnu`  | cargo (native)                                         | Standard Linux, built on `ubuntu-latest`    |
+| `aarch64-unknown-linux-gnu` | [cross](https://github.com/cross-rs/cross)             | ARM64 Linux, Docker-based cross-compilation |
+| `x86_64-unknown-linux-musl` | [cross](https://github.com/cross-rs/cross)             | Static musl binary                          |
+| `x86_64-pc-windows-msvc`    | [cargo-xwin](https://github.com/rust-cross/cargo-xwin) | Windows x86_64, cross-compiled from Linux   |
 
 ## Dropped Targets
 

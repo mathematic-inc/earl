@@ -8,12 +8,12 @@ Templates are `version = 1` HCL files. Each file declares a provider namespace a
 
 ## Root Fields
 
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `version` | `integer` | Yes | -- | Must be `1`. |
-| `provider` | `string` | Yes | -- | Namespace for commands (e.g., `github`). Must not be empty. |
-| `categories` | `string[]` | No | `[]` | Provider-level categories applied to all commands in the file. |
-| `command "<name>"` | block | Yes | -- | One or more named command blocks. At least one is required. |
+| Field              | Type       | Required | Default | Description                                                    |
+| ------------------ | ---------- | -------- | ------- | -------------------------------------------------------------- |
+| `version`          | `integer`  | Yes      | --      | Must be `1`.                                                   |
+| `provider`         | `string`   | Yes      | --      | Namespace for commands (e.g., `github`). Must not be empty.    |
+| `categories`       | `string[]` | No       | `[]`    | Provider-level categories applied to all commands in the file. |
+| `command "<name>"` | block      | Yes      | --      | One or more named command blocks. At least one is required.    |
 
 Commands are identified by `provider.command` (e.g., `github.search_issues`).
 
@@ -33,16 +33,16 @@ command "search_issues" {
 }
 ```
 
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `title` | `string` | Yes | -- | Human-readable title. Must not be empty. |
-| `summary` | `string` | Yes | -- | One-line summary. Must not be empty. |
-| `description` | `string` | Yes | -- | Detailed markdown description. Must not be empty. |
-| `categories` | `string[]` | No | `[]` | Command-level categories (merged with provider categories). |
-| `annotations` | block | Yes | -- | Mode and secret declarations. |
-| `param` | block(s) | No | `[]` | Repeatable typed input parameters. |
-| `operation` | block | Yes | -- | Protocol-specific execution definition. |
-| `result` | block | Yes | -- | Output decoding, extraction, and rendering. |
+| Field         | Type       | Required | Default | Description                                                 |
+| ------------- | ---------- | -------- | ------- | ----------------------------------------------------------- |
+| `title`       | `string`   | Yes      | --      | Human-readable title. Must not be empty.                    |
+| `summary`     | `string`   | Yes      | --      | One-line summary. Must not be empty.                        |
+| `description` | `string`   | Yes      | --      | Detailed markdown description. Must not be empty.           |
+| `categories`  | `string[]` | No       | `[]`    | Command-level categories (merged with provider categories). |
+| `annotations` | block      | Yes      | --      | Mode and secret declarations.                               |
+| `param`       | block(s)   | No       | `[]`    | Repeatable typed input parameters.                          |
+| `operation`   | block      | Yes      | --      | Protocol-specific execution definition.                     |
+| `result`      | block      | Yes      | --      | Output decoding, extraction, and rendering.                 |
 
 ## `annotations`
 
@@ -53,10 +53,10 @@ annotations {
 }
 ```
 
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `mode` | `"read"` \| `"write"` | Yes | -- | Safety mode. Write-mode commands require user confirmation. |
-| `secrets` | `string[]` | No | `[]` | Secret keys this command is allowed to access. Auth blocks that reference a secret must declare it here. |
+| Field     | Type                  | Required | Default | Description                                                                                              |
+| --------- | --------------------- | -------- | ------- | -------------------------------------------------------------------------------------------------------- |
+| `mode`    | `"read"` \| `"write"` | Yes      | --      | Safety mode. Write-mode commands require user confirmation.                                              |
+| `secrets` | `string[]`            | No       | `[]`    | Secret keys this command is allowed to access. Auth blocks that reference a secret must declare it here. |
 
 ## `param`
 
@@ -75,37 +75,37 @@ param "limit" {
 }
 ```
 
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `name` | `string` | Yes | -- | Parameter name (inferred from the block label). Must be unique within a command. |
-| `type` | `string` | Yes | -- | One of: `string`, `integer`, `number`, `boolean`, `null`, `array`, `object`. |
-| `required` | `boolean` | No | `false` | Whether the argument must be provided. |
-| `default` | `any` | No | -- | Default value used when the argument is not provided. |
-| `description` | `string` | No | -- | Human-readable description shown in help and MCP tool schemas. |
+| Field         | Type      | Required | Default | Description                                                                      |
+| ------------- | --------- | -------- | ------- | -------------------------------------------------------------------------------- |
+| `name`        | `string`  | Yes      | --      | Parameter name (inferred from the block label). Must be unique within a command. |
+| `type`        | `string`  | Yes      | --      | One of: `string`, `integer`, `number`, `boolean`, `null`, `array`, `object`.     |
+| `required`    | `boolean` | No       | `false` | Whether the argument must be provided.                                           |
+| `default`     | `any`     | No       | --      | Default value used when the argument is not provided.                            |
+| `description` | `string`  | No       | --      | Human-readable description shown in help and MCP tool schemas.                   |
 
 ### Parameter Type Details
 
-| Type | CLI Input | Description |
-|------|-----------|-------------|
-| `string` | `--name value` | Passed as-is. |
-| `integer` | `--name 42` | Parsed as a signed 64-bit integer. |
-| `number` | `--name 3.14` | Parsed as a 64-bit float. |
-| `boolean` | `--name` or `--name true` | Bare `--flag` is treated as `true`. |
-| `null` | `--name null` | Only the literal `null` is accepted. |
-| `array` | `--name '[1,2,3]'` | Parsed as a JSON array. |
-| `object` | `--name '{"k":"v"}'` | Parsed as a JSON object. |
+| Type      | CLI Input                 | Description                          |
+| --------- | ------------------------- | ------------------------------------ |
+| `string`  | `--name value`            | Passed as-is.                        |
+| `integer` | `--name 42`               | Parsed as a signed 64-bit integer.   |
+| `number`  | `--name 3.14`             | Parsed as a 64-bit float.            |
+| `boolean` | `--name` or `--name true` | Bare `--flag` is treated as `true`.  |
+| `null`    | `--name null`             | Only the literal `null` is accepted. |
+| `array`   | `--name '[1,2,3]'`        | Parsed as a JSON array.              |
+| `object`  | `--name '{"k":"v"}'`      | Parsed as a JSON object.             |
 
 ## `operation`
 
 The `operation` block defines what earl executes. The `protocol` field selects the operation shape.
 
-| Protocol | Description | Feature Flag |
-|----------|-------------|--------------|
-| `http` | Standard HTTP request | `http` (default) |
-| `graphql` | GraphQL over HTTP POST | `graphql` (default) |
-| `grpc` | gRPC over HTTP/2 | `grpc` (default) |
-| `bash` | Sandboxed Bash script execution | `bash` (default) |
-| `sql` | Parameterized SQL query execution | `sql` (default) |
+| Protocol  | Description                       | Feature Flag        |
+| --------- | --------------------------------- | ------------------- |
+| `http`    | Standard HTTP request             | `http` (default)    |
+| `graphql` | GraphQL over HTTP POST            | `graphql` (default) |
+| `grpc`    | gRPC over HTTP/2                  | `grpc` (default)    |
+| `bash`    | Sandboxed Bash script execution   | `bash` (default)    |
+| `sql`     | Parameterized SQL query execution | `sql` (default)     |
 
 ### HTTP Operation
 
@@ -125,18 +125,18 @@ operation {
 }
 ```
 
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `protocol` | `string` | Yes | -- | Must be `"http"`. |
-| `method` | `string` | Yes | -- | HTTP method (`GET`, `POST`, `PUT`, `DELETE`, etc.). Must not be empty. |
-| `url` | `string` | Yes | -- | Base URL for the request. Must not be empty. Supports template expressions. |
-| `path` | `string` | No | -- | Path appended to `url`. Supports template expressions. |
-| `query` | `map<string, any>` | No | -- | Query string parameters. Keys and values support template expressions. |
-| `headers` | `map<string, any>` | No | -- | HTTP headers. Keys and values support template expressions. |
-| `cookies` | `map<string, any>` | No | -- | Cookies sent with the request. Keys and values support template expressions. |
-| `auth` | block | No | -- | Authentication configuration. See [auth](#auth). |
-| `body` | block | No | -- | Request body configuration. See [body](#body). |
-| `transport` | block | No | -- | Transport options (timeouts, retries, TLS). See [transport](#transport). |
+| Field       | Type               | Required | Default | Description                                                                  |
+| ----------- | ------------------ | -------- | ------- | ---------------------------------------------------------------------------- |
+| `protocol`  | `string`           | Yes      | --      | Must be `"http"`.                                                            |
+| `method`    | `string`           | Yes      | --      | HTTP method (`GET`, `POST`, `PUT`, `DELETE`, etc.). Must not be empty.       |
+| `url`       | `string`           | Yes      | --      | Base URL for the request. Must not be empty. Supports template expressions.  |
+| `path`      | `string`           | No       | --      | Path appended to `url`. Supports template expressions.                       |
+| `query`     | `map<string, any>` | No       | --      | Query string parameters. Keys and values support template expressions.       |
+| `headers`   | `map<string, any>` | No       | --      | HTTP headers. Keys and values support template expressions.                  |
+| `cookies`   | `map<string, any>` | No       | --      | Cookies sent with the request. Keys and values support template expressions. |
+| `auth`      | block              | No       | --      | Authentication configuration. See [auth](#auth).                             |
+| `body`      | block              | No       | --      | Request body configuration. See [body](#body).                               |
+| `transport` | block              | No       | --      | Transport options (timeouts, retries, TLS). See [transport](#transport).     |
 
 ### GraphQL Operation
 
@@ -159,26 +159,26 @@ operation {
 }
 ```
 
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `protocol` | `string` | Yes | -- | Must be `"graphql"`. |
-| `method` | `string` | No | `"POST"` | Must be `POST` when provided. |
-| `url` | `string` | Yes | -- | GraphQL endpoint URL. Must not be empty. |
-| `path` | `string` | No | -- | Path appended to `url`. |
-| `query` | `map<string, any>` | No | -- | URL query parameters (not the GraphQL query). |
-| `headers` | `map<string, any>` | No | -- | HTTP headers. |
-| `cookies` | `map<string, any>` | No | -- | Cookies. |
-| `auth` | block | No | -- | Authentication. See [auth](#auth). |
-| `graphql` | block | Yes | -- | GraphQL query definition. |
-| `transport` | block | No | -- | Transport options. See [transport](#transport). |
+| Field       | Type               | Required | Default  | Description                                     |
+| ----------- | ------------------ | -------- | -------- | ----------------------------------------------- |
+| `protocol`  | `string`           | Yes      | --       | Must be `"graphql"`.                            |
+| `method`    | `string`           | No       | `"POST"` | Must be `POST` when provided.                   |
+| `url`       | `string`           | Yes      | --       | GraphQL endpoint URL. Must not be empty.        |
+| `path`      | `string`           | No       | --       | Path appended to `url`.                         |
+| `query`     | `map<string, any>` | No       | --       | URL query parameters (not the GraphQL query).   |
+| `headers`   | `map<string, any>` | No       | --       | HTTP headers.                                   |
+| `cookies`   | `map<string, any>` | No       | --       | Cookies.                                        |
+| `auth`      | block              | No       | --       | Authentication. See [auth](#auth).              |
+| `graphql`   | block              | Yes      | --       | GraphQL query definition.                       |
+| `transport` | block              | No       | --       | Transport options. See [transport](#transport). |
 
 #### `graphql` block
 
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `query` | `string` | Yes | -- | GraphQL query or mutation string. Must not be empty. |
-| `operation_name` | `string` | No | -- | GraphQL operation name (for documents with multiple operations). |
-| `variables` | `any` | No | -- | Variables passed to the GraphQL operation. Supports template expressions. |
+| Field            | Type     | Required | Default | Description                                                               |
+| ---------------- | -------- | -------- | ------- | ------------------------------------------------------------------------- |
+| `query`          | `string` | Yes      | --      | GraphQL query or mutation string. Must not be empty.                      |
+| `operation_name` | `string` | No       | --      | GraphQL operation name (for documents with multiple operations).          |
+| `variables`      | `any`    | No       | --      | Variables passed to the GraphQL operation. Supports template expressions. |
 
 ### gRPC Operation
 
@@ -201,23 +201,23 @@ operation {
 }
 ```
 
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `protocol` | `string` | Yes | -- | Must be `"grpc"`. |
-| `url` | `string` | Yes | -- | gRPC server URL. Must not be empty. |
-| `headers` | `map<string, any>` | No | -- | gRPC metadata headers. |
-| `auth` | block | No | -- | Authentication. For gRPC, `api_key.location` must be `header`. See [auth](#auth). |
-| `grpc` | block | Yes | -- | gRPC call definition. |
-| `transport` | block | No | -- | Transport options. `proxy_profile` and `tls.min_version` are not supported for gRPC. |
+| Field       | Type               | Required | Default | Description                                                                          |
+| ----------- | ------------------ | -------- | ------- | ------------------------------------------------------------------------------------ |
+| `protocol`  | `string`           | Yes      | --      | Must be `"grpc"`.                                                                    |
+| `url`       | `string`           | Yes      | --      | gRPC server URL. Must not be empty.                                                  |
+| `headers`   | `map<string, any>` | No       | --      | gRPC metadata headers.                                                               |
+| `auth`      | block              | No       | --      | Authentication. For gRPC, `api_key.location` must be `header`. See [auth](#auth).    |
+| `grpc`      | block              | Yes      | --      | gRPC call definition.                                                                |
+| `transport` | block              | No       | --      | Transport options. `proxy_profile` and `tls.min_version` are not supported for gRPC. |
 
 #### `grpc` block
 
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `service` | `string` | Yes | -- | Fully qualified gRPC service name (e.g., `grpc.health.v1.Health`). Must not be empty. |
-| `method` | `string` | Yes | -- | RPC method name (e.g., `Check`). Must not be empty. |
-| `body` | `object` or `array` | No | -- | Request message. An object for unary/server-streaming calls, or an array of objects for client-streaming. |
-| `descriptor_set_file` | `string` | No | -- | Path to a protobuf file descriptor set (`.fds.bin`). If omitted, earl uses server reflection. Must not be empty when provided. |
+| Field                 | Type                | Required | Default | Description                                                                                                                    |
+| --------------------- | ------------------- | -------- | ------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `service`             | `string`            | Yes      | --      | Fully qualified gRPC service name (e.g., `grpc.health.v1.Health`). Must not be empty.                                          |
+| `method`              | `string`            | Yes      | --      | RPC method name (e.g., `Check`). Must not be empty.                                                                            |
+| `body`                | `object` or `array` | No       | --      | Request message. An object for unary/server-streaming calls, or an array of objects for client-streaming.                      |
+| `descriptor_set_file` | `string`            | No       | --      | Path to a protobuf file descriptor set (`.fds.bin`). If omitted, earl uses server reflection. Must not be empty when provided. |
 
 ### Bash Operation
 
@@ -245,29 +245,29 @@ operation {
 }
 ```
 
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `protocol` | `string` | Yes | -- | Must be `"bash"`. |
-| `bash` | block | Yes | -- | Bash execution definition. |
-| `transport` | block | No | -- | Transport options (only `timeout_ms` is typically relevant). |
+| Field       | Type     | Required | Default | Description                                                  |
+| ----------- | -------- | -------- | ------- | ------------------------------------------------------------ |
+| `protocol`  | `string` | Yes      | --      | Must be `"bash"`.                                            |
+| `bash`      | block    | Yes      | --      | Bash execution definition.                                   |
+| `transport` | block    | No       | --      | Transport options (only `timeout_ms` is typically relevant). |
 
 #### `bash` block
 
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `script` | `string` | Yes | -- | Bash script to execute. Supports template expressions. Must not be empty. |
-| `env` | `map<string, any>` | No | -- | Environment variables passed to the script. Values support template expressions. |
-| `cwd` | `string` | No | -- | Working directory for the script. |
-| `sandbox` | block | No | -- | Sandbox restrictions. |
+| Field     | Type               | Required | Default | Description                                                                      |
+| --------- | ------------------ | -------- | ------- | -------------------------------------------------------------------------------- |
+| `script`  | `string`           | Yes      | --      | Bash script to execute. Supports template expressions. Must not be empty.        |
+| `env`     | `map<string, any>` | No       | --      | Environment variables passed to the script. Values support template expressions. |
+| `cwd`     | `string`           | No       | --      | Working directory for the script.                                                |
+| `sandbox` | block              | No       | --      | Sandbox restrictions.                                                            |
 
 #### `bash.sandbox` block
 
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `network` | `boolean` | No | -- | Allow network access from the script. |
-| `writable_paths` | `string[]` | No | -- | Relative paths the script may write to. Must not contain absolute paths or `..` segments. |
-| `max_time_ms` | `u64` | No | -- | Maximum execution time in milliseconds. |
-| `max_output_bytes` | `u64` | No | -- | Maximum combined stdout+stderr size in bytes. |
+| Field              | Type       | Required | Default | Description                                                                               |
+| ------------------ | ---------- | -------- | ------- | ----------------------------------------------------------------------------------------- |
+| `network`          | `boolean`  | No       | --      | Allow network access from the script.                                                     |
+| `writable_paths`   | `string[]` | No       | --      | Relative paths the script may write to. Must not contain absolute paths or `..` segments. |
+| `max_time_ms`      | `u64`      | No       | --      | Maximum execution time in milliseconds.                                                   |
+| `max_output_bytes` | `u64`      | No       | --      | Maximum combined stdout+stderr size in bytes.                                             |
 
 ### SQL Operation
 
@@ -292,28 +292,28 @@ operation {
 }
 ```
 
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `protocol` | `string` | Yes | -- | Must be `"sql"`. |
-| `sql` | block | Yes | -- | SQL query definition. |
-| `transport` | block | No | -- | Transport options. |
+| Field       | Type     | Required | Default | Description           |
+| ----------- | -------- | -------- | ------- | --------------------- |
+| `protocol`  | `string` | Yes      | --      | Must be `"sql"`.      |
+| `sql`       | block    | Yes      | --      | SQL query definition. |
+| `transport` | block    | No       | --      | Transport options.    |
 
 #### `sql` block
 
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `connection_secret` | `string` | Yes | -- | Secret key containing the database connection URL. Must not be empty. Must be declared in `annotations.secrets`. |
-| `query` | `string` | Yes | -- | SQL query to execute. Use `?` for parameterized values. Must not be empty. Must not contain `{{` or `}}`. |
-| `params` | `any[]` | No | -- | Positional parameters bound to `?` placeholders in the query. Values support template expressions. Wrap Jinja expressions in quotes (e.g., `["{{ args.limit }}"]`) so the HCL parser sees valid string tokens. Pure expressions like `"{{ args.limit }}"` are automatically parsed as JSON, so integers and other types are preserved. |
-| `sandbox` | block | No | -- | Sandbox restrictions. |
+| Field               | Type     | Required | Default | Description                                                                                                                                                                                                                                                                                                                            |
+| ------------------- | -------- | -------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `connection_secret` | `string` | Yes      | --      | Secret key containing the database connection URL. Must not be empty. Must be declared in `annotations.secrets`.                                                                                                                                                                                                                       |
+| `query`             | `string` | Yes      | --      | SQL query to execute. Use `?` for parameterized values. Must not be empty. Must not contain `{{` or `}}`.                                                                                                                                                                                                                              |
+| `params`            | `any[]`  | No       | --      | Positional parameters bound to `?` placeholders in the query. Values support template expressions. Wrap Jinja expressions in quotes (e.g., `["{{ args.limit }}"]`) so the HCL parser sees valid string tokens. Pure expressions like `"{{ args.limit }}"` are automatically parsed as JSON, so integers and other types are preserved. |
+| `sandbox`           | block    | No       | --      | Sandbox restrictions.                                                                                                                                                                                                                                                                                                                  |
 
 #### `sql.sandbox` block
 
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `read_only` | `boolean` | No | -- | Restrict to read-only queries. The `sandbox.sql_force_read_only` setting in `config.toml` can override this to `true`. |
-| `max_rows` | `u64` | No | -- | Maximum number of rows to return. The `sandbox.sql_max_rows` setting in `config.toml` can cap this further. |
-| `max_time_ms` | `u64` | No | -- | Maximum query execution time in milliseconds. |
+| Field         | Type      | Required | Default | Description                                                                                                            |
+| ------------- | --------- | -------- | ------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `read_only`   | `boolean` | No       | --      | Restrict to read-only queries. The `sandbox.sql_force_read_only` setting in `config.toml` can override this to `true`. |
+| `max_rows`    | `u64`     | No       | --      | Maximum number of rows to return. The `sandbox.sql_max_rows` setting in `config.toml` can cap this further.            |
+| `max_time_ms` | `u64`     | No       | --      | Maximum query execution time in milliseconds.                                                                          |
 
 ## `auth`
 
@@ -331,10 +331,10 @@ auth {
 }
 ```
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `kind` | `string` | Yes | Must be `"bearer"`. |
-| `secret` | `string` | Yes | Secret key containing the bearer token. |
+| Field    | Type     | Required | Description                             |
+| -------- | -------- | -------- | --------------------------------------- |
+| `kind`   | `string` | Yes      | Must be `"bearer"`.                     |
+| `secret` | `string` | Yes      | Secret key containing the bearer token. |
 
 </Tab>
 <Tab value="api_key">
@@ -350,12 +350,12 @@ auth {
 }
 ```
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `kind` | `string` | Yes | Must be `"api_key"`. |
-| `location` | `"header"` \| `"query"` \| `"cookie"` | Yes | Where to send the API key. For gRPC, must be `"header"`. |
-| `name` | `string` | Yes | Header name, query parameter name, or cookie name. |
-| `secret` | `string` | Yes | Secret key containing the API key value. |
+| Field      | Type                                  | Required | Description                                              |
+| ---------- | ------------------------------------- | -------- | -------------------------------------------------------- |
+| `kind`     | `string`                              | Yes      | Must be `"api_key"`.                                     |
+| `location` | `"header"` \| `"query"` \| `"cookie"` | Yes      | Where to send the API key. For gRPC, must be `"header"`. |
+| `name`     | `string`                              | Yes      | Header name, query parameter name, or cookie name.       |
+| `secret`   | `string`                              | Yes      | Secret key containing the API key value.                 |
 
 </Tab>
 <Tab value="basic">
@@ -370,11 +370,11 @@ auth {
 }
 ```
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `kind` | `string` | Yes | Must be `"basic"`. |
-| `username` | `string` | Yes | Username. Supports template expressions. |
-| `password_secret` | `string` | Yes | Secret key containing the password. |
+| Field             | Type     | Required | Description                              |
+| ----------------- | -------- | -------- | ---------------------------------------- |
+| `kind`            | `string` | Yes      | Must be `"basic"`.                       |
+| `username`        | `string` | Yes      | Username. Supports template expressions. |
+| `password_secret` | `string` | Yes      | Secret key containing the password.      |
 
 </Tab>
 <Tab value="oauth2_profile">
@@ -388,10 +388,10 @@ auth {
 }
 ```
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `kind` | `string` | Yes | Must be `"oauth2_profile"`. |
-| `profile` | `string` | Yes | Name of the OAuth2 profile defined in configuration. |
+| Field     | Type     | Required | Description                                          |
+| --------- | -------- | -------- | ---------------------------------------------------- |
+| `kind`    | `string` | Yes      | Must be `"oauth2_profile"`.                          |
+| `profile` | `string` | Yes      | Name of the OAuth2 profile defined in configuration. |
 
 </Tab>
 <Tab value="none">
@@ -404,9 +404,9 @@ auth {
 }
 ```
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `kind` | `string` | Yes | Must be `"none"`. |
+| Field  | Type     | Required | Description       |
+| ------ | -------- | -------- | ----------------- |
+| `kind` | `string` | Yes      | Must be `"none"`. |
 
 </Tab>
 </Tabs>
@@ -431,10 +431,10 @@ body {
 }
 ```
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `kind` | `string` | Yes | Must be `"json"`. |
-| `value` | `any` | Yes | JSON value to send. Supports template expressions. |
+| Field   | Type     | Required | Description                                        |
+| ------- | -------- | -------- | -------------------------------------------------- |
+| `kind`  | `string` | Yes      | Must be `"json"`.                                  |
+| `value` | `any`    | Yes      | JSON value to send. Supports template expressions. |
 
 </Tab>
 <Tab value="form_urlencoded">
@@ -451,10 +451,10 @@ body {
 }
 ```
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `kind` | `string` | Yes | Must be `"form_urlencoded"`. |
-| `fields` | `map<string, any>` | Yes | Form fields. Values support template expressions. |
+| Field    | Type               | Required | Description                                       |
+| -------- | ------------------ | -------- | ------------------------------------------------- |
+| `kind`   | `string`           | Yes      | Must be `"form_urlencoded"`.                      |
+| `fields` | `map<string, any>` | Yes      | Form fields. Values support template expressions. |
 
 </Tab>
 <Tab value="multipart">
@@ -479,21 +479,21 @@ body {
 }
 ```
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `kind` | `string` | Yes | Must be `"multipart"`. |
-| `parts` | `array` | Yes | Array of part objects. Must include at least one part. |
+| Field   | Type     | Required | Description                                            |
+| ------- | -------- | -------- | ------------------------------------------------------ |
+| `kind`  | `string` | Yes      | Must be `"multipart"`.                                 |
+| `parts` | `array`  | Yes      | Array of part objects. Must include at least one part. |
 
 #### Multipart Part Fields
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `name` | `string` | Yes | Form field name. |
-| `value` | `string` | No | Text value. Mutually exclusive with `bytes_base64` and `file_path`. |
-| `bytes_base64` | `string` | No | Base64-encoded binary content. Mutually exclusive with `value` and `file_path`. |
-| `file_path` | `string` | No | Path to a file to upload. Mutually exclusive with `value` and `bytes_base64`. |
-| `content_type` | `string` | No | MIME type for this part. |
-| `filename` | `string` | No | Filename sent in the multipart Content-Disposition header. |
+| Field          | Type     | Required | Description                                                                     |
+| -------------- | -------- | -------- | ------------------------------------------------------------------------------- |
+| `name`         | `string` | Yes      | Form field name.                                                                |
+| `value`        | `string` | No       | Text value. Mutually exclusive with `bytes_base64` and `file_path`.             |
+| `bytes_base64` | `string` | No       | Base64-encoded binary content. Mutually exclusive with `value` and `file_path`. |
+| `file_path`    | `string` | No       | Path to a file to upload. Mutually exclusive with `value` and `bytes_base64`.   |
+| `content_type` | `string` | No       | MIME type for this part.                                                        |
+| `filename`     | `string` | No       | Filename sent in the multipart Content-Disposition header.                      |
 
 </Tab>
 <Tab value="raw_text">
@@ -508,11 +508,11 @@ body {
 }
 ```
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `kind` | `string` | Yes | Must be `"raw_text"`. |
-| `value` | `string` | Yes | Text content. Supports template expressions. |
-| `content_type` | `string` | No | MIME type override. |
+| Field          | Type     | Required | Description                                  |
+| -------------- | -------- | -------- | -------------------------------------------- |
+| `kind`         | `string` | Yes      | Must be `"raw_text"`.                        |
+| `value`        | `string` | Yes      | Text content. Supports template expressions. |
+| `content_type` | `string` | No       | MIME type override.                          |
 
 </Tab>
 <Tab value="raw_bytes_base64">
@@ -527,11 +527,11 @@ body {
 }
 ```
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `kind` | `string` | Yes | Must be `"raw_bytes_base64"`. |
-| `value` | `string` | Yes | Base64-encoded binary content. |
-| `content_type` | `string` | No | MIME type override. |
+| Field          | Type     | Required | Description                    |
+| -------------- | -------- | -------- | ------------------------------ |
+| `kind`         | `string` | Yes      | Must be `"raw_bytes_base64"`.  |
+| `value`        | `string` | Yes      | Base64-encoded binary content. |
+| `content_type` | `string` | No       | MIME type override.            |
 
 </Tab>
 <Tab value="file_stream">
@@ -546,11 +546,11 @@ body {
 }
 ```
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `kind` | `string` | Yes | Must be `"file_stream"`. |
-| `path` | `string` | Yes | Path to the file. Must not be empty. Supports template expressions. |
-| `content_type` | `string` | No | MIME type override. |
+| Field          | Type     | Required | Description                                                         |
+| -------------- | -------- | -------- | ------------------------------------------------------------------- |
+| `kind`         | `string` | Yes      | Must be `"file_stream"`.                                            |
+| `path`         | `string` | Yes      | Path to the file. Must not be empty. Supports template expressions. |
+| `content_type` | `string` | No       | MIME type override.                                                 |
 
 </Tab>
 <Tab value="none">
@@ -563,9 +563,9 @@ body {
 }
 ```
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `kind` | `string` | Yes | Must be `"none"`. |
+| Field  | Type     | Required | Description       |
+| ------ | -------- | -------- | ----------------- |
+| `kind` | `string` | Yes      | Must be `"none"`. |
 
 </Tab>
 </Tabs>
@@ -600,33 +600,33 @@ transport {
 
 ### Top-level Transport Fields
 
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `timeout_ms` | `u64` | No | -- | Request timeout in milliseconds. Must be greater than 0. |
-| `max_response_bytes` | `u64` | No | -- | Maximum response body size in bytes. Must be greater than 0. |
-| `compression` | `boolean` | No | -- | Enable response decompression. |
-| `proxy_profile` | `string` | No | -- | Named proxy profile from `config.toml` `network.proxy_profiles`. Must not be empty when provided. Not supported for gRPC. |
+| Field                | Type      | Required | Default | Description                                                                                                               |
+| -------------------- | --------- | -------- | ------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `timeout_ms`         | `u64`     | No       | --      | Request timeout in milliseconds. Must be greater than 0.                                                                  |
+| `max_response_bytes` | `u64`     | No       | --      | Maximum response body size in bytes. Must be greater than 0.                                                              |
+| `compression`        | `boolean` | No       | --      | Enable response decompression.                                                                                            |
+| `proxy_profile`      | `string`  | No       | --      | Named proxy profile from `config.toml` `network.proxy_profiles`. Must not be empty when provided. Not supported for gRPC. |
 
 ### `transport.redirects`
 
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `follow` | `boolean` | No | `true` | Whether to follow HTTP redirects. |
-| `max_hops` | `integer` | No | `5` | Maximum number of redirect hops. |
+| Field      | Type      | Required | Default | Description                       |
+| ---------- | --------- | -------- | ------- | --------------------------------- |
+| `follow`   | `boolean` | No       | `true`  | Whether to follow HTTP redirects. |
+| `max_hops` | `integer` | No       | `5`     | Maximum number of redirect hops.  |
 
 ### `transport.retry`
 
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `max_attempts` | `integer` | No | `0` | Maximum number of retry attempts. |
-| `backoff_ms` | `u64` | No | `250` | Backoff between retries in milliseconds. |
-| `retry_on_status` | `integer[]` | No | `[]` | Status codes that trigger a retry. For HTTP/GraphQL these are HTTP status codes; for gRPC these are gRPC status code numbers. |
+| Field             | Type        | Required | Default | Description                                                                                                                   |
+| ----------------- | ----------- | -------- | ------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `max_attempts`    | `integer`   | No       | `0`     | Maximum number of retry attempts.                                                                                             |
+| `backoff_ms`      | `u64`       | No       | `250`   | Backoff between retries in milliseconds.                                                                                      |
+| `retry_on_status` | `integer[]` | No       | `[]`    | Status codes that trigger a retry. For HTTP/GraphQL these are HTTP status codes; for gRPC these are gRPC status code numbers. |
 
 ### `transport.tls`
 
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `min_version` | `string` | No | -- | Minimum TLS version. Accepted values: `"1.0"`, `"1.1"`, `"1.2"`, `"1.3"`. Not supported for gRPC. |
+| Field         | Type     | Required | Default | Description                                                                                       |
+| ------------- | -------- | -------- | ------- | ------------------------------------------------------------------------------------------------- |
+| `min_version` | `string` | No       | --      | Minimum TLS version. Accepted values: `"1.0"`, `"1.1"`, `"1.2"`, `"1.3"`. Not supported for gRPC. |
 
 ## `result`
 
@@ -643,23 +643,23 @@ result {
 }
 ```
 
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `decode` | `string` | No | `"auto"` | Decode strategy for the response body. |
-| `extract` | block | No | -- | Optional extraction rule applied after decoding. |
-| `output` | `string` | Yes | -- | Jinja2 template for the human-readable output. Must not be empty. |
-| `result_alias` | `string` | No | -- | Additional variable name for `result` in the output template. |
+| Field          | Type     | Required | Default  | Description                                                       |
+| -------------- | -------- | -------- | -------- | ----------------------------------------------------------------- |
+| `decode`       | `string` | No       | `"auto"` | Decode strategy for the response body.                            |
+| `extract`      | block    | No       | --       | Optional extraction rule applied after decoding.                  |
+| `output`       | `string` | Yes      | --       | Jinja2 template for the human-readable output. Must not be empty. |
+| `result_alias` | `string` | No       | --       | Additional variable name for `result` in the output template.     |
 
 ### `result.decode` Values
 
-| Value | Description |
-|-------|-------------|
-| `auto` | Automatically detect the format from Content-Type headers. |
-| `json` | Parse the response body as JSON. |
-| `text` | Treat the response body as plain text. |
-| `html` | Treat the response body as HTML (enables `css_selector` extraction). |
-| `xml` | Treat the response body as XML (enables `xpath` extraction). |
-| `binary` | Treat the response body as binary data. |
+| Value    | Description                                                          |
+| -------- | -------------------------------------------------------------------- |
+| `auto`   | Automatically detect the format from Content-Type headers.           |
+| `json`   | Parse the response body as JSON.                                     |
+| `text`   | Treat the response body as plain text.                               |
+| `html`   | Treat the response body as HTML (enables `css_selector` extraction). |
+| `xml`    | Treat the response body as XML (enables `xpath` extraction).         |
+| `binary` | Treat the response body as binary data.                              |
 
 ### `result.extract` Shapes
 
@@ -676,9 +676,9 @@ extract {
 }
 ```
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `json_pointer` | `string` | Yes | JSON Pointer path (e.g., `/items/0`). Requires `decode = "json"` or `"auto"` with JSON response. |
+| Field          | Type     | Required | Description                                                                                      |
+| -------------- | -------- | -------- | ------------------------------------------------------------------------------------------------ |
+| `json_pointer` | `string` | Yes      | JSON Pointer path (e.g., `/items/0`). Requires `decode = "json"` or `"auto"` with JSON response. |
 
 </Tab>
 <Tab value="regex">
@@ -691,9 +691,9 @@ extract {
 }
 ```
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `regex` | `string` | Yes | Regular expression pattern. Requires decoded text, HTML, or XML body. |
+| Field   | Type     | Required | Description                                                           |
+| ------- | -------- | -------- | --------------------------------------------------------------------- |
+| `regex` | `string` | Yes      | Regular expression pattern. Requires decoded text, HTML, or XML body. |
 
 </Tab>
 <Tab value="css_selector">
@@ -706,9 +706,9 @@ extract {
 }
 ```
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `css_selector` | `string` | Yes | CSS selector. Requires decoded HTML or text body. |
+| Field          | Type     | Required | Description                                       |
+| -------------- | -------- | -------- | ------------------------------------------------- |
+| `css_selector` | `string` | Yes      | CSS selector. Requires decoded HTML or text body. |
 
 </Tab>
 <Tab value="xpath">
@@ -721,9 +721,9 @@ extract {
 }
 ```
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `xpath` | `string` | Yes | XPath expression. Requires decoded XML or text body. |
+| Field   | Type     | Required | Description                                          |
+| ------- | -------- | -------- | ---------------------------------------------------- |
+| `xpath` | `string` | Yes      | XPath expression. Requires decoded XML or text body. |
 
 </Tab>
 </Tabs>
@@ -732,25 +732,26 @@ extract {
 
 The `result.output` field is a Jinja2 template with access to:
 
-| Variable | Description |
-|----------|-------------|
-| `args` | The bound argument values passed to the command. |
-| `result` | The decoded (and optionally extracted) response body. |
-| *(alias)* | Same as `result`, available under the name set by `result_alias`. |
+| Variable  | Description                                                       |
+| --------- | ----------------------------------------------------------------- |
+| `args`    | The bound argument values passed to the command.                  |
+| `result`  | The decoded (and optionally extracted) response body.             |
+| _(alias)_ | Same as `result`, available under the name set by `result_alias`. |
 
 <Callout type="warn">
-`secrets.*` is not available in `result.output`. This prevents secrets from leaking through command output.
+  `secrets.*` is not available in `result.output`. This prevents secrets from
+  leaking through command output.
 </Callout>
 
 ## HCL Functions
 
 Template files support built-in functions for loading external content into string fields.
 
-| Function | Description |
-|----------|-------------|
-| `file("path")` | Read a file relative to the template directory. Path must be relative and must not contain `..` segments. The file must not resolve outside the template directory. |
-| `base64encode("value")` | Base64-encode a string value (standard encoding). |
-| `trimspace("value")` | Trim leading and trailing whitespace. |
+| Function                | Description                                                                                                                                                         |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `file("path")`          | Read a file relative to the template directory. Path must be relative and must not contain `..` segments. The file must not resolve outside the template directory. |
+| `base64encode("value")` | Base64-encode a string value (standard encoding).                                                                                                                   |
+| `trimspace("value")`    | Trim leading and trailing whitespace.                                                                                                                               |
 
 Functions can be composed:
 
@@ -761,6 +762,7 @@ sql {
 ```
 
 Functions work in two forms:
+
 - As native HCL expressions: `script = file("run.sh")`
 - As string values: `script = "file(\"run.sh\")"`
 

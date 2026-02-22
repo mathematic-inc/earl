@@ -8,13 +8,13 @@ Config file: `~/.config/earl/config.toml`. All sections are optional.
 
 ## File Locations
 
-| Path                                     | Purpose               |
-| ---------------------------------------- | --------------------- |
-| `~/.config/earl/config.toml`             | Main configuration    |
-| `~/.config/earl/templates/*.hcl`         | Global templates      |
+| Path                                     | Purpose                               |
+| ---------------------------------------- | ------------------------------------- |
+| `~/.config/earl/config.toml`             | Main configuration                    |
+| `~/.config/earl/templates/*.hcl`         | Global templates                      |
 | `./templates/*.hcl`                      | Workspace templates (override global) |
-| `~/.local/state/earl/secrets-index.json` | Secret metadata index |
-| `~/.cache/earl/search-index-v1.json`     | Search cache          |
+| `~/.local/state/earl/secrets-index.json` | Secret metadata index                 |
+| `~/.cache/earl/search-index-v1.json`     | Search cache                          |
 
 ## Full Example
 
@@ -93,11 +93,11 @@ url = "https://proxy.corp.example.com:8080"
 
 Define profiles under `[auth.profiles.<name>]` and reference them from templates via `auth.kind = "oauth2_profile"`. See [Auth](/docs/auth) for flow details.
 
-| Flow                 | Required Fields                                   |
-| -------------------- | ------------------------------------------------- |
-| `auth_code_pkce`     | `token_url`, `authorization_url`                  |
-| `device_code`        | `token_url`, `device_authorization_url`           |
-| `client_credentials` | `token_url`, `client_secret_key`                  |
+| Flow                 | Required Fields                         |
+| -------------------- | --------------------------------------- |
+| `auth_code_pkce`     | `token_url`, `authorization_url`        |
+| `device_code`        | `token_url`, `device_authorization_url` |
+| `client_credentials` | `token_url`, `client_secret_key`        |
 
 All flows require `client_id`. Optional fields: `client_secret_key` (required for `client_credentials`), `redirect_url`, `scopes`, `issuer`, `use_auth_request_body`.
 
@@ -107,19 +107,19 @@ The `[sandbox]` section controls execution limits for Bash and SQL protocol oper
 
 ### Bash
 
-| Key                      | Type            | Default | Description                                    |
-| ------------------------ | --------------- | ------- | ---------------------------------------------- |
-| `bash_max_time_ms`       | `u64` (optional)| —       | Maximum wall-clock time for a Bash command (ms) |
-| `bash_max_output_bytes`  | `u64` (optional)| —       | Maximum stdout/stderr capture size (bytes)      |
-| `bash_allow_network`     | `bool`          | `false` | Allow network access from Bash commands         |
+| Key                     | Type             | Default | Description                                     |
+| ----------------------- | ---------------- | ------- | ----------------------------------------------- |
+| `bash_max_time_ms`      | `u64` (optional) | —       | Maximum wall-clock time for a Bash command (ms) |
+| `bash_max_output_bytes` | `u64` (optional) | —       | Maximum stdout/stderr capture size (bytes)      |
+| `bash_allow_network`    | `bool`           | `false` | Allow network access from Bash commands         |
 
 ### SQL
 
-| Key                        | Type              | Default | Description                                    |
-| -------------------------- | ----------------- | ------- | ---------------------------------------------- |
-| `sql_force_read_only`      | `bool`            | `true`  | Force all SQL queries to be read-only           |
-| `sql_max_rows`             | `u64` (optional)  | —       | Maximum number of rows returned per query       |
-| `sql_connection_allowlist` | `string[]`        | `[]`    | Secret keys whose values are permitted as connection strings |
+| Key                        | Type             | Default | Description                                                  |
+| -------------------------- | ---------------- | ------- | ------------------------------------------------------------ |
+| `sql_force_read_only`      | `bool`           | `true`  | Force all SQL queries to be read-only                        |
+| `sql_max_rows`             | `u64` (optional) | —       | Maximum number of rows returned per query                    |
+| `sql_connection_allowlist` | `string[]`       | `[]`    | Secret keys whose values are permitted as connection strings |
 
 The `sql_connection_allowlist` entries refer to secret names managed by `earl secrets`. Only connections whose secret key appears in this list are allowed.
 
@@ -136,10 +136,10 @@ Controls the semantic search engine used by `earl templates search` and MCP disc
 
 ### Global
 
-| Key              | Type   | Default | Description                          |
-| ---------------- | ------ | ------- | ------------------------------------ |
-| `search.top_k`   | `usize`| `40`    | Candidates retrieved from embeddings |
-| `search.rerank_k` | `usize`| `10`   | Results returned after reranking     |
+| Key               | Type    | Default | Description                          |
+| ----------------- | ------- | ------- | ------------------------------------ |
+| `search.top_k`    | `usize` | `40`    | Candidates retrieved from embeddings |
+| `search.rerank_k` | `usize` | `10`    | Results returned after reranking     |
 
 ### Local Models
 
@@ -152,16 +152,17 @@ Controls the semantic search engine used by `earl templates search` and MCP disc
 
 Enable a remote search backend for embedding and reranking when local models are not sufficient.
 
-| Key                              | Type     | Default        | Description                             |
-| -------------------------------- | -------- | -------------- | --------------------------------------- |
-| `search.remote.enabled`          | `bool`   | `false`        | Enable remote search backend            |
-| `search.remote.base_url`        | `string` | —              | Base URL of the remote service          |
-| `search.remote.api_key_secret`  | `string` | —              | Secret key name for the API key         |
-| `search.remote.embeddings_path` | `string` | `/embeddings`  | Path appended to base URL for embeddings |
-| `search.remote.rerank_path`     | `string` | `/rerank`      | Path appended to base URL for reranking  |
-| `search.remote.openai_compatible`| `bool`  | `true`         | Use OpenAI-compatible request format     |
-| `search.remote.timeout_ms`      | `u64`    | `10000`        | Request timeout in milliseconds          |
+| Key                               | Type     | Default       | Description                              |
+| --------------------------------- | -------- | ------------- | ---------------------------------------- |
+| `search.remote.enabled`           | `bool`   | `false`       | Enable remote search backend             |
+| `search.remote.base_url`          | `string` | —             | Base URL of the remote service           |
+| `search.remote.api_key_secret`    | `string` | —             | Secret key name for the API key          |
+| `search.remote.embeddings_path`   | `string` | `/embeddings` | Path appended to base URL for embeddings |
+| `search.remote.rerank_path`       | `string` | `/rerank`     | Path appended to base URL for reranking  |
+| `search.remote.openai_compatible` | `bool`   | `true`        | Use OpenAI-compatible request format     |
+| `search.remote.timeout_ms`        | `u64`    | `10000`       | Request timeout in milliseconds          |
 
 <Callout type="info">
-  Run `earl doctor` to verify your configuration. See [Troubleshooting](/docs/troubleshooting) for common errors.
+  Run `earl doctor` to verify your configuration. See
+  [Troubleshooting](/docs/troubleshooting) for common errors.
 </Callout>

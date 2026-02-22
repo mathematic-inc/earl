@@ -36,34 +36,36 @@ Instead of exposing every template, discovery mode registers only two meta-tools
 
 | Parameter  | Type      | Required | Default | Description                                       |
 | ---------- | --------- | -------- | ------- | ------------------------------------------------- |
-| `query`    | `string`  | Yes      | —       | Natural-language intent to match against metadata  |
-| `limit`    | `integer` | No       | `10`    | Maximum matches to return (1–50)                   |
-| `mode`     | `string`  | No       | —       | Filter by `read` or `write`                        |
-| `provider` | `string`  | No       | —       | Filter by provider name (e.g., `github`)           |
-| `category` | `string`  | No       | —       | Filter by category                                 |
+| `query`    | `string`  | Yes      | —       | Natural-language intent to match against metadata |
+| `limit`    | `integer` | No       | `10`    | Maximum matches to return (1–50)                  |
+| `mode`     | `string`  | No       | —       | Filter by `read` or `write`                       |
+| `provider` | `string`  | No       | —       | Filter by provider name (e.g., `github`)          |
+| `category` | `string`  | No       | —       | Filter by category                                |
 
 Returns a ranked list of matching tools with name, score, summary, mode, categories, and the full tool schema.
 
 **`earl.tool_call`** — Execute a discovered template tool.
 
-| Parameter   | Type     | Required | Default | Description                                     |
-| ----------- | -------- | -------- | ------- | ----------------------------------------------- |
-| `name`      | `string` | Yes      | —       | Exact tool name returned by `earl.tool_search`   |
-| `arguments` | `object` | No       | `{}`    | Arguments for the selected template tool         |
+| Parameter   | Type     | Required | Default | Description                                    |
+| ----------- | -------- | -------- | ------- | ---------------------------------------------- |
+| `name`      | `string` | Yes      | —       | Exact tool name returned by `earl.tool_search` |
+| `arguments` | `object` | No       | `{}`    | Arguments for the selected template tool       |
 
 In discovery mode, the server also returns an `instructions` field during initialization that guides the agent to use the two-step search-then-call workflow.
 
 ### Full vs Discovery Trade-offs
 
-| Concern             | Full                                | Discovery                                |
-| ------------------- | ----------------------------------- | ---------------------------------------- |
-| Context window cost | One tool definition per template    | Always two tool definitions              |
-| Latency             | Single tool call                    | Two calls (search + invoke)              |
-| Scalability         | Degrades with hundreds of templates | Constant overhead regardless of catalog size |
+| Concern             | Full                                | Discovery                                     |
+| ------------------- | ----------------------------------- | --------------------------------------------- |
+| Context window cost | One tool definition per template    | Always two tool definitions                   |
+| Latency             | Single tool call                    | Two calls (search + invoke)                   |
+| Scalability         | Degrades with hundreds of templates | Constant overhead regardless of catalog size  |
 | Agent compatibility | Works with any MCP client           | Requires agent capable of multi-step tool use |
 
 <Callout type="info">
-  Discovery mode is recommended when your catalog exceeds ~30 templates. The search scoring considers tool names, titles, summaries, descriptions, categories, and parameter names.
+  Discovery mode is recommended when your catalog exceeds ~30 templates. The
+  search scoring considers tool names, titles, summaries, descriptions,
+  categories, and parameter names.
 </Callout>
 
 ## Claude Desktop
@@ -155,10 +157,10 @@ For non-stdio integrations, earl can serve MCP over HTTP:
 earl mcp http --listen 127.0.0.1:8977 --mode full --yes
 ```
 
-| Endpoint      | Method | Description                        |
-| ------------- | ------ | ---------------------------------- |
-| `/mcp`        | POST   | JSON-RPC endpoint for MCP requests |
-| `/health`     | GET    | Health check — returns `204 No Content` |
+| Endpoint  | Method | Description                             |
+| --------- | ------ | --------------------------------------- |
+| `/mcp`    | POST   | JSON-RPC endpoint for MCP requests      |
+| `/health` | GET    | Health check — returns `204 No Content` |
 
 The `--listen` flag defaults to `127.0.0.1:8977`.
 

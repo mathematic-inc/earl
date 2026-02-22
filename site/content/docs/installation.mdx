@@ -25,6 +25,7 @@ Downloads a prebuilt binary from [GitHub Releases](https://github.com/brwse/earl
     | `--bin-dir <path>` | Install the binary directly into this directory |
 
     Default install location: `~/.local/bin` (or `/usr/local/bin` when run as root). Ensure the install directory is on your `PATH`.
+
   </Tab>
   <Tab value="Windows (PowerShell)">
     ```powershell
@@ -34,6 +35,7 @@ Downloads a prebuilt binary from [GitHub Releases](https://github.com/brwse/earl
     Parameters: `-Version`, `-InstallDir`, `-BinDir`.
 
     Default install location: `%LOCALAPPDATA%\Programs\earl\bin`.
+
   </Tab>
 </Tabs>
 
@@ -55,16 +57,17 @@ All protocols are enabled by default. To install with only the protocols you nee
 cargo install earl --no-default-features --features http,graphql
 ```
 
-| Flag | Description | Default |
-| --- | --- | --- |
-| `http` | HTTP protocol support | Yes |
-| `graphql` | GraphQL protocol (requires `http`) | Yes |
-| `grpc` | gRPC protocol support | Yes |
-| `bash` | Sandboxed Bash script execution | Yes |
-| `sql` | SQL query execution with sandboxing | Yes |
+| Flag      | Description                         | Default |
+| --------- | ----------------------------------- | ------- |
+| `http`    | HTTP protocol support               | Yes     |
+| `graphql` | GraphQL protocol (requires `http`)  | Yes     |
+| `grpc`    | gRPC protocol support               | Yes     |
+| `bash`    | Sandboxed Bash script execution     | Yes     |
+| `sql`     | SQL query execution with sandboxing | Yes     |
 
 <Callout type="info">
-  The `graphql` feature automatically enables `http` since GraphQL requests are sent over HTTP.
+  The `graphql` feature automatically enables `http` since GraphQL requests are
+  sent over HTTP.
 </Callout>
 
 ## Verify
