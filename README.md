@@ -5,17 +5,15 @@
 [![docs.rs](https://img.shields.io/docsrs/earl)](https://docs.rs/earl)
 [![License: MIT](https://img.shields.io/crates/l/earl)](LICENSE)
 
-> **Protocols**&ensp;
-> [![HTTP](https://img.shields.io/badge/HTTP-005CDE?logo=curl&logoColor=fff)](#)
-> [![GraphQL](https://img.shields.io/badge/GraphQL-E10098?logo=graphql&logoColor=fff)](#)
-> [![gRPC](https://img.shields.io/badge/gRPC-244C5A?logo=google&logoColor=fff)](#)
-> [![Bash](https://img.shields.io/badge/Bash-4EAA25?logo=gnubash&logoColor=fff)](#)
-> [![SQL](https://img.shields.io/badge/SQL-%23316192.svg?logo=postgresql&logoColor=white)](#)
->
-> **Platforms**&ensp;
-> [![macOS](https://img.shields.io/badge/macOS-000000?logo=apple&logoColor=white)](https://github.com/brwse/earl/releases/latest)
-> [![Linux](https://img.shields.io/badge/Linux-FCC624?logo=linux&logoColor=black)](https://github.com/brwse/earl/releases/latest)
-> [![Windows](https://img.shields.io/badge/Windows-0078D4?logo=windows&logoColor=white)](https://github.com/brwse/earl/releases/latest)
+[![HTTP](https://img.shields.io/badge/HTTP-005CDE?logo=curl&logoColor=fff)](#)
+[![GraphQL](https://img.shields.io/badge/GraphQL-E10098?logo=graphql&logoColor=fff)](#)
+[![gRPC](https://img.shields.io/badge/gRPC-244C5A?logo=google&logoColor=fff)](#)
+[![Bash](https://img.shields.io/badge/Bash-4EAA25?logo=gnubash&logoColor=fff)](#)
+[![SQL](https://img.shields.io/badge/SQL-%23316192.svg?logo=postgresql&logoColor=white)](#)
+&ensp;|&ensp;
+[![macOS](https://img.shields.io/badge/macOS-000000?logo=apple&logoColor=white)](https://github.com/brwse/earl/releases/latest)
+[![Linux](https://img.shields.io/badge/Linux-FCC624?logo=linux&logoColor=black)](https://github.com/brwse/earl/releases/latest)
+[![Windows](https://img.shields.io/badge/Windows-0078D4?logo=windows&logoColor=white)](https://github.com/brwse/earl/releases/latest)
 
 AI-safe CLI for AI agents. Earl sits between your agent and external
 services, ensuring secrets stay in the OS keychain, requests follow reviewed
