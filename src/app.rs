@@ -93,7 +93,10 @@ async fn run_call(
     let active_env = resolve_active_env(
         env_flag.as_deref(),
         config_env_default.as_deref(),
-        entry.provider_environments.as_ref().and_then(|e| e.default.as_deref()),
+        entry
+            .provider_environments
+            .as_ref()
+            .and_then(|e| e.default.as_deref()),
     );
 
     // Display active environment (non-JSON mode only)
@@ -161,7 +164,10 @@ async fn run_call(
             let rendered = render_json_output(&execution);
             let mut redacted = prepared.redactor.redact_json(&rendered);
             if let (Some(env), Some(obj)) = (active_env, redacted.as_object_mut()) {
-                obj.insert("environment".to_string(), serde_json::Value::String(env.to_string()));
+                obj.insert(
+                    "environment".to_string(),
+                    serde_json::Value::String(env.to_string()),
+                );
             }
             println!("{}", serde_json::to_string_pretty(&redacted)?);
         } else {

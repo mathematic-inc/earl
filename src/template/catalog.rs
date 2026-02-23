@@ -80,7 +80,10 @@ mod tests {
     fn catalog_entry_has_provider_environments_field() {
         let mut envs = BTreeMap::new();
         let mut prod = BTreeMap::new();
-        prod.insert("base_url".to_string(), "https://api.example.com".to_string());
+        prod.insert(
+            "base_url".to_string(),
+            "https://api.example.com".to_string(),
+        );
         envs.insert("production".to_string(), prod);
 
         let pe = ProviderEnvironments {

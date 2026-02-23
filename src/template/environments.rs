@@ -1,4 +1,4 @@
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 
 use super::schema::{CommandTemplate, EnvironmentOverride, OperationTemplate, ResultTemplate};
 
@@ -20,7 +20,10 @@ pub fn validate_env_name(name: &str) -> Result<()> {
     if name.is_empty() || name.len() > 64 {
         bail!("environment name must be 1–64 characters, got `{name}`");
     }
-    if !name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-') {
+    if !name
+        .chars()
+        .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
+    {
         bail!(
             "environment name `{name}` contains invalid characters; \
              only alphanumeric, underscore, and hyphen are allowed"
@@ -42,8 +45,14 @@ pub fn select_for_env<'a>(
         return (&cmd.operation, &cmd.result);
     };
     match cmd.environment_overrides.get(name) {
-        Some(EnvironmentOverride { operation, result: Some(result) }) => (operation, result),
-        Some(EnvironmentOverride { operation, result: None }) => (operation, &cmd.result),
+        Some(EnvironmentOverride {
+            operation,
+            result: Some(result),
+        }) => (operation, result),
+        Some(EnvironmentOverride {
+            operation,
+            result: None,
+        }) => (operation, &cmd.result),
         None => (&cmd.operation, &cmd.result),
     }
 }
@@ -54,12 +63,18 @@ mod tests {
 
     #[test]
     fn resolve_prefers_cli_flag() {
-        assert_eq!(resolve_active_env(Some("staging"), Some("prod"), Some("dev")), Some("staging"));
+        assert_eq!(
+            resolve_active_env(Some("staging"), Some("prod"), Some("dev")),
+            Some("staging")
+        );
     }
 
     #[test]
     fn resolve_falls_back_to_config() {
-        assert_eq!(resolve_active_env(None, Some("prod"), Some("dev")), Some("prod"));
+        assert_eq!(
+            resolve_active_env(None, Some("prod"), Some("dev")),
+            Some("prod")
+        );
     }
 
     #[test]

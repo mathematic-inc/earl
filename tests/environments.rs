@@ -120,8 +120,8 @@ fn vars_secret_values_tracked_for_redaction() {
     // The function is tested at the unit level in builder.rs,
     // but we verify here that the integration contract is correct:
     // any value that goes through resolve_vars ends up in secret_values.
-    use std::collections::BTreeMap;
     use earl::template::schema::ProviderEnvironments;
+    use std::collections::BTreeMap;
 
     let mut staging_vars: BTreeMap<String, String> = BTreeMap::new();
     staging_vars.insert("token".to_string(), "super_secret_value".to_string());

@@ -51,7 +51,11 @@ pub fn validate_template_file(file: &TemplateFile) -> Result<()> {
                 "provider `{}` environments.default is `{default_name}` but that environment is not defined; \
                  available: {}",
                 file.provider,
-                envs.environments.keys().cloned().collect::<Vec<_>>().join(", ")
+                envs.environments
+                    .keys()
+                    .cloned()
+                    .collect::<Vec<_>>()
+                    .join(", ")
             );
         }
         // All secrets referenced in vars values must be declared in environments.secrets
@@ -80,7 +84,11 @@ pub fn validate_template_file(file: &TemplateFile) -> Result<()> {
                     "command `{name}` has environment override for `{env_name}` \
                      which is not defined in the provider environments block; \
                      defined: {}",
-                    defined_env_names.iter().cloned().collect::<Vec<_>>().join(", ")
+                    defined_env_names
+                        .iter()
+                        .cloned()
+                        .collect::<Vec<_>>()
+                        .join(", ")
                 );
             }
             // Protocol switching requires annotation

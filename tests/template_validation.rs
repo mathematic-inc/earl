@@ -897,7 +897,8 @@ command "ping" {
   }
 }
 "#,
-    ).unwrap();
+    )
+    .unwrap();
     let err = validate_all_from_dirs(&global_dir, &local_dir).unwrap_err();
     let rendered = format!("{err:#}");
     assert!(rendered.contains("ghost"), "error: {rendered}");
@@ -942,7 +943,8 @@ command "ping" {
   }
 }
 "#,
-    ).unwrap();
+    )
+    .unwrap();
     let err = validate_all_from_dirs(&global_dir, &local_dir).unwrap_err();
     let rendered = format!("{err:#}");
     assert!(rendered.contains("test.key"), "error: {rendered}");
@@ -994,7 +996,8 @@ command "ping" {
   }
 }
 "#,
-    ).unwrap();
+    )
+    .unwrap();
     let err = validate_all_from_dirs(&global_dir, &local_dir).unwrap_err();
     let rendered = format!("{err:#}");
     assert!(rendered.contains("shadow"), "error: {rendered}");
@@ -1049,7 +1052,8 @@ command "ping" {
   }
 }
 "#,
-    ).unwrap();
+    )
+    .unwrap();
     // Same protocol (both bash) — should pass
     validate_all_from_dirs(&global_dir, &local_dir).expect("same protocol is fine");
 }
@@ -1104,7 +1108,8 @@ command "ping" {
   }
 }
 "#,
-    ).unwrap();
+    )
+    .unwrap();
     validate_all_from_dirs(&global_dir, &local_dir).expect("annotation allows switching");
 }
 

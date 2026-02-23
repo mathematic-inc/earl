@@ -55,7 +55,9 @@ pub struct Annotations {
 
 /// Provider-level environments block stored at the TemplateFile level.
 /// Carried into TemplateCatalogEntry so it's available at call time.
-#[derive(Debug, Clone, Default, Deserialize, Serialize, Archive, RkyvSerialize, RkyvDeserialize)]
+#[derive(
+    Debug, Clone, Default, Deserialize, Serialize, Archive, RkyvSerialize, RkyvDeserialize,
+)]
 pub struct ProviderEnvironments {
     #[serde(default)]
     pub default: Option<String>,
@@ -247,8 +249,14 @@ mod tests {
         let pe: ProviderEnvironments = serde_json::from_value(json).unwrap();
         assert_eq!(pe.default.as_deref(), Some("production"));
         assert_eq!(pe.secrets, vec!["myservice.prod_token"]);
-        assert_eq!(pe.environments["production"]["base_url"], "https://api.myservice.com");
-        assert_eq!(pe.environments["staging"]["base_url"], "https://staging.myservice.com");
+        assert_eq!(
+            pe.environments["production"]["base_url"],
+            "https://api.myservice.com"
+        );
+        assert_eq!(
+            pe.environments["staging"]["base_url"],
+            "https://staging.myservice.com"
+        );
     }
 
     #[test]

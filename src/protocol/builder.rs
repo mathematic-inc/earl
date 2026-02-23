@@ -11,12 +11,12 @@ use crate::config::{ProxyProfile, SandboxConfig};
 use crate::secrets::SecretManager;
 use crate::secrets::store::require_secret;
 use crate::template::catalog::TemplateCatalogEntry;
+use crate::template::environments::select_for_env;
 use crate::template::render::{render_json_value, render_string_raw};
 #[allow(unused_imports)]
 use crate::template::schema::{
     AllowRule, ApiKeyLocation, AuthTemplate, CommandMode, OperationTemplate, ProviderEnvironments,
 };
-use crate::template::environments::select_for_env;
 use earl_core::Redactor;
 
 use super::transport::{ResolvedTransport, resolve_transport};
@@ -464,7 +464,11 @@ fn resolve_vars(
         Some(v) => v,
         None => bail!(
             "environment `{name}` is not defined; available: {}",
-            envs.environments.keys().cloned().collect::<Vec<_>>().join(", ")
+            envs.environments
+                .keys()
+                .cloned()
+                .collect::<Vec<_>>()
+                .join(", ")
         ),
     };
 
@@ -526,7 +530,10 @@ mod tests {
     #[test]
     fn resolve_vars_returns_empty_when_no_active_env() {
         let mut staging_vars = BTreeMap::new();
-        staging_vars.insert("base_url".to_string(), "https://staging.example.com".to_string());
+        staging_vars.insert(
+            "base_url".to_string(),
+            "https://staging.example.com".to_string(),
+        );
         let pe = ProviderEnvironments {
             default: None,
             secrets: vec![],
@@ -549,7 +556,8 @@ mod tests {
         };
         let mut secret_values = vec![];
         let secrets = Value::Object(Map::new());
-        let result = resolve_vars(Some(&pe), Some("staging"), &secrets, &mut secret_values).unwrap();
+        let result =
+            resolve_vars(Some(&pe), Some("staging"), &secrets, &mut secret_values).unwrap();
         assert_eq!(result["label"], Value::String("staging-label".to_string()));
         // Every resolved value must be tracked for redaction
         assert!(secret_values.contains(&"staging-label".to_string()));
@@ -560,15 +568,19 @@ mod tests {
         let pe = ProviderEnvironments {
             default: None,
             secrets: vec![],
-            environments: BTreeMap::from([
-                ("staging".to_string(), BTreeMap::new()),
-            ]),
+            environments: BTreeMap::from([("staging".to_string(), BTreeMap::new())]),
         };
         let mut secret_values = vec![];
         let secrets = Value::Object(Map::new());
         let err = resolve_vars(Some(&pe), Some("ghost"), &secrets, &mut secret_values).unwrap_err();
         let msg = err.to_string();
-        assert!(msg.contains("ghost"), "error should mention the env name: {msg}");
-        assert!(msg.contains("staging"), "error should list available envs: {msg}");
+        assert!(
+            msg.contains("ghost"),
+            "error should mention the env name: {msg}"
+        );
+        assert!(
+            msg.contains("staging"),
+            "error should list available envs: {msg}"
+        );
     }
 }

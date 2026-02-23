@@ -142,7 +142,10 @@ fn normalize_environments_block(root: &mut Map<String, Value>) -> Result<()> {
 
 /// Extracts `environment "name" { ... }` blocks from a command object and
 /// renames them to `environment_overrides` so serde can deserialize them.
-fn normalize_environment_overrides(command: &mut Map<String, Value>, command_path: &str) -> Result<()> {
+fn normalize_environment_overrides(
+    command: &mut Map<String, Value>,
+    command_path: &str,
+) -> Result<()> {
     let Some(env_blocks) = command.remove("environment") else {
         return Ok(());
     };
@@ -543,7 +546,13 @@ command "ping" {
 "#;
         let parsed = parse_template_hcl(template, dummy_dir()).unwrap();
         let cmd = parsed.commands.get("ping").unwrap();
-        let override_ = cmd.environment_overrides.get("staging").expect("staging override");
-        assert!(matches!(override_.operation, crate::template::schema::OperationTemplate::Bash(_)));
+        let override_ = cmd
+            .environment_overrides
+            .get("staging")
+            .expect("staging override");
+        assert!(matches!(
+            override_.operation,
+            crate::template::schema::OperationTemplate::Bash(_)
+        ));
     }
 }
