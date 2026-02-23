@@ -39,6 +39,7 @@ fn make_config(profile_name: &str, profile: OAuthProfile) -> Config {
         network: Default::default(),
         sandbox: SandboxConfig::default(),
         policy: vec![],
+        environments: Default::default(),
     }
 }
 

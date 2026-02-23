@@ -30,6 +30,7 @@ use crate::protocol::builder::build_prepared_request;
 use crate::protocol::executor::execute_prepared_request;
 use crate::secrets::SecretManager;
 use crate::template::catalog::{TemplateCatalog, TemplateCatalogEntry};
+use crate::template::environments::validate_env_name;
 use crate::template::schema::{CommandMode, ParamSpec, ParamType};
 
 const JSONRPC_VERSION: &str = "2.0";
@@ -71,6 +72,7 @@ struct McpState {
     auto_yes: bool,
     jwt: Option<auth::JwtState>,
     policies: Vec<PolicyRule>,
+    active_env: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -219,6 +221,14 @@ pub async fn run_server(
     };
 
     let policies = cfg.policy.clone();
+    // The MCP server resolves the active environment once at startup from the
+    // config default. There is intentionally no per-request override mechanism
+    // for environments in MCP mode; a separate server process is needed for
+    // multi-environment deployments.
+    let active_env = cfg.environments.default.clone();
+    if let Some(name) = &active_env {
+        validate_env_name(name).context("config [environments].default is invalid")?;
+    }
 
     let state = McpState {
         catalog: Arc::new(catalog),
@@ -227,6 +237,7 @@ pub async fn run_server(
         auto_yes: options.auto_yes,
         jwt,
         policies,
+        active_env,
     };
 
     match options.transport {
@@ -331,7 +342,7 @@ async fn handle_request(
     }
 
     let result = match request.method.as_str() {
-        "initialize" => handle_initialize(request.params, state.mode),
+        "initialize" => handle_initialize(request.params, state.mode, state.active_env.as_deref()),
         "notifications/initialized" => return None,
         "ping" => Ok(json!({})),
         "tools/list" => Ok(json!({
@@ -353,12 +364,14 @@ async fn handle_request(
 fn handle_initialize(
     params: Option<Value>,
     mode: McpMode,
+    active_env: Option<&str>,
 ) -> std::result::Result<Value, RpcFailure> {
     let params = decode_params::<InitializeParams>(params)?;
     let protocol_version = params
         .protocol_version
         .unwrap_or_else(|| DEFAULT_PROTOCOL_VERSION.to_string());
 
+    let env_str = active_env.unwrap_or("(none)");
     let mut response = json!({
         "protocolVersion": protocol_version,
         "capabilities": {
@@ -369,6 +382,7 @@ fn handle_initialize(
         "serverInfo": {
             "name": "earl",
             "version": env!("CARGO_PKG_VERSION"),
+            "environment": env_str,
         }
     });
 
@@ -653,6 +667,7 @@ async fn execute_template_tool(
         &allow_rules,
         &proxy_profiles,
         &sandbox_config,
+        state.active_env.as_deref(),
     )
     .await?;
     let execution = execute_prepared_request(&prepared)
@@ -1012,6 +1027,7 @@ async fn write_stdio_frame<W: AsyncWrite + Unpin>(
 
 #[cfg(all(test, feature = "http"))]
 mod tests {
+    use std::collections::BTreeMap;
     use std::io::Cursor;
     use std::path::PathBuf;
 
@@ -1044,6 +1060,7 @@ mod tests {
             auto_yes,
             jwt: None,
             policies: Vec::new(),
+            active_env: None,
         }
     }
 
@@ -1071,6 +1088,7 @@ mod tests {
                 annotations: Annotations {
                     mode,
                     secrets: vec![],
+                    allow_environment_protocol_switching: false,
                 },
                 params,
                 operation: OperationTemplate::Http(HttpOperationTemplate {
@@ -1091,7 +1109,9 @@ mod tests {
                     output: "{{ result }}".to_string(),
                     result_alias: None,
                 },
+                environment_overrides: BTreeMap::new(),
             },
+            provider_environments: None,
         }
     }
 

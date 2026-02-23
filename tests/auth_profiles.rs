@@ -63,6 +63,7 @@ async fn resolves_oidc_endpoints_and_client_secret_from_secrets() {
         network: Default::default(),
         sandbox: SandboxConfig::default(),
         policy: vec![],
+        environments: Default::default(),
     };
 
     let http_client = Client::builder().build().unwrap();
@@ -100,6 +101,7 @@ async fn fails_when_required_auth_code_endpoint_is_missing() {
         network: Default::default(),
         sandbox: SandboxConfig::default(),
         policy: vec![],
+        environments: Default::default(),
     };
 
     let http_client = Client::builder().build().unwrap();
@@ -130,6 +132,7 @@ async fn fails_when_device_flow_endpoint_missing() {
         network: Default::default(),
         sandbox: SandboxConfig::default(),
         policy: vec![],
+        environments: Default::default(),
     };
 
     let http_client = Client::builder().build().unwrap();

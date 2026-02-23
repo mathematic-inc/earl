@@ -18,7 +18,8 @@ use earl_core::with::AsJson;
 // Also bump when upgrading rkyv to a version that changes archive layout; bytecheck
 // will reject stale archives safely (cache miss rather than UB), but a version bump
 // prevents unnecessary re-parses once the old cache file ages out.
-pub const CACHE_VERSION: u32 = 1;
+// v2 (2026-02-23): Added environments block support to TemplateFile and CommandTemplate.
+pub const CACHE_VERSION: u32 = 2;
 
 /// Serialized catalog cache file stored at `~/.cache/earl/catalog-{CACHE_VERSION}.bin`.
 #[derive(Archive, RkyvSerialize, RkyvDeserialize)]

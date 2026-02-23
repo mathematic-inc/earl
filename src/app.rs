@@ -39,7 +39,7 @@ pub async fn run(cli: Cli) -> Result<()> {
     match cli.command {
         Command::Call(args) => {
             let cfg = config::load_config()?;
-            run_call(args.command, args.args, args.yes, args.json, cfg).await
+            run_call(args.command, args.args, args.yes, args.json, args.env, cfg).await
         }
         Command::Templates(args) => {
             let cfg = config::load_config()?;
@@ -65,8 +65,11 @@ async fn run_call(
     raw_args: Vec<String>,
     auto_yes: bool,
     json_mode: bool,
+    env_flag: Option<String>,
     cfg: Config,
 ) -> Result<()> {
+    use crate::template::environments::{resolve_active_env, validate_env_name};
+
     let cwd = env::current_dir()?;
     let catalog = load_catalog(&cwd)?;
 
@@ -79,6 +82,31 @@ async fn run_call(
 
     if entry.mode == CommandMode::Write && !auto_yes {
         prompt_write_confirmation(&entry.key)?;
+    }
+
+    if let Some(name) = &env_flag {
+        validate_env_name(name)?;
+    }
+    // Clone the config-level default so we don't hold a borrow into `cfg`
+    // when `OAuthManager::new` later takes ownership of it.
+    let config_env_default = cfg.environments.default.clone();
+    if let Some(name) = &config_env_default {
+        validate_env_name(name).context("config [environments].default is invalid")?;
+    }
+    let active_env = resolve_active_env(
+        env_flag.as_deref(),
+        config_env_default.as_deref(),
+        entry
+            .provider_environments
+            .as_ref()
+            .and_then(|e| e.default.as_deref()),
+    );
+
+    // Display active environment (non-JSON mode only)
+    if let Some(env) = active_env
+        && !json_mode
+    {
+        eprintln!("[env: {env}]");
     }
 
     let secret_manager = SecretManager::new();
@@ -95,6 +123,7 @@ async fn run_call(
         &allow_rules,
         &proxy_profiles,
         &sandbox_config,
+        active_env,
     )
     .await?;
     if prepared.stream {
@@ -106,8 +135,15 @@ async fn run_call(
         let redactor = prepared.redactor.clone();
 
         let (rx, handle) = start_streaming_request(prepared);
-        let render_result =
-            render_streaming_output(rx, &result_template, &args, &redactor, json_mode).await;
+        let render_result = render_streaming_output(
+            rx,
+            &result_template,
+            &args,
+            &redactor,
+            json_mode,
+            active_env,
+        )
+        .await;
 
         if render_result.is_err() {
             // Abort the producer so it doesn't leak.
@@ -136,7 +172,13 @@ async fn run_call(
         let execution = execute_prepared_request(&prepared).await?;
         if json_mode {
             let rendered = render_json_output(&execution);
-            let redacted = prepared.redactor.redact_json(&rendered);
+            let mut redacted = prepared.redactor.redact_json(&rendered);
+            if let (Some(env), Some(obj)) = (active_env, redacted.as_object_mut()) {
+                obj.insert(
+                    "environment".to_string(),
+                    serde_json::Value::String(env.to_string()),
+                );
+            }
             println!("{}", serde_json::to_string_pretty(&redacted)?);
         } else {
             let output =
