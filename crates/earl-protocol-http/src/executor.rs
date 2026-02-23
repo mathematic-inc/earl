@@ -344,10 +344,20 @@ where
             };
             // Buffer for incomplete UTF-8 sequences at chunk boundaries (SSE only).
             let mut utf8_buffer: Vec<u8> = Vec::new();
+            let max = ctx.transport.max_response_bytes;
 
             while let Some(chunk) = response.chunk().await? {
                 if let Some(parser) = &mut sse_parser {
                     utf8_buffer.extend_from_slice(&chunk);
+                    // Guard against unbounded buffer growth from invalid
+                    // UTF-8 or a server that never sends event boundaries.
+                    // An incomplete multi-byte sequence is at most 3 trailing
+                    // bytes; anything larger indicates bad data.
+                    if utf8_buffer.len() > max {
+                        bail!(
+                            "streaming response exceeded configured max_response_bytes ({max} bytes)"
+                        );
+                    }
                     // Find the last valid UTF-8 boundary — bytes beyond it
                     // are an incomplete multi-byte character.
                     let valid_up_to = match std::str::from_utf8(&utf8_buffer) {
@@ -362,21 +372,21 @@ where
                         .expect("validated UTF-8 boundary");
                     let events = parser.feed(text);
                     // Keep any incomplete trailing bytes for the next chunk.
-                    let remainder = utf8_buffer[valid_up_to..].to_vec();
-                    utf8_buffer.clear();
-                    utf8_buffer.extend_from_slice(&remainder);
+                    utf8_buffer.drain(..valid_up_to);
                     for event in events {
                         total_bytes = total_bytes.saturating_add(event.data.len());
-                        if total_bytes > ctx.transport.max_response_bytes {
+                        if total_bytes > max {
                             bail!(
-                                "streaming response exceeded configured max_response_bytes ({} bytes)",
-                                ctx.transport.max_response_bytes
+                                "streaming response exceeded configured max_response_bytes ({max} bytes)"
                             );
                         }
                         if sender
                             .send(StreamChunk {
                                 data: event.data.into_bytes(),
-                                content_type: content_type.clone(),
+                                // SSE event data is extracted content — not
+                                // text/event-stream.  Leave content_type as
+                                // None so decode="auto" can probe the data.
+                                content_type: None,
                             })
                             .await
                             .is_err()
@@ -416,27 +426,33 @@ where
                 {
                     for event in parser.feed(text) {
                         total_bytes = total_bytes.saturating_add(event.data.len());
-                        if total_bytes <= ctx.transport.max_response_bytes {
-                            let _ = sender
-                                .send(StreamChunk {
-                                    data: event.data.into_bytes(),
-                                    content_type: content_type.clone(),
-                                })
-                                .await;
+                        if total_bytes > max {
+                            bail!(
+                                "streaming response exceeded configured max_response_bytes ({max} bytes)"
+                            );
                         }
+                        let _ = sender
+                            .send(StreamChunk {
+                                data: event.data.into_bytes(),
+                                content_type: None,
+                            })
+                            .await;
                     }
                 }
 
                 if let Some(event) = parser.flush() {
                     total_bytes = total_bytes.saturating_add(event.data.len());
-                    if total_bytes <= ctx.transport.max_response_bytes {
-                        let _ = sender
-                            .send(StreamChunk {
-                                data: event.data.into_bytes(),
-                                content_type: content_type.clone(),
-                            })
-                            .await;
+                    if total_bytes > max {
+                        bail!(
+                            "streaming response exceeded configured max_response_bytes ({max} bytes)"
+                        );
                     }
+                    let _ = sender
+                        .send(StreamChunk {
+                            data: event.data.into_bytes(),
+                            content_type: None,
+                        })
+                        .await;
                 }
             }
 

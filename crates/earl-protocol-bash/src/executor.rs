@@ -260,8 +260,9 @@ impl StreamingProtocolExecutor for BashStreamExecutor {
 
                 total_bytes = total_bytes.saturating_add(bytes_read);
                 if total_bytes > max_bytes {
-                    // Kill the process before bailing.
+                    // Kill the process and reap it before bailing.
                     kill_process(pid);
+                    let _ = child.wait().await;
                     bail!("bash stdout exceeded configured max output bytes ({max_bytes} bytes)");
                 }
 
