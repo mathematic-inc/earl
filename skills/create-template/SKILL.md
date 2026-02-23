@@ -251,11 +251,9 @@ earl call --yes --json <provider>.<command> --<param> <test_value>
 
 **Important:** If `annotations.mode = "write"`, the test call will create/modify/delete real
 data. If the template defines environments (check the `environments` block for valid names),
-use `--env <name>` to select a non-production environment for the test call. Otherwise, use
-a test or sandbox account, a safe test value
-(e.g. a dedicated test repo), or
-choose a read-only command for the initial verification. Warn the user before running
-write-mode test calls.
+use `--env <name>` to select a non-production environment for the test call. Otherwise, use a
+test or sandbox account, a safe test value (e.g. a dedicated test repo), or choose a read-only
+command for the initial verification. Warn the user before running write-mode test calls.
 
 If the call fails:
 - HTTP 401/403 → secret not set or wrong key name

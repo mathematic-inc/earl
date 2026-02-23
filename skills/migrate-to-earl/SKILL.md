@@ -134,9 +134,8 @@ earl call --yes --json <provider>.<command> --<param> <representative_value>
 **Important:** If a command has `annotations.mode = "write"`, the test call will create/modify/
 delete real data. If the template defines environments (check the `environments` block for
 valid names), use `--env <name>` to select a non-production environment for the test call.
-Otherwise, use read-only commands for
-verification where possible, or use a
-test/sandbox account. Warn the user before running any write-mode test calls.
+Otherwise, use read-only commands for verification where possible, or use a test/sandbox
+account. Warn the user before running any write-mode test calls.
 
 If any call fails, resolve it (via `troubleshoot-earl` if needed) before proceeding.
 
