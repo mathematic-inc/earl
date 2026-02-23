@@ -262,7 +262,10 @@ pub fn search_index_path() -> PathBuf {
 }
 
 pub fn catalog_cache_path() -> PathBuf {
-    cache_dir().join("catalog-1.bin")
+    cache_dir().join(format!(
+        "catalog-{}.bin",
+        crate::template::cache::CACHE_VERSION
+    ))
 }
 
 fn home_dir() -> PathBuf {

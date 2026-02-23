@@ -14,17 +14,23 @@ use super::validator::validate_template_file;
 pub fn load_catalog(cwd: &Path) -> Result<TemplateCatalog> {
     let global_dir = config::global_templates_dir();
     let local_dir = config::local_templates_dir(cwd);
+    load_catalog_with_cache(&global_dir, &local_dir, &config::catalog_cache_path())
+}
 
-    let cache_path = config::catalog_cache_path();
-    let fingerprint = super::cache::collect_fingerprint(&global_dir, &local_dir)?;
+fn load_catalog_with_cache(
+    global_dir: &Path,
+    local_dir: &Path,
+    cache_path: &Path,
+) -> Result<TemplateCatalog> {
+    let fingerprint = super::cache::collect_fingerprint(global_dir, local_dir)?;
 
-    if let Some(catalog) = super::cache::try_load_cache(&cache_path, &fingerprint) {
+    if let Some(catalog) = super::cache::try_load_cache(cache_path, &fingerprint) {
         return Ok(catalog);
     }
 
-    let catalog = load_catalog_from_dirs(&global_dir, &local_dir)?;
+    let catalog = load_catalog_from_dirs(global_dir, local_dir)?;
     // Best-effort: ignore write errors (cache is an optimization, not a requirement)
-    let _ = super::cache::save_cache(&cache_path, &fingerprint, &catalog);
+    let _ = super::cache::save_cache(cache_path, &fingerprint, &catalog);
     Ok(catalog)
 }
 
@@ -212,5 +218,33 @@ command "{command}" {{
         let e1 = c1.get("myprovider2.cmd").unwrap();
         let e2 = c2.get("myprovider2.cmd").unwrap();
         assert_eq!(e1.title, e2.title);
+    }
+
+    #[test]
+    fn load_catalog_writes_cache_on_miss_and_hits_on_second_call() {
+        let tmp = TempDir::new().unwrap();
+        let global = TempDir::new().unwrap();
+        let cache_dir = TempDir::new().unwrap();
+        let cache_path = cache_dir.path().join("catalog-test.bin");
+        write_bash_template(&tmp, "myprovider3", "cached_cmd");
+
+        let local = tmp.path().join("templates");
+
+        // First call: cache miss — parses HCL and writes cache.
+        assert!(!cache_path.exists());
+        let c1 = load_catalog_with_cache(global.path(), &local, &cache_path).unwrap();
+        assert!(c1.get("myprovider3.cached_cmd").is_some());
+        assert!(
+            cache_path.exists(),
+            "cache file should have been written after miss"
+        );
+
+        // Second call with unchanged files: cache hit — returns same catalog.
+        let c2 = load_catalog_with_cache(global.path(), &local, &cache_path).unwrap();
+        assert!(c2.get("myprovider3.cached_cmd").is_some());
+        assert_eq!(
+            c1.get("myprovider3.cached_cmd").unwrap().title,
+            c2.get("myprovider3.cached_cmd").unwrap().title
+        );
     }
 }

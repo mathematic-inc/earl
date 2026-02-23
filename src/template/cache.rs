@@ -10,9 +10,12 @@ use crate::template::catalog::TemplateCatalog;
 // Bump this whenever any type transitively included in TemplateCatalog changes its
 // serialized shape (field added, removed, or reordered). bincode 1.x is not
 // self-describing — it will silently deserialize stale data if the version is not bumped.
+// Also bump when adding or removing cfg-gated variants from OperationTemplate: bincode
+// serializes enum variants by index, so changing which features are compiled in shifts
+// indices and corrupts existing caches.
 pub const CACHE_VERSION: u32 = 1;
 
-/// Serialized catalog cache file stored at ~/.cache/earl/catalog-1.bin.
+/// Serialized catalog cache file stored at `~/.cache/earl/catalog-{CACHE_VERSION}.bin`.
 #[derive(Serialize, Deserialize)]
 pub struct CacheFile {
     pub version: u32,
@@ -24,6 +27,9 @@ pub struct CacheFile {
 /// Collects (absolute_path, mtime_unix_secs) for every .hcl file in both
 /// directories, sorted by path. This is a cheap readdir-only operation —
 /// file contents are not read.
+///
+/// Granularity is 1 second (limited by `SystemTime`). Files written within the
+/// same second as a cache write may not be detected as changed.
 pub fn collect_fingerprint(global_dir: &Path, local_dir: &Path) -> Result<Vec<(PathBuf, u64)>> {
     let mut entries: Vec<(PathBuf, u64)> = Vec::new();
     for dir in [global_dir, local_dir] {
@@ -72,7 +78,7 @@ pub fn save_cache(
         catalog: catalog.clone(),
     };
     let bytes = bincode::serialize(&file)?;
-    let tmp = cache_path.with_extension("tmp");
+    let tmp = cache_path.with_extension(format!("{}.tmp", std::process::id()));
     std::fs::write(&tmp, &bytes)?;
     std::fs::rename(&tmp, cache_path)?;
     Ok(())
