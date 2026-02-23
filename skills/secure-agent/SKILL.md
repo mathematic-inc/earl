@@ -161,6 +161,12 @@ hosts = ["api.stripe.com"]
 hosts = ["api.slack.com", "slack.com"]
 ```
 
+**Security note on environments:** If any template uses `allow_environment_protocol_switching
+= true` in its annotations, an environment override can silently switch protocols (e.g. from
+HTTP to bash). Review templates with this annotation carefully — a staging environment that
+switches to bash bypasses the HTTP egress rules above. Prefer `vars.*` for environment
+differences (e.g. different base URLs) over full protocol switching where possible.
+
 After editing, verify:
 
 ```bash

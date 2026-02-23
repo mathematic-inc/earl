@@ -156,6 +156,9 @@ Match the error to the table:
 | `earl call` hangs waiting for input | `--yes` flag in wrong position | Agent: reorder — `earl call --yes --json provider.command ...` |
 | `earl secrets set` hangs | macOS keychain dialog | Human: click "Always Allow" in system dialog |
 | OAuth flow required | Browser-based auth | Human: run `earl auth login <profile>`, complete browser flow |
+| `unknown environment` / `invalid environment name` | Bad `--env` value | Agent: check `environments` block in template for valid names |
+| `vars.*` resolves to empty string | No active environment | Agent: pass `--env <name>` or set `[environments] default` in config.toml |
+| `environment protocol switching not allowed` | Protocol mismatch in environment override | Agent: add `allow_environment_protocol_switching = true` to `annotations` |
 
 ---
 

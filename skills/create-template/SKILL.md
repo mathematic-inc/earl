@@ -122,6 +122,12 @@ Examples: `github`, `my_company_api`, `internal_db`.
 **If the file already exists:** Read it first. Add the new `command` block to the existing
 file rather than overwriting it.
 
+**Environments (optional):** If the user needs staging/production separation, add an
+`environments` block at the provider level. Environment variables are available as `vars.*`
+in all template expressions. See the [template schema docs](https://earl.dev/docs/template-schema#environments)
+for full syntax. Only add environments when the user explicitly needs them — most templates
+don't.
+
 **Template structure:**
 
 ```hcl
@@ -244,9 +250,10 @@ earl call --yes --json <provider>.<command> --<param> <test_value>
 ```
 
 **Important:** If `annotations.mode = "write"`, the test call will create/modify/delete real
-data. Use a test or sandbox account, a safe test value (e.g. a dedicated test repo), or choose
-a read-only command for the initial verification. Warn the user before running write-mode
-test calls.
+data. If the template defines a staging environment, use `--env staging` for the test call.
+Otherwise, use a test or sandbox account, a safe test value (e.g. a dedicated test repo), or
+choose a read-only command for the initial verification. Warn the user before running
+write-mode test calls.
 
 If the call fails:
 - HTTP 401/403 → secret not set or wrong key name
