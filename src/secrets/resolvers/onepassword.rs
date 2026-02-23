@@ -172,22 +172,15 @@ impl SecretResolver for OpResolver {
 }
 
 /// Resolve a vault name to its UUID via the Connect Server API.
-///
-/// If `name_or_id` looks like a UUID (contains only hex digits and hyphens with
-/// the right length), it is returned as-is.
 fn resolve_vault_id(
     client: &reqwest::Client,
     base: &str,
     token: &str,
     name_or_id: &str,
 ) -> Result<String> {
-    if looks_like_uuid(name_or_id) {
-        return Ok(name_or_id.to_string());
-    }
-
-    let url = format!("{base}/v1/vaults?filter=name eq \"{name_or_id}\"");
     let request = client
-        .get(&url)
+        .get(format!("{base}/v1/vaults"))
+        .query(&[("filter", format!("name eq \"{name_or_id}\""))])
         .header("Authorization", format!("Bearer {token}"))
         .header("Accept", "application/json")
         .build()
@@ -227,8 +220,6 @@ fn resolve_vault_id(
 }
 
 /// Resolve an item title to its UUID within a vault.
-///
-/// If `name_or_id` looks like a UUID, it is returned as-is.
 fn resolve_item_id(
     client: &reqwest::Client,
     base: &str,
@@ -236,15 +227,9 @@ fn resolve_item_id(
     vault_id: &str,
     name_or_id: &str,
 ) -> Result<String> {
-    if looks_like_uuid(name_or_id) {
-        return Ok(name_or_id.to_string());
-    }
-
-    let url = format!(
-        "{base}/v1/vaults/{vault_id}/items?filter=title eq \"{name_or_id}\""
-    );
     let request = client
-        .get(&url)
+        .get(format!("{base}/v1/vaults/{vault_id}/items"))
+        .query(&[("filter", format!("title eq \"{name_or_id}\""))])
         .header("Authorization", format!("Bearer {token}"))
         .header("Accept", "application/json")
         .build()
@@ -281,12 +266,6 @@ fn resolve_item_id(
         .as_str()
         .map(|s| s.to_string())
         .ok_or_else(|| anyhow!("1Password item response missing 'id' field"))
-}
-
-/// Quick heuristic to detect UUID-formatted strings (e.g. `26ydsakjlkxyz...`).
-/// 1Password UUIDs are 26-character alphanumeric strings.
-fn looks_like_uuid(s: &str) -> bool {
-    s.len() == 26 && s.chars().all(|c| c.is_ascii_alphanumeric())
 }
 
 #[cfg(test)]
