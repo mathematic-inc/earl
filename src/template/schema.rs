@@ -58,6 +58,7 @@ pub struct Annotations {
 #[derive(
     Debug, Clone, Default, Deserialize, Serialize, Archive, RkyvSerialize, RkyvDeserialize,
 )]
+#[serde(deny_unknown_fields)]
 pub struct ProviderEnvironments {
     #[serde(default)]
     pub default: Option<String>,

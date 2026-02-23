@@ -132,8 +132,15 @@ async fn run_call(
         let redactor = prepared.redactor.clone();
 
         let (rx, handle) = start_streaming_request(prepared);
-        let render_result =
-            render_streaming_output(rx, &result_template, &args, &redactor, json_mode).await;
+        let render_result = render_streaming_output(
+            rx,
+            &result_template,
+            &args,
+            &redactor,
+            json_mode,
+            active_env,
+        )
+        .await;
 
         if render_result.is_err() {
             // Abort the producer so it doesn't leak.

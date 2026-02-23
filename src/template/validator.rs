@@ -4,6 +4,7 @@ use std::path::{Component, Path};
 
 use anyhow::{Result, bail};
 
+use super::environments::validate_env_name;
 #[cfg(feature = "bash")]
 use super::schema::BashOperationTemplate;
 #[cfg(feature = "graphql")]
@@ -44,19 +45,31 @@ pub fn validate_template_file(file: &TemplateFile) -> Result<()> {
 
     if let Some(envs) = &file.environments {
         // environments.default must reference a defined environment
-        if let Some(default_name) = &envs.default
-            && !envs.environments.contains_key(default_name.as_str())
-        {
-            bail!(
-                "provider `{}` environments.default is `{default_name}` but that environment is not defined; \
-                 available: {}",
-                file.provider,
-                envs.environments
-                    .keys()
-                    .cloned()
-                    .collect::<Vec<_>>()
-                    .join(", ")
-            );
+        if let Some(default_name) = &envs.default {
+            validate_env_name(default_name).map_err(|e| {
+                anyhow::anyhow!("provider `{}` environments.default: {e}", file.provider)
+            })?;
+            if !envs.environments.contains_key(default_name.as_str()) {
+                bail!(
+                    "provider `{}` environments.default is `{default_name}` but that environment is not defined; \
+                     available: {}",
+                    file.provider,
+                    envs.environments
+                        .keys()
+                        .cloned()
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                );
+            }
+        }
+        // Validate format of all declared environment names
+        for env_key in envs.environments.keys() {
+            validate_env_name(env_key).map_err(|e| {
+                anyhow::anyhow!(
+                    "provider `{}` environments block contains invalid name `{env_key}`: {e}",
+                    file.provider
+                )
+            })?;
         }
         // All secrets referenced in vars values must be declared in environments.secrets
         let declared_secrets: std::collections::HashSet<&str> =
@@ -78,6 +91,12 @@ pub fn validate_template_file(file: &TemplateFile) -> Result<()> {
 
     for (name, cmd) in &file.commands {
         for (env_name, override_) in &cmd.environment_overrides {
+            // Environment override names must follow the same format rules as CLI --env values
+            validate_env_name(env_name).map_err(|e| {
+                anyhow::anyhow!(
+                    "command `{name}` has invalid environment override name `{env_name}`: {e}"
+                )
+            })?;
             // Per-command environment names must be defined in the provider environments block
             if !defined_env_names.is_empty() && !defined_env_names.contains(env_name) {
                 bail!(
@@ -102,6 +121,16 @@ pub fn validate_template_file(file: &TemplateFile) -> Result<()> {
                     cmd.operation.protocol(),
                     override_.operation.protocol()
                 );
+            }
+            // Validate the override operation itself
+            validate_operation(name, &override_.operation, &cmd.annotations.secrets)?;
+            // Validate override result if provided
+            if let Some(result) = &override_.result {
+                if result.output.trim().is_empty() {
+                    bail!(
+                        "command `{name}` environment override `{env_name}` has empty result.output"
+                    );
+                }
             }
         }
         validate_command(name, cmd)?;

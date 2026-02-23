@@ -12,12 +12,17 @@ use crate::protocol::extract::extract_result;
 ///
 /// Each [`StreamChunk`] is decoded, extracted, and printed independently,
 /// giving the user real-time output as data arrives from the server.
+///
+/// When `json_mode` is true and `active_env` is `Some`, the `"environment"`
+/// key is included in every emitted JSON line for parity with non-streaming
+/// JSON output.
 pub async fn render_streaming_output(
     mut rx: mpsc::Receiver<StreamChunk>,
     result_template: &ResultTemplate,
     args: &Map<String, Value>,
     redactor: &Redactor,
     json_mode: bool,
+    active_env: Option<&str>,
 ) -> Result<()> {
     use std::io::Write;
 
@@ -44,11 +49,14 @@ pub async fn render_streaming_output(
         let stdout = std::io::stdout();
         let mut out = stdout.lock();
         if json_mode {
-            let obj = Value::Object(Map::from_iter([
+            let mut map = Map::from_iter([
                 ("result".to_string(), extracted.clone()),
                 ("decoded".to_string(), decoded_body.to_json_value()),
-            ]));
-            let redacted = redactor.redact_json(&obj);
+            ]);
+            if let Some(env) = active_env {
+                map.insert("environment".to_string(), Value::String(env.to_string()));
+            }
+            let redacted = redactor.redact_json(&Value::Object(map));
             writeln!(out, "{}", serde_json::to_string(&redacted)?)?;
         } else {
             let output = render_human_output(result_template, args, &extracted)?;

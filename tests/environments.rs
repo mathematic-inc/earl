@@ -39,17 +39,16 @@ fn fixture_environment_vars_accessible() {
 }
 
 #[test]
-#[cfg(feature = "bash")]
+#[cfg(feature = "http")]
 fn select_uses_default_operation_when_no_env() {
     let file = load_fixture();
     let cmd = file.commands.get("override_in_staging").unwrap();
     let (op, _) = select_for_env(cmd, None);
+    // Default operation is HTTP GET
     assert!(matches!(
         op,
-        earl::template::schema::OperationTemplate::Bash(_)
+        earl::template::schema::OperationTemplate::Http(_)
     ));
-    // The default operation's script is "echo production"
-    assert!(op.bash_script().unwrap().contains("production"));
 }
 
 #[test]
@@ -67,13 +66,16 @@ fn select_uses_override_for_matching_env() {
 }
 
 #[test]
-#[cfg(feature = "bash")]
+#[cfg(feature = "http")]
 fn select_falls_back_to_default_for_unrecognized_env() {
     let file = load_fixture();
     let cmd = file.commands.get("override_in_staging").unwrap();
-    // "development" has no override — should fall back to default
+    // "development" has no override — should fall back to default (HTTP GET)
     let (op, _) = select_for_env(cmd, Some("development"));
-    assert!(op.bash_script().unwrap().contains("production"));
+    assert!(matches!(
+        op,
+        earl::template::schema::OperationTemplate::Http(_)
+    ));
 }
 
 #[test]
@@ -112,14 +114,13 @@ fn command_with_no_overrides_always_uses_default() {
     );
 }
 
-// ── Security: vars values must be tracked for redaction ──────────────────
+// ── ProviderEnvironments struct construction ──────────────────────────────
 
 #[test]
-fn vars_secret_values_tracked_for_redaction() {
-    // Directly test resolve_vars behavior via the builder module.
-    // The function is tested at the unit level in builder.rs,
-    // but we verify here that the integration contract is correct:
-    // any value that goes through resolve_vars ends up in secret_values.
+fn provider_environments_struct_constructed_correctly() {
+    // Verify ProviderEnvironments fields are accessible as expected.
+    // Actual redaction behaviour (that resolve_vars tracks values) is
+    // covered by the builder unit test `resolve_vars_resolves_and_tracks_values`.
     use earl::template::schema::ProviderEnvironments;
     use std::collections::BTreeMap;
 
@@ -132,9 +133,6 @@ fn vars_secret_values_tracked_for_redaction() {
         environments: BTreeMap::from([("staging".to_string(), staging_vars)]),
     };
 
-    // We can test this via the public module since resolve_vars is private.
-    // Instead we verify the fixture template's environments parse correctly
-    // and the fields exist (actual redaction test is a builder unit test).
     assert!(pe.environments.contains_key("staging"));
     assert_eq!(pe.environments["staging"]["token"], "super_secret_value");
 }

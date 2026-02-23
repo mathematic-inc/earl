@@ -36,18 +36,17 @@ command "echo_env" {
 
 command "override_in_staging" {
   title       = "Override"
-  summary     = "Uses a different script in staging"
-  description = "HTTP in production, bash in staging."
+  summary     = "Uses a bash script in staging instead of HTTP"
+  description = "HTTP GET in production, bash in staging — exercises the protocol-switching guard."
   annotations {
     mode                                 = "read"
     secrets                              = []
     allow_environment_protocol_switching = true
   }
   operation {
-    protocol = "bash"
-    bash {
-      script = "echo production"
-    }
+    protocol = "http"
+    method   = "GET"
+    url      = "{{ vars.base_url }}/ping"
   }
   environment "staging" {
     operation {

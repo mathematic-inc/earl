@@ -220,6 +220,10 @@ pub async fn run_server(
     };
 
     let policies = cfg.policy.clone();
+    // The MCP server resolves the active environment once at startup from the
+    // config default. There is intentionally no per-request override mechanism
+    // for environments in MCP mode; a separate server process is needed for
+    // multi-environment deployments.
     let active_env = cfg.environments.default.clone();
 
     let state = McpState {

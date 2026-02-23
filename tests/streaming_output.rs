@@ -34,7 +34,7 @@ async fn render_streaming_output_processes_json_chunks() {
     let args = Map::new();
     let redactor = Redactor::new(vec![]);
 
-    let result = render_streaming_output(rx, &result_template, &args, &redactor, true).await;
+    let result = render_streaming_output(rx, &result_template, &args, &redactor, true, None).await;
     assert!(result.is_ok(), "should process JSON chunks without error");
 }
 
@@ -66,7 +66,7 @@ async fn render_streaming_output_skips_malformed_json_chunks() {
     let args = Map::new();
     let redactor = Redactor::new(vec![]);
 
-    let result = render_streaming_output(rx, &result_template, &args, &redactor, true).await;
+    let result = render_streaming_output(rx, &result_template, &args, &redactor, true, None).await;
     assert!(result.is_ok(), "should skip bad chunks and continue");
 }
 
@@ -79,7 +79,7 @@ async fn render_streaming_output_handles_empty_channel() {
     let args = Map::new();
     let redactor = Redactor::new(vec![]);
 
-    let result = render_streaming_output(rx, &result_template, &args, &redactor, false).await;
+    let result = render_streaming_output(rx, &result_template, &args, &redactor, false, None).await;
     assert!(result.is_ok(), "empty channel should return Ok");
 }
 

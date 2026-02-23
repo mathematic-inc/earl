@@ -1128,3 +1128,150 @@ fn validates_all_example_templates() {
         "no .hcl files found in examples/ directory"
     );
 }
+
+// ── Environment name format validation ─────────────────────────────────
+
+#[test]
+#[cfg(feature = "bash")]
+fn accepts_valid_environment_names() {
+    use earl::template::parser::parse_template_hcl;
+    use earl::template::validator::validate_template_file;
+
+    let hcl = r#"version = 1
+provider = "test"
+
+environments {
+  production {
+    base_url = "https://api.example.com"
+  }
+  staging-eu {
+    base_url = "https://staging.example.com"
+  }
+}
+
+command "ping" {
+  title = "Ping"
+  summary = "Ping"
+  description = "Ping"
+  annotations {
+    mode = "read"
+    secrets = []
+  }
+  operation {
+    protocol = "bash"
+    bash {
+      script = "echo hi"
+    }
+  }
+  result {
+    output = "ok"
+  }
+}
+"#;
+    let file = parse_template_hcl(hcl, std::path::Path::new(".")).unwrap();
+    validate_template_file(&file).expect("alphanumeric-and-hyphen names are valid");
+}
+
+#[test]
+#[cfg(feature = "bash")]
+fn fails_when_env_override_name_has_invalid_characters() {
+    use earl::template::parser::parse_template_hcl;
+    use earl::template::validator::validate_template_file;
+
+    // HCL quoted labels allow arbitrary strings; "has.dot" is valid HCL but
+    // invalid per our env-name rules (dots not allowed).
+    let hcl = r#"version = 1
+provider = "test"
+
+environments {
+  production {
+    base_url = "https://api.example.com"
+  }
+}
+
+command "ping" {
+  title = "Ping"
+  summary = "Ping"
+  description = "Ping"
+  annotations {
+    mode = "read"
+    secrets = []
+  }
+  operation {
+    protocol = "bash"
+    bash {
+      script = "echo prod"
+    }
+  }
+  environment "has.dot" {
+    operation {
+      protocol = "bash"
+      bash {
+        script = "echo override"
+      }
+    }
+  }
+  result {
+    output = "ok"
+  }
+}
+"#;
+    let file = parse_template_hcl(hcl, std::path::Path::new(".")).unwrap();
+    let err = validate_template_file(&file).unwrap_err();
+    let msg = format!("{err}");
+    assert!(
+        msg.contains("invalid environment override name"),
+        "unexpected error: {msg}"
+    );
+}
+
+// ── Override operation validation ───────────────────────────────────────
+
+#[test]
+#[cfg(feature = "http")]
+fn fails_when_env_override_operation_has_empty_url() {
+    use earl::template::parser::parse_template_hcl;
+    use earl::template::validator::validate_template_file;
+
+    let hcl = r#"version = 1
+provider = "test"
+
+environments {
+  staging {
+    base_url = "https://staging.example.com"
+  }
+}
+
+command "ping" {
+  title = "Ping"
+  summary = "Ping"
+  description = "Ping"
+  annotations {
+    mode = "read"
+    secrets = []
+  }
+  operation {
+    protocol = "http"
+    method   = "GET"
+    url      = "https://api.example.com/ping"
+  }
+  environment "staging" {
+    operation {
+      protocol = "http"
+      method   = "GET"
+      url      = ""
+    }
+  }
+  result {
+    output = "ok"
+  }
+}
+"#;
+    let file = parse_template_hcl(hcl, std::path::Path::new(".")).unwrap();
+    let err = validate_template_file(&file).unwrap_err();
+    let msg = format!("{err}");
+    assert!(
+        msg.contains("empty operation.url"),
+        "unexpected error: {msg}"
+    );
+}

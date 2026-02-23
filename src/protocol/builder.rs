@@ -481,6 +481,11 @@ fn resolve_vars(
     for (key, template_str) in env_vars {
         let rendered = render_string_raw(template_str, &render_ctx)
             .with_context(|| format!("failed rendering vars.{key} for environment `{name}`"))?;
+        // Track every rendered value for redaction. Even plain-string vars (e.g.
+        // `base_url`) are redacted because they may contain secret-derived content
+        // and we can't cheaply distinguish them from pure constants at this stage.
+        // This means non-secret vars will also be redacted from output and error
+        // messages; that's the chosen tradeoff for defence-in-depth.
         secret_values.push(rendered.clone());
         resolved.insert(key.clone(), Value::String(rendered));
     }
