@@ -114,6 +114,10 @@ Check that the MCP config file exists and contains the `earl` entry:
 }
 ```
 
+Note: `["mcp", "stdio", "--mode", "discovery"]` is also valid — it is used when the template
+count is ≥ 30 (per `setup-earl` Phase 3). Do not remove the `--mode discovery` flag from a
+config that already has it; that would silently downgrade to full mode.
+
 **Claude Desktop:** `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows)
 
 **Cursor:** `.cursor/mcp.json` (project directory)

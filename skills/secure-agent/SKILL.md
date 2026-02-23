@@ -59,6 +59,12 @@ Note which providers are covered. Map each to the CLI tools to deny:
 **Do NOT deny `Bash` entirely.** Earl's bash protocol and legitimate shell operations still
 need it.
 
+**Note on `Bash(curl *)` and `Bash(wget *)`:** Denying these also blocks all non-API curl
+uses — downloading binaries, health probes (`curl http://localhost:8080/health`), fetching
+install scripts, etc. If the agent legitimately needs curl for non-API tasks, add a narrow
+`allowedTools` override for those specific patterns, or use `earl call` instead for all
+HTTP operations.
+
 ---
 
 ## Step 2: Generate and Present Denylist
