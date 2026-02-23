@@ -92,6 +92,16 @@ params = ["{{ args.limit }}"]   # correct
 params = [{{ args.limit }}]     # WRONG — invalid HCL
 ```
 
+### Environments (optional)
+
+If the user needs to target multiple backends (e.g., production vs staging) or swap credentials per stage, use named environments. See [references/environments.md](references/environments.md) for full syntax.
+
+Key points:
+- Define an `environments` block at the provider level with named variable sets
+- Access variables as `vars.<key>` in operations and results
+- Select at runtime with `earl call --env <name> provider.command`
+- If an environment override switches protocols, set `allow_environment_protocol_switching = true` in annotations
+
 ## Step 6: Validate
 
 After writing the file, run:
