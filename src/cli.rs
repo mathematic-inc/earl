@@ -46,6 +46,9 @@ pub struct CallArgs {
     /// Print structured JSON output instead of rendered text.
     #[arg(long)]
     pub json: bool,
+    /// Active environment (e.g. --env staging).
+    #[arg(long)]
+    pub env: Option<String>,
 }
 
 #[derive(Debug, Args)]

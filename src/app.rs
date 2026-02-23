@@ -39,7 +39,7 @@ pub async fn run(cli: Cli) -> Result<()> {
     match cli.command {
         Command::Call(args) => {
             let cfg = config::load_config()?;
-            run_call(args.command, args.args, args.yes, args.json, cfg).await
+            run_call(args.command, args.args, args.yes, args.json, args.env, cfg).await
         }
         Command::Templates(args) => {
             let cfg = config::load_config()?;
@@ -65,8 +65,11 @@ async fn run_call(
     raw_args: Vec<String>,
     auto_yes: bool,
     json_mode: bool,
+    env_flag: Option<String>,
     cfg: Config,
 ) -> Result<()> {
+    use crate::template::environments::{resolve_active_env, validate_env_name};
+
     let cwd = env::current_dir()?;
     let catalog = load_catalog(&cwd)?;
 
@@ -80,6 +83,18 @@ async fn run_call(
     if entry.mode == CommandMode::Write && !auto_yes {
         prompt_write_confirmation(&entry.key)?;
     }
+
+    if let Some(name) = &env_flag {
+        validate_env_name(name)?;
+    }
+    // Clone the config-level default so we don't hold a borrow into `cfg`
+    // when `OAuthManager::new` later takes ownership of it.
+    let config_env_default = cfg.environments.default.clone();
+    let active_env = resolve_active_env(
+        env_flag.as_deref(),
+        config_env_default.as_deref(),
+        entry.provider_environments.as_ref().and_then(|e| e.default.as_deref()),
+    );
 
     let secret_manager = SecretManager::new();
     let allow_rules = cfg.network.allow.clone();
@@ -95,7 +110,7 @@ async fn run_call(
         &allow_rules,
         &proxy_profiles,
         &sandbox_config,
-        None, // active_env — will be wired in Task 8
+        active_env,
     )
     .await?;
     if prepared.stream {
