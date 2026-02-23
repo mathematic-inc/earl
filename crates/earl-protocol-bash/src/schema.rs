@@ -34,6 +34,8 @@ pub struct BashSandboxTemplate {
     pub writable_paths: Option<Vec<String>>,
     pub max_time_ms: Option<u64>,
     pub max_output_bytes: Option<u64>,
+    pub max_memory_bytes: Option<u64>,
+    pub max_cpu_time_ms: Option<u64>,
 }
 
 #[cfg(test)]

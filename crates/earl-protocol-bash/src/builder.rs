@@ -71,6 +71,8 @@ pub fn build_bash_request(
             writable_paths,
             max_time_ms,
             max_output_bytes,
+            max_memory_bytes: None, // filled in next task
+            max_cpu_time_ms: None,  // filled in next task
         },
     })
 }

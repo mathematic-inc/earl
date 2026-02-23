@@ -14,6 +14,8 @@ pub struct ResolvedBashSandbox {
     pub writable_paths: Vec<String>,
     pub max_time_ms: Option<u64>,
     pub max_output_bytes: Option<usize>,
+    pub max_memory_bytes: Option<usize>,
+    pub max_cpu_time_ms: Option<u64>,
 }
 
 /// Prepared bash script data, ready for execution.
