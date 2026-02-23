@@ -856,6 +856,322 @@ command "fetch" {
     );
 }
 
+// ── Environment validation tests ─────────────────────────
+
+#[test]
+#[cfg(feature = "bash")]
+fn rejects_undefined_default_env() {
+    let dir = tempdir().unwrap();
+    let local_dir = dir.path().join("local");
+    let global_dir = dir.path().join("global");
+    std::fs::create_dir_all(&local_dir).unwrap();
+    std::fs::create_dir_all(&global_dir).unwrap();
+    std::fs::write(
+        local_dir.join("env_default.hcl"),
+        r#"version = 1
+provider = "test"
+
+environments {
+  default = "ghost"
+  production {
+    base_url = "https://api.example.com"
+  }
+}
+
+command "ping" {
+  title = "Ping"
+  summary = "Ping"
+  description = "Ping"
+  annotations {
+    mode = "read"
+    secrets = []
+  }
+  operation {
+    protocol = "bash"
+    bash {
+      script = "echo hi"
+    }
+  }
+  result {
+    output = "ok"
+  }
+}
+"#,
+    )
+    .unwrap();
+    let err = validate_all_from_dirs(&global_dir, &local_dir).unwrap_err();
+    let rendered = format!("{err:#}");
+    assert!(rendered.contains("ghost"), "error: {rendered}");
+}
+
+#[test]
+#[cfg(feature = "bash")]
+fn rejects_undeclared_secret_in_vars() {
+    let dir = tempdir().unwrap();
+    let local_dir = dir.path().join("local");
+    let global_dir = dir.path().join("global");
+    std::fs::create_dir_all(&local_dir).unwrap();
+    std::fs::create_dir_all(&global_dir).unwrap();
+    std::fs::write(
+        local_dir.join("env_secret.hcl"),
+        r#"version = 1
+provider = "test"
+
+environments {
+  secrets = []
+  production {
+    token = "{{ secrets.test.key }}"
+  }
+}
+
+command "ping" {
+  title = "Ping"
+  summary = "Ping"
+  description = "Ping"
+  annotations {
+    mode = "read"
+    secrets = []
+  }
+  operation {
+    protocol = "bash"
+    bash {
+      script = "echo hi"
+    }
+  }
+  result {
+    output = "ok"
+  }
+}
+"#,
+    )
+    .unwrap();
+    let err = validate_all_from_dirs(&global_dir, &local_dir).unwrap_err();
+    let rendered = format!("{err:#}");
+    assert!(rendered.contains("test.key"), "error: {rendered}");
+}
+
+#[test]
+#[cfg(feature = "bash")]
+fn rejects_command_override_for_undefined_env() {
+    let dir = tempdir().unwrap();
+    let local_dir = dir.path().join("local");
+    let global_dir = dir.path().join("global");
+    std::fs::create_dir_all(&local_dir).unwrap();
+    std::fs::create_dir_all(&global_dir).unwrap();
+    std::fs::write(
+        local_dir.join("env_orphan.hcl"),
+        r#"version = 1
+provider = "test"
+
+environments {
+  production {
+    base_url = "https://api.example.com"
+  }
+}
+
+command "ping" {
+  title = "Ping"
+  summary = "Ping"
+  description = "Ping"
+  annotations {
+    mode = "read"
+    secrets = []
+  }
+  operation {
+    protocol = "bash"
+    bash {
+      script = "echo hi"
+    }
+  }
+  environment "shadow" {
+    operation {
+      protocol = "bash"
+      bash {
+        script = "echo shadow"
+      }
+    }
+  }
+  result {
+    output = "ok"
+  }
+}
+"#,
+    )
+    .unwrap();
+    let err = validate_all_from_dirs(&global_dir, &local_dir).unwrap_err();
+    let rendered = format!("{err:#}");
+    assert!(rendered.contains("shadow"), "error: {rendered}");
+}
+
+#[test]
+#[cfg(feature = "bash")]
+fn accepts_same_protocol_override_without_annotation() {
+    let dir = tempdir().unwrap();
+    let local_dir = dir.path().join("local");
+    let global_dir = dir.path().join("global");
+    std::fs::create_dir_all(&local_dir).unwrap();
+    std::fs::create_dir_all(&global_dir).unwrap();
+    std::fs::write(
+        local_dir.join("env_protocol.hcl"),
+        r#"version = 1
+provider = "test"
+
+environments {
+  production {
+    base_url = "https://api.example.com"
+  }
+  staging {
+    base_url = "https://staging.example.com"
+  }
+}
+
+command "ping" {
+  title = "Ping"
+  summary = "Ping"
+  description = "Ping"
+  annotations {
+    mode = "read"
+    secrets = []
+  }
+  operation {
+    protocol = "bash"
+    bash {
+      script = "echo prod"
+    }
+  }
+  environment "staging" {
+    operation {
+      protocol = "bash"
+      bash {
+        script = "echo staging"
+      }
+    }
+  }
+  result {
+    output = "ok"
+  }
+}
+"#,
+    )
+    .unwrap();
+    // Same protocol (bash→bash) — annotation is not required
+    validate_all_from_dirs(&global_dir, &local_dir).expect("same protocol is fine");
+}
+
+#[test]
+#[cfg(all(feature = "bash", feature = "http"))]
+fn rejects_protocol_switch_without_annotation() {
+    let dir = tempdir().unwrap();
+    let local_dir = dir.path().join("local");
+    let global_dir = dir.path().join("global");
+    std::fs::create_dir_all(&local_dir).unwrap();
+    std::fs::create_dir_all(&global_dir).unwrap();
+    std::fs::write(
+        local_dir.join("env_proto_switch.hcl"),
+        r#"version = 1
+provider = "test"
+
+environments {
+  production {
+    base_url = "https://api.example.com"
+  }
+  staging {
+    base_url = "https://staging.example.com"
+  }
+}
+
+command "ping" {
+  title = "Ping"
+  summary = "Ping"
+  description = "Ping"
+  annotations {
+    mode = "read"
+    secrets = []
+  }
+  operation {
+    protocol = "http"
+    method   = "GET"
+    url      = "https://api.example.com/ping"
+  }
+  environment "staging" {
+    operation {
+      protocol = "bash"
+      bash {
+        script = "echo staging"
+      }
+    }
+  }
+  result {
+    output = "ok"
+  }
+}
+"#,
+    )
+    .unwrap();
+    // http→bash protocol switch without annotation must be rejected
+    let err = validate_all_from_dirs(&global_dir, &local_dir).unwrap_err();
+    let rendered = format!("{err:#}");
+    assert!(
+        rendered.contains("switches protocol"),
+        "expected protocol switch error, got: {rendered}"
+    );
+}
+
+#[test]
+#[cfg(all(feature = "bash", feature = "http"))]
+fn allows_protocol_switch_with_annotation() {
+    let dir = tempdir().unwrap();
+    let local_dir = dir.path().join("local");
+    let global_dir = dir.path().join("global");
+    std::fs::create_dir_all(&local_dir).unwrap();
+    std::fs::create_dir_all(&global_dir).unwrap();
+    std::fs::write(
+        local_dir.join("env_proto_ok.hcl"),
+        r#"version = 1
+provider = "test"
+
+environments {
+  production {
+    base_url = "https://api.example.com"
+  }
+  staging {
+    base_url = "https://staging.example.com"
+  }
+}
+
+command "ping" {
+  title = "Ping"
+  summary = "Ping"
+  description = "Ping"
+  annotations {
+    mode = "read"
+    secrets = []
+    allow_environment_protocol_switching = true
+  }
+  operation {
+    protocol = "http"
+    method   = "GET"
+    url      = "https://api.example.com/ping"
+  }
+  environment "staging" {
+    operation {
+      protocol = "bash"
+      bash {
+        script = "echo staging"
+      }
+    }
+  }
+  result {
+    output = "ok"
+  }
+}
+"#,
+    )
+    .unwrap();
+    // http→bash with annotation must pass
+    validate_all_from_dirs(&global_dir, &local_dir).expect("annotation allows switching");
+}
+
 #[test]
 #[cfg(feature = "http")]
 fn validates_all_example_templates() {
@@ -869,5 +1185,152 @@ fn validates_all_example_templates() {
     assert!(
         !files.is_empty(),
         "no .hcl files found in examples/ directory"
+    );
+}
+
+// ── Environment name format validation ─────────────────────────────────
+
+#[test]
+#[cfg(feature = "bash")]
+fn accepts_valid_environment_names() {
+    use earl::template::parser::parse_template_hcl;
+    use earl::template::validator::validate_template_file;
+
+    let hcl = r#"version = 1
+provider = "test"
+
+environments {
+  production {
+    base_url = "https://api.example.com"
+  }
+  staging-eu {
+    base_url = "https://staging.example.com"
+  }
+}
+
+command "ping" {
+  title = "Ping"
+  summary = "Ping"
+  description = "Ping"
+  annotations {
+    mode = "read"
+    secrets = []
+  }
+  operation {
+    protocol = "bash"
+    bash {
+      script = "echo hi"
+    }
+  }
+  result {
+    output = "ok"
+  }
+}
+"#;
+    let file = parse_template_hcl(hcl, std::path::Path::new(".")).unwrap();
+    validate_template_file(&file).expect("alphanumeric-and-hyphen names are valid");
+}
+
+#[test]
+#[cfg(feature = "bash")]
+fn fails_when_env_override_name_has_invalid_characters() {
+    use earl::template::parser::parse_template_hcl;
+    use earl::template::validator::validate_template_file;
+
+    // HCL quoted labels allow arbitrary strings; "has.dot" is valid HCL but
+    // invalid per our env-name rules (dots not allowed).
+    let hcl = r#"version = 1
+provider = "test"
+
+environments {
+  production {
+    base_url = "https://api.example.com"
+  }
+}
+
+command "ping" {
+  title = "Ping"
+  summary = "Ping"
+  description = "Ping"
+  annotations {
+    mode = "read"
+    secrets = []
+  }
+  operation {
+    protocol = "bash"
+    bash {
+      script = "echo prod"
+    }
+  }
+  environment "has.dot" {
+    operation {
+      protocol = "bash"
+      bash {
+        script = "echo override"
+      }
+    }
+  }
+  result {
+    output = "ok"
+  }
+}
+"#;
+    let file = parse_template_hcl(hcl, std::path::Path::new(".")).unwrap();
+    let err = validate_template_file(&file).unwrap_err();
+    let msg = format!("{err}");
+    assert!(
+        msg.contains("invalid environment override name"),
+        "unexpected error: {msg}"
+    );
+}
+
+// ── Override operation validation ───────────────────────────────────────
+
+#[test]
+#[cfg(feature = "http")]
+fn fails_when_env_override_operation_has_empty_url() {
+    use earl::template::parser::parse_template_hcl;
+    use earl::template::validator::validate_template_file;
+
+    let hcl = r#"version = 1
+provider = "test"
+
+environments {
+  staging {
+    base_url = "https://staging.example.com"
+  }
+}
+
+command "ping" {
+  title = "Ping"
+  summary = "Ping"
+  description = "Ping"
+  annotations {
+    mode = "read"
+    secrets = []
+  }
+  operation {
+    protocol = "http"
+    method   = "GET"
+    url      = "https://api.example.com/ping"
+  }
+  environment "staging" {
+    operation {
+      protocol = "http"
+      method   = "GET"
+      url      = ""
+    }
+  }
+  result {
+    output = "ok"
+  }
+}
+"#;
+    let file = parse_template_hcl(hcl, std::path::Path::new(".")).unwrap();
+    let err = validate_template_file(&file).unwrap_err();
+    let msg = format!("{err}");
+    assert!(
+        msg.contains("empty operation.url"),
+        "unexpected error: {msg}"
     );
 }

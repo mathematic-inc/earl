@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 use std::future::Future;
 
 #[allow(unused_imports)]
-use anyhow::{Result, bail};
+use anyhow::{Context, Result, bail};
 use base64::Engine;
 use serde_json::{Map, Value};
 
@@ -11,10 +11,11 @@ use crate::config::{ProxyProfile, SandboxConfig};
 use crate::secrets::SecretManager;
 use crate::secrets::store::require_secret;
 use crate::template::catalog::TemplateCatalogEntry;
+use crate::template::environments::select_for_env;
 use crate::template::render::{render_json_value, render_string_raw};
 #[allow(unused_imports)]
 use crate::template::schema::{
-    AllowRule, ApiKeyLocation, AuthTemplate, CommandMode, OperationTemplate,
+    AllowRule, ApiKeyLocation, AuthTemplate, CommandMode, OperationTemplate, ProviderEnvironments,
 };
 use earl_core::Redactor;
 
@@ -79,6 +80,7 @@ pub use earl_protocol_sql::PreparedSqlQuery;
 
 // ── Builder entry-points ─────────────────────────────────────
 
+#[allow(clippy::too_many_arguments)]
 pub async fn build_prepared_request(
     entry: &TemplateCatalogEntry,
     args: Map<String, Value>,
@@ -87,6 +89,7 @@ pub async fn build_prepared_request(
     allow_rules: &[AllowRule],
     proxy_profiles: &BTreeMap<String, ProxyProfile>,
     sandbox_config: &SandboxConfig,
+    active_env: Option<&str>,
 ) -> Result<PreparedRequest> {
     build_prepared_request_with_token_provider(
         entry,
@@ -96,10 +99,12 @@ pub async fn build_prepared_request(
         allow_rules,
         proxy_profiles,
         sandbox_config,
+        active_env,
     )
     .await
 }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn build_prepared_request_with_token_provider<F, Fut>(
     entry: &TemplateCatalogEntry,
     args: Map<String, Value>,
@@ -108,6 +113,7 @@ pub async fn build_prepared_request_with_token_provider<F, Fut>(
     allow_rules: &[AllowRule],
     proxy_profiles: &BTreeMap<String, ProxyProfile>,
     sandbox_config: &SandboxConfig,
+    active_env: Option<&str>,
 ) -> Result<PreparedRequest>
 where
     F: FnMut(String) -> Fut,
@@ -126,16 +132,41 @@ where
         secret_values.push(secret);
     }
 
+    // Load environment-level secrets declared in environments.secrets
+    // (so they're available in the secrets context for vars rendering).
+    if let Some(envs) = &entry.provider_environments {
+        for secret_key in &envs.secrets {
+            if !entry.template.annotations.secrets.contains(secret_key) {
+                let secret = require_secret(secret_manager.store(), secret_key)?;
+                insert_dotted_key(
+                    &mut secrets_context,
+                    secret_key,
+                    Value::String(secret.clone()),
+                );
+                secret_values.push(secret);
+            }
+        }
+    }
+
+    // Resolve vars for the active environment.
+    let vars_context = resolve_vars(
+        entry.provider_environments.as_ref(),
+        active_env,
+        &Value::Object(secrets_context.clone()),
+        &mut secret_values,
+    )?;
+
     let context = Value::Object(Map::from_iter([
         ("args".to_string(), Value::Object(args.clone())),
         (
             "secrets".to_string(),
             Value::Object(secrets_context.clone()),
         ),
+        ("vars".to_string(), Value::Object(vars_context)),
     ]));
 
     let renderer = JinjaRenderer;
-    let operation = &entry.template.operation;
+    let (operation, result_template) = select_for_env(&entry.template, active_env);
     let transport = resolve_transport(operation.transport(), proxy_profiles)?;
 
     #[allow(unreachable_patterns)]
@@ -166,10 +197,10 @@ where
             Ok(PreparedRequest {
                 key: entry.key.clone(),
                 mode: entry.mode,
-                stream: entry.template.operation.is_streaming(),
+                stream: operation.is_streaming(),
                 allow_rules: allow_rules.to_vec(),
                 transport,
-                result_template: entry.template.result.clone(),
+                result_template: result_template.clone(),
                 args,
                 redactor: Redactor::new(secret_values),
                 protocol_data: PreparedProtocolData::Http(data),
@@ -201,10 +232,10 @@ where
             Ok(PreparedRequest {
                 key: entry.key.clone(),
                 mode: entry.mode,
-                stream: entry.template.operation.is_streaming(),
+                stream: operation.is_streaming(),
                 allow_rules: allow_rules.to_vec(),
                 transport,
-                result_template: entry.template.result.clone(),
+                result_template: result_template.clone(),
                 args,
                 redactor: Redactor::new(secret_values),
                 protocol_data: PreparedProtocolData::Graphql(data),
@@ -249,10 +280,10 @@ where
             Ok(PreparedRequest {
                 key: entry.key.clone(),
                 mode: entry.mode,
-                stream: entry.template.operation.is_streaming(),
+                stream: operation.is_streaming(),
                 allow_rules: allow_rules.to_vec(),
                 transport,
-                result_template: entry.template.result.clone(),
+                result_template: result_template.clone(),
                 args,
                 redactor: Redactor::new(secret_values),
                 protocol_data: PreparedProtocolData::Grpc(data),
@@ -278,10 +309,10 @@ where
             Ok(PreparedRequest {
                 key: entry.key.clone(),
                 mode: entry.mode,
-                stream: entry.template.operation.is_streaming(),
+                stream: operation.is_streaming(),
                 allow_rules: Vec::new(),
                 transport,
-                result_template: entry.template.result.clone(),
+                result_template: result_template.clone(),
                 args,
                 redactor: Redactor::new(secret_values),
                 protocol_data: PreparedProtocolData::Bash(data),
@@ -326,10 +357,10 @@ where
             Ok(PreparedRequest {
                 key: entry.key.clone(),
                 mode: entry.mode,
-                stream: entry.template.operation.is_streaming(),
+                stream: operation.is_streaming(),
                 allow_rules: Vec::new(),
                 transport,
-                result_template: entry.template.result.clone(),
+                result_template: result_template.clone(),
                 args,
                 redactor: Redactor::new(secret_values),
                 protocol_data: PreparedProtocolData::Sql(data),
@@ -408,6 +439,59 @@ struct AuthOutputs<'a> {
 
 // ── Helpers ──────────────────────────────────────────────────
 
+/// Resolves the active environment's variable set.
+///
+/// Each variable value is rendered as a Jinja template with only `secrets`
+/// available in the render context — `args` are not available here.
+/// Every resolved value is added to `secret_values` for redaction (since
+/// values may be derived from secrets).
+///
+/// Returns an empty map if there is no active environment or no environments
+/// block is configured.
+fn resolve_vars(
+    provider_envs: Option<&ProviderEnvironments>,
+    env_name: Option<&str>,
+    secrets_context: &Value,
+    secret_values: &mut Vec<String>,
+) -> Result<Map<String, Value>> {
+    let Some(envs) = provider_envs else {
+        return Ok(Map::new());
+    };
+    let Some(name) = env_name else {
+        return Ok(Map::new());
+    };
+    let env_vars = match envs.environments.get(name) {
+        Some(v) => v,
+        None => bail!(
+            "environment `{name}` is not defined; available: {}",
+            envs.environments
+                .keys()
+                .cloned()
+                .collect::<Vec<_>>()
+                .join(", ")
+        ),
+    };
+
+    let render_ctx = Value::Object(Map::from_iter([(
+        "secrets".to_string(),
+        secrets_context.clone(),
+    )]));
+
+    let mut resolved = Map::new();
+    for (key, template_str) in env_vars {
+        let rendered = render_string_raw(template_str, &render_ctx)
+            .with_context(|| format!("failed rendering vars.{key} for environment `{name}`"))?;
+        // Track every rendered value for redaction. Even plain-string vars (e.g.
+        // `base_url`) are redacted because they may contain secret-derived content
+        // and we can't cheaply distinguish them from pure constants at this stage.
+        // This means non-secret vars will also be redacted from output and error
+        // messages; that's the chosen tradeoff for defence-in-depth.
+        secret_values.push(rendered.clone());
+        resolved.insert(key.clone(), Value::String(rendered));
+    }
+    Ok(resolved)
+}
+
 fn insert_dotted_key(root: &mut Map<String, Value>, dotted_key: &str, value: Value) {
     let parts: Vec<&str> = dotted_key.split('.').filter(|p| !p.is_empty()).collect();
     if parts.is_empty() {
@@ -430,5 +514,78 @@ fn insert_dotted_key(root: &mut Map<String, Value>, dotted_key: &str, value: Val
         }
 
         current = child.as_object_mut().expect("object ensured above");
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::template::schema::ProviderEnvironments;
+    use std::collections::BTreeMap;
+
+    #[test]
+    fn resolve_vars_returns_empty_when_no_envs() {
+        let mut secret_values = vec![];
+        let secrets = Value::Object(Map::new());
+        let result = resolve_vars(None, None, &secrets, &mut secret_values).unwrap();
+        assert!(result.is_empty());
+        assert!(secret_values.is_empty());
+    }
+
+    #[test]
+    fn resolve_vars_returns_empty_when_no_active_env() {
+        let mut staging_vars = BTreeMap::new();
+        staging_vars.insert(
+            "base_url".to_string(),
+            "https://staging.example.com".to_string(),
+        );
+        let pe = ProviderEnvironments {
+            default: None,
+            secrets: vec![],
+            environments: BTreeMap::from([("staging".to_string(), staging_vars)]),
+        };
+        let mut secret_values = vec![];
+        let secrets = Value::Object(Map::new());
+        let result = resolve_vars(Some(&pe), None, &secrets, &mut secret_values).unwrap();
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn resolve_vars_resolves_and_tracks_values() {
+        let mut staging_vars = BTreeMap::new();
+        staging_vars.insert("label".to_string(), "staging-label".to_string());
+        let pe = ProviderEnvironments {
+            default: None,
+            secrets: vec![],
+            environments: BTreeMap::from([("staging".to_string(), staging_vars)]),
+        };
+        let mut secret_values = vec![];
+        let secrets = Value::Object(Map::new());
+        let result =
+            resolve_vars(Some(&pe), Some("staging"), &secrets, &mut secret_values).unwrap();
+        assert_eq!(result["label"], Value::String("staging-label".to_string()));
+        // Every resolved value must be tracked for redaction
+        assert!(secret_values.contains(&"staging-label".to_string()));
+    }
+
+    #[test]
+    fn resolve_vars_errors_for_unknown_env() {
+        let pe = ProviderEnvironments {
+            default: None,
+            secrets: vec![],
+            environments: BTreeMap::from([("staging".to_string(), BTreeMap::new())]),
+        };
+        let mut secret_values = vec![];
+        let secrets = Value::Object(Map::new());
+        let err = resolve_vars(Some(&pe), Some("ghost"), &secrets, &mut secret_values).unwrap_err();
+        let msg = err.to_string();
+        assert!(
+            msg.contains("ghost"),
+            "error should mention the env name: {msg}"
+        );
+        assert!(
+            msg.contains("staging"),
+            "error should list available envs: {msg}"
+        );
     }
 }

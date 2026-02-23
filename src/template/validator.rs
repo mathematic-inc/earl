@@ -4,6 +4,7 @@ use std::path::{Component, Path};
 
 use anyhow::{Result, bail};
 
+use super::environments::validate_env_name;
 #[cfg(feature = "bash")]
 use super::schema::BashOperationTemplate;
 #[cfg(feature = "graphql")]
@@ -35,11 +36,135 @@ pub fn validate_template_file(file: &TemplateFile) -> Result<()> {
         bail!("provider {} defines no commands", file.provider);
     }
 
+    // Build set of defined environment names for cross-reference checks
+    let defined_env_names: std::collections::HashSet<String> = file
+        .environments
+        .as_ref()
+        .map(|e| e.environments.keys().cloned().collect())
+        .unwrap_or_default();
+
+    if let Some(envs) = &file.environments {
+        // environments.default must reference a defined environment
+        if let Some(default_name) = &envs.default {
+            validate_env_name(default_name).map_err(|e| {
+                anyhow::anyhow!("provider `{}` environments.default: {e}", file.provider)
+            })?;
+            if !envs.environments.contains_key(default_name.as_str()) {
+                bail!(
+                    "provider `{}` environments.default is `{default_name}` but that environment is not defined; \
+                     available: {}",
+                    file.provider,
+                    envs.environments
+                        .keys()
+                        .cloned()
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                );
+            }
+        }
+        // Validate format of all declared environment names
+        for env_key in envs.environments.keys() {
+            validate_env_name(env_key).map_err(|e| {
+                anyhow::anyhow!(
+                    "provider `{}` environments block contains invalid name `{env_key}`: {e}",
+                    file.provider
+                )
+            })?;
+        }
+        // All secrets referenced in vars values must be declared in environments.secrets
+        let declared_secrets: std::collections::HashSet<&str> =
+            envs.secrets.iter().map(String::as_str).collect();
+        for (env_name, vars) in &envs.environments {
+            for (var_name, value) in vars {
+                for secret_ref in extract_secret_refs(value) {
+                    if !declared_secrets.contains(secret_ref) {
+                        bail!(
+                            "provider `{}` environments.{env_name}.{var_name} references secret \
+                             `{secret_ref}` which is not declared in environments.secrets",
+                            file.provider
+                        );
+                    }
+                }
+            }
+        }
+    }
+
     for (name, cmd) in &file.commands {
+        for (env_name, override_) in &cmd.environment_overrides {
+            // Environment override names must follow the same format rules as CLI --env values
+            validate_env_name(env_name).map_err(|e| {
+                anyhow::anyhow!(
+                    "command `{name}` has invalid environment override name `{env_name}`: {e}"
+                )
+            })?;
+            // Per-command environment names must be defined in the provider environments block
+            // when one exists. When there is no provider-level environments block the cross-
+            // reference check is skipped: per-command overrides are valid without a global
+            // block (they activate via `--env <name>` and `vars.*` will be empty). Template
+            // authors relying only on operation overrides without vars injection may omit the
+            // global block intentionally.
+            if !defined_env_names.is_empty() && !defined_env_names.contains(env_name) {
+                bail!(
+                    "command `{name}` has environment override for `{env_name}` \
+                     which is not defined in the provider environments block; \
+                     defined: {}",
+                    defined_env_names
+                        .iter()
+                        .cloned()
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                );
+            }
+            // Protocol switching requires annotation
+            if override_.operation.protocol() != cmd.operation.protocol()
+                && !cmd.annotations.allow_environment_protocol_switching
+            {
+                bail!(
+                    "command `{name}` environment `{env_name}` switches protocol \
+                     from {:?} to {:?}; add `annotations {{ allow_environment_protocol_switching = true }}` \
+                     to opt in",
+                    cmd.operation.protocol(),
+                    override_.operation.protocol()
+                );
+            }
+            // Validate the override operation itself
+            validate_operation(name, &override_.operation, &cmd.annotations.secrets)?;
+            // Validate override result if provided
+            if let Some(result) = &override_.result
+                && result.output.trim().is_empty()
+            {
+                bail!("command `{name}` environment override `{env_name}` has empty result.output");
+            }
+        }
         validate_command(name, cmd)?;
     }
 
     Ok(())
+}
+
+/// Extracts `secrets.X.Y` references from Jinja `{{ secrets.X.Y }}` expressions.
+fn extract_secret_refs(value: &str) -> Vec<&str> {
+    let mut refs = Vec::new();
+    let mut remaining = value;
+    while let Some(start) = remaining.find("{{") {
+        remaining = &remaining[start + 2..];
+        let end = match remaining.find("}}") {
+            Some(e) => e,
+            None => break,
+        };
+        let expr = remaining[..end].trim();
+        if let Some(key) = expr.strip_prefix("secrets.") {
+            // Take everything up to the first whitespace or pipe
+            let key = key
+                .split(|c: char| c.is_whitespace() || c == '|')
+                .next()
+                .unwrap_or(key);
+            let key = key.trim_end_matches('.');
+            refs.push(key);
+        }
+        remaining = &remaining[end + 2..];
+    }
+    refs
 }
 
 fn validate_command(command_name: &str, cmd: &CommandTemplate) -> Result<()> {
