@@ -31,7 +31,7 @@ Use this during the `migrate-to-earl` scan phase to identify which providers to 
 | `curl.*api\.airtable\.com` | `airtable` | `earl templates import https://raw.githubusercontent.com/brwse/earl/main/examples/airtable.hcl` |
 | `curl.*api\.resend\.com` | `resend` | `earl templates import https://raw.githubusercontent.com/brwse/earl/main/examples/resend.hcl` |
 | `curl.*auth0\.com` | `auth0` | `earl templates import https://raw.githubusercontent.com/brwse/earl/main/examples/auth0.hcl` |
-| `curl.*supabase\.co` | `supabase` | `earl templates import https://raw.githubusercontent.com/brwse/earl/main/examples/supabase.hcl` |
+| `curl.*supabase\.(co\|com)` | `supabase` | `earl templates import https://raw.githubusercontent.com/brwse/earl/main/examples/supabase.hcl` |
 
 ## No Pre-built Template
 
