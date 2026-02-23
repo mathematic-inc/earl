@@ -9,6 +9,8 @@ use earl_core::schema::TransportTemplate;
 #[serde(deny_unknown_fields)]
 pub struct BashOperationTemplate {
     pub bash: BashScriptTemplate,
+    #[serde(default)]
+    pub stream: bool,
     pub transport: Option<TransportTemplate>,
 }
 
@@ -29,4 +31,23 @@ pub struct BashSandboxTemplate {
     pub writable_paths: Option<Vec<String>>,
     pub max_time_ms: Option<u64>,
     pub max_output_bytes: Option<u64>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn bash_operation_defaults_stream_false() {
+        let json = r#"{"bash":{"script":"echo hello"}}"#;
+        let op: BashOperationTemplate = serde_json::from_str(json).unwrap();
+        assert!(!op.stream);
+    }
+
+    #[test]
+    fn bash_operation_accepts_stream_true() {
+        let json = r#"{"stream":true,"bash":{"script":"echo hello"}}"#;
+        let op: BashOperationTemplate = serde_json::from_str(json).unwrap();
+        assert!(op.stream);
+    }
 }
