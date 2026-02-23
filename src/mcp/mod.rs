@@ -71,6 +71,7 @@ struct McpState {
     auto_yes: bool,
     jwt: Option<auth::JwtState>,
     policies: Vec<PolicyRule>,
+    active_env: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -219,6 +220,7 @@ pub async fn run_server(
     };
 
     let policies = cfg.policy.clone();
+    let active_env = cfg.environments.default.clone();
 
     let state = McpState {
         catalog: Arc::new(catalog),
@@ -227,6 +229,7 @@ pub async fn run_server(
         auto_yes: options.auto_yes,
         jwt,
         policies,
+        active_env,
     };
 
     match options.transport {
@@ -331,7 +334,7 @@ async fn handle_request(
     }
 
     let result = match request.method.as_str() {
-        "initialize" => handle_initialize(request.params, state.mode),
+        "initialize" => handle_initialize(request.params, state.mode, state.active_env.as_deref()),
         "notifications/initialized" => return None,
         "ping" => Ok(json!({})),
         "tools/list" => Ok(json!({
@@ -353,12 +356,14 @@ async fn handle_request(
 fn handle_initialize(
     params: Option<Value>,
     mode: McpMode,
+    active_env: Option<&str>,
 ) -> std::result::Result<Value, RpcFailure> {
     let params = decode_params::<InitializeParams>(params)?;
     let protocol_version = params
         .protocol_version
         .unwrap_or_else(|| DEFAULT_PROTOCOL_VERSION.to_string());
 
+    let env_str = active_env.unwrap_or("(none)");
     let mut response = json!({
         "protocolVersion": protocol_version,
         "capabilities": {
@@ -369,6 +374,7 @@ fn handle_initialize(
         "serverInfo": {
             "name": "earl",
             "version": env!("CARGO_PKG_VERSION"),
+            "environment": env_str,
         }
     });
 
@@ -653,7 +659,7 @@ async fn execute_template_tool(
         &allow_rules,
         &proxy_profiles,
         &sandbox_config,
-        None, // active_env — will be wired in Task 11
+        state.active_env.as_deref(),
     )
     .await?;
     let execution = execute_prepared_request(&prepared)
@@ -1046,6 +1052,7 @@ mod tests {
             auto_yes,
             jwt: None,
             policies: Vec::new(),
+            active_env: None,
         }
     }
 
