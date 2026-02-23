@@ -58,6 +58,7 @@ fn base_entry(
                 cookies: Some(BTreeMap::new()),
                 auth,
                 body,
+                stream: false,
                 transport: None,
             }),
             result: ResultTemplate {
@@ -493,6 +494,7 @@ async fn builds_graphql_payload_and_headers() {
             operation_name: Some("User".to_string()),
             variables: Some(json!({ "id": "{{ args.user_id }}" })),
         },
+        stream: false,
         transport: None,
     });
 
@@ -576,6 +578,7 @@ async fn builds_grpc_payload_and_headers() {
             })),
             descriptor_set_file: None,
         },
+        stream: false,
         transport: None,
     });
 

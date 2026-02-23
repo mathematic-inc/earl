@@ -219,7 +219,8 @@ async fn read_response_body_limited(
     Ok(out)
 }
 
-use earl_core::ProtocolExecutor;
+use earl_core::{ProtocolExecutor, StreamChunk, StreamMeta, StreamingProtocolExecutor};
+use tokio::sync::mpsc;
 
 /// HTTP/GraphQL protocol executor.
 ///
@@ -241,6 +242,227 @@ where
         ctx: &ExecutionContext,
     ) -> Result<RawExecutionResult> {
         execute_http_once_with_host_validator(data, ctx, &mut self.host_validator).await
+    }
+}
+
+/// Streaming HTTP executor — sends response chunks as they arrive.
+///
+/// Reuses the same connection setup (redirect following, SSRF validation,
+/// client building) as [`HttpExecutor`] but streams chunks through an
+/// `mpsc::Sender` instead of buffering the entire response body.
+pub struct HttpStreamExecutor<F> {
+    pub host_validator: F,
+}
+
+impl<F, Fut> StreamingProtocolExecutor for HttpStreamExecutor<F>
+where
+    F: FnMut(Url) -> Fut + Send,
+    Fut: Future<Output = Result<Vec<IpAddr>>> + Send,
+{
+    type PreparedData = PreparedHttpData;
+
+    async fn execute_stream(
+        &mut self,
+        data: &PreparedHttpData,
+        ctx: &ExecutionContext,
+        sender: mpsc::Sender<StreamChunk>,
+    ) -> anyhow::Result<StreamMeta> {
+        let mut method = data.method.clone();
+        let mut body = data.body.clone();
+        let mut url = data.url.clone();
+
+        for hop in 0..=ctx.transport.max_redirect_hops {
+            ensure_url_allowed(&url, &ctx.allow_rules)?;
+            let resolved_ips = (self.host_validator)(url.clone()).await?;
+            let client = build_http_client(ctx, &url, &resolved_ips)?;
+
+            let request = build_request(
+                &client,
+                &method,
+                &url,
+                &data.headers,
+                &data.cookies,
+                &data.query,
+                &body,
+            )?;
+            let response = request
+                .send()
+                .await
+                .with_context(|| format!("request execution failed for `{}`", url.as_str()))?;
+
+            if response.status().is_redirection() && ctx.transport.follow_redirects {
+                if hop >= ctx.transport.max_redirect_hops {
+                    bail!(
+                        "maximum redirect hops reached ({})",
+                        ctx.transport.max_redirect_hops
+                    );
+                }
+
+                let location = response
+                    .headers()
+                    .get(LOCATION)
+                    .ok_or_else(|| anyhow::anyhow!("redirect response missing Location header"))?
+                    .to_str()
+                    .context("redirect Location header is not valid UTF-8")?
+                    .to_string();
+
+                let new_url = url
+                    .join(&location)
+                    .with_context(|| format!("invalid redirect Location `{location}`"))?;
+
+                let status = response.status().as_u16();
+                if status == 303
+                    || ((status == 301 || status == 302) && method == reqwest::Method::POST)
+                {
+                    method = reqwest::Method::GET;
+                    body = PreparedBody::Empty;
+                }
+                url = new_url;
+                continue;
+            }
+
+            let status = response.status().as_u16();
+            let content_type = response
+                .headers()
+                .get(CONTENT_TYPE)
+                .and_then(|v| v.to_str().ok())
+                .map(|v| v.to_string());
+
+            // Detect SSE responses so we can parse individual events.
+            let is_sse = content_type
+                .as_deref()
+                .map(|ct| ct.starts_with("text/event-stream"))
+                .unwrap_or(false);
+
+            // Stream chunks instead of buffering the entire response body.
+            let mut response = response;
+            let mut total_bytes = 0usize;
+            let mut sse_parser = if is_sse {
+                Some(crate::sse::SseParser::new())
+            } else {
+                None
+            };
+            // Buffer for incomplete UTF-8 sequences at chunk boundaries (SSE only).
+            let mut utf8_buffer: Vec<u8> = Vec::new();
+            let max = ctx.transport.max_response_bytes;
+
+            while let Some(chunk) = response.chunk().await? {
+                if let Some(parser) = &mut sse_parser {
+                    utf8_buffer.extend_from_slice(&chunk);
+                    // Guard against unbounded buffer growth from invalid
+                    // UTF-8 or a server that never sends event boundaries.
+                    // An incomplete multi-byte sequence is at most 3 trailing
+                    // bytes; anything larger indicates bad data.
+                    if utf8_buffer.len() > max {
+                        bail!(
+                            "streaming response exceeded configured max_response_bytes ({max} bytes)"
+                        );
+                    }
+                    // Find the last valid UTF-8 boundary — bytes beyond it
+                    // are an incomplete multi-byte character.
+                    let valid_up_to = match std::str::from_utf8(&utf8_buffer) {
+                        Ok(_) => utf8_buffer.len(),
+                        Err(e) => e.valid_up_to(),
+                    };
+                    if valid_up_to == 0 {
+                        // No complete UTF-8 characters yet — wait for more data.
+                        continue;
+                    }
+                    let text = std::str::from_utf8(&utf8_buffer[..valid_up_to])
+                        .expect("validated UTF-8 boundary");
+                    let events = parser.feed(text);
+                    // Keep any incomplete trailing bytes for the next chunk.
+                    utf8_buffer.drain(..valid_up_to);
+                    for event in events {
+                        total_bytes = total_bytes.saturating_add(event.data.len());
+                        if total_bytes > max {
+                            bail!(
+                                "streaming response exceeded configured max_response_bytes ({max} bytes)"
+                            );
+                        }
+                        if sender
+                            .send(StreamChunk {
+                                data: event.data.into_bytes(),
+                                // SSE event data is extracted content — not
+                                // text/event-stream.  Leave content_type as
+                                // None so decode="auto" can probe the data.
+                                content_type: None,
+                            })
+                            .await
+                            .is_err()
+                        {
+                            return Ok(StreamMeta {
+                                status,
+                                url: url.to_string(),
+                            });
+                        }
+                    }
+                } else {
+                    total_bytes = total_bytes.saturating_add(chunk.len());
+                    if total_bytes > ctx.transport.max_response_bytes {
+                        bail!(
+                            "streaming response exceeded configured max_response_bytes ({} bytes)",
+                            ctx.transport.max_response_bytes
+                        );
+                    }
+                    if sender
+                        .send(StreamChunk {
+                            data: chunk.to_vec(),
+                            content_type: content_type.clone(),
+                        })
+                        .await
+                        .is_err()
+                    {
+                        // Receiver dropped — stop streaming gracefully.
+                        break;
+                    }
+                }
+            }
+
+            // Feed remaining UTF-8 bytes and flush trailing SSE event.
+            if let Some(mut parser) = sse_parser {
+                if let Ok(text) = std::str::from_utf8(&utf8_buffer)
+                    && !text.is_empty()
+                {
+                    for event in parser.feed(text) {
+                        total_bytes = total_bytes.saturating_add(event.data.len());
+                        if total_bytes > max {
+                            bail!(
+                                "streaming response exceeded configured max_response_bytes ({max} bytes)"
+                            );
+                        }
+                        let _ = sender
+                            .send(StreamChunk {
+                                data: event.data.into_bytes(),
+                                content_type: None,
+                            })
+                            .await;
+                    }
+                }
+
+                if let Some(event) = parser.flush() {
+                    total_bytes = total_bytes.saturating_add(event.data.len());
+                    if total_bytes > max {
+                        bail!(
+                            "streaming response exceeded configured max_response_bytes ({max} bytes)"
+                        );
+                    }
+                    let _ = sender
+                        .send(StreamChunk {
+                            data: event.data.into_bytes(),
+                            content_type: None,
+                        })
+                        .await;
+                }
+            }
+
+            return Ok(StreamMeta {
+                status,
+                url: url.to_string(),
+            });
+        }
+
+        bail!("redirect handling failed unexpectedly")
     }
 }
 
