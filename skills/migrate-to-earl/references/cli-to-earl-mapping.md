@@ -8,9 +8,8 @@ Use this during the `migrate-to-earl` scan phase to identify which providers to 
 **Note:** All `curl.*` patterns should also be run with `wget` substituted for `curl` — codebases
 may use either tool for the same API calls.
 
-**Note:** Use `grep -E` (ERE) for patterns that contain alternation groups `(a|b)`. macOS BSD
-grep does not support `\|` alternation in BRE mode — it silently matches nothing. `grep -E`
-works on both macOS (BSD grep) and Linux (GNU grep).
+**Note:** Always use `grep -E` (ERE mode) for all patterns in this table. `grep -E` works on
+both macOS (BSD grep) and Linux (GNU grep) and is a strict superset for these patterns.
 
 | Grep pattern | Provider | Import command |
 |---|---|---|

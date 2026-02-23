@@ -156,6 +156,25 @@ curl -H "Authorization: Bearer $GITHUB_TOKEN" https://api.github.com/repos/owner
 earl call --yes --json github.get_repo --owner owner --repo repo
 ```
 
+**For source files (Python, JavaScript, etc.):** curl calls typically appear inside subprocess
+invocations — replace the subprocess call with the Earl equivalent for that language:
+
+```python
+# Before (Python):
+subprocess.run(["curl", "-H", f"Authorization: Bearer {token}", url])
+
+# After (Python):
+subprocess.run(["earl", "call", "--yes", "--json", "github.get_repo", "--owner", owner, "--repo", repo])
+```
+
+```javascript
+// Before (Node.js):
+execSync(`curl -H "Authorization: Bearer ${token}" ${url}`)
+
+// After (Node.js):
+execSync(`earl call --yes --json github.get_repo --owner ${owner} --repo ${repo}`)
+```
+
 For flagged complex pipelines, add a comment but leave the original:
 ```bash
 # TODO: migrate to earl (complex pipeline — review manually)
