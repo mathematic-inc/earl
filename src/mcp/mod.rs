@@ -30,6 +30,7 @@ use crate::protocol::builder::build_prepared_request;
 use crate::protocol::executor::execute_prepared_request;
 use crate::secrets::SecretManager;
 use crate::template::catalog::{TemplateCatalog, TemplateCatalogEntry};
+use crate::template::environments::validate_env_name;
 use crate::template::schema::{CommandMode, ParamSpec, ParamType};
 
 const JSONRPC_VERSION: &str = "2.0";
@@ -225,6 +226,9 @@ pub async fn run_server(
     // for environments in MCP mode; a separate server process is needed for
     // multi-environment deployments.
     let active_env = cfg.environments.default.clone();
+    if let Some(name) = &active_env {
+        validate_env_name(name).context("config [environments].default is invalid")?;
+    }
 
     let state = McpState {
         catalog: Arc::new(catalog),
