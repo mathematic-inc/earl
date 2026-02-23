@@ -1,6 +1,7 @@
 pub mod keychain;
 pub mod metadata_index;
 pub mod resolver;
+pub mod resolvers;
 pub mod store;
 
 use anyhow::Result;
@@ -20,11 +21,27 @@ pub struct SecretManager {
     index_path: std::path::PathBuf,
 }
 
+fn default_resolvers() -> Vec<Box<dyn SecretResolver>> {
+    #[allow(unused_mut)]
+    let mut resolvers: Vec<Box<dyn SecretResolver>> = Vec::new();
+    #[cfg(feature = "secrets-1password")]
+    resolvers.push(Box::new(resolvers::onepassword::OpResolver::new()));
+    #[cfg(feature = "secrets-vault")]
+    resolvers.push(Box::new(resolvers::vault::VaultResolver::new()));
+    #[cfg(feature = "secrets-aws")]
+    resolvers.push(Box::new(resolvers::aws::AwsResolver::new()));
+    #[cfg(feature = "secrets-gcp")]
+    resolvers.push(Box::new(resolvers::gcp::GcpResolver::new()));
+    #[cfg(feature = "secrets-azure")]
+    resolvers.push(Box::new(resolvers::azure::AzureResolver::new()));
+    resolvers
+}
+
 impl SecretManager {
     pub fn new() -> Self {
         Self {
             store: Box::new(KeychainSecretStore),
-            resolvers: Vec::new(),
+            resolvers: default_resolvers(),
             index_path: config::secrets_index_path(),
         }
     }
