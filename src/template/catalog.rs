@@ -5,7 +5,7 @@ use serde::Serialize;
 
 use super::schema::{CommandMode, CommandTemplate};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct TemplateCatalog {
     pub entries: BTreeMap<String, TemplateCatalogEntry>,
 }
@@ -30,7 +30,7 @@ impl TemplateCatalog {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct TemplateCatalogEntry {
     pub key: String,
     pub provider: String,
@@ -44,13 +44,13 @@ pub struct TemplateCatalogEntry {
     pub template: CommandTemplate,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, serde::Deserialize)]
 pub struct TemplateSource {
     pub path: PathBuf,
     pub scope: TemplateScope,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, serde::Deserialize, PartialEq, Eq)]
 pub enum TemplateScope {
     Local,
     Global,
