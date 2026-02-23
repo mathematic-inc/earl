@@ -41,19 +41,19 @@ fn collect_template_files(dir: &Path, root: &Path, files: &mut Vec<PathBuf>) -> 
         if file_type.is_dir() {
             // Canonicalize before recursing; skip entries that escape the root
             // (e.g. symlinks pointing outside the template directory).
-            if let Ok(canonical) = path.canonicalize() {
-                if canonical.starts_with(root) {
-                    collect_template_files(&canonical, root, files)?;
-                }
+            if let Ok(canonical) = path.canonicalize()
+                && canonical.starts_with(root)
+            {
+                collect_template_files(&canonical, root, files)?;
             }
             continue;
         }
         if file_type.is_file() && is_template_file(&path) {
             // Canonicalize before storing; skip entries that escape the root.
-            if let Ok(canonical) = path.canonicalize() {
-                if canonical.starts_with(root) {
-                    files.push(canonical);
-                }
+            if let Ok(canonical) = path.canonicalize()
+                && canonical.starts_with(root)
+            {
+                files.push(canonical);
             }
         }
     }
