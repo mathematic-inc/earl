@@ -34,19 +34,39 @@ RUST_LOG=debug earl call github.search_issues --query "test"
 Execute a template command.
 
 ```bash
-earl call <provider.command> [--key value ...] [--yes] [--json]
+earl call <provider.command> [--key value ...] [--env <name>] [--yes] [--json]
 ```
 
 The first argument is the command key in `provider.command` form. Remaining
 arguments are passed as `--key value` pairs that bind to the template's declared
 parameters.
 
-| Flag     | Default | Description                                                                 |
-| -------- | ------- | --------------------------------------------------------------------------- |
-| `--yes`  | off     | Auto-approve write-mode commands (skip the `Type YES to continue:` prompt). |
-| `--json` | off     | Print structured JSON output instead of the rendered text template.         |
+| Flag          | Default | Description                                                                                     |
+| ------------- | ------- | ----------------------------------------------------------------------------------------------- |
+| `--env <name>`| —       | Active environment. Overrides `config.toml` and the template default. See [Environments](#environments). |
+| `--yes`       | off     | Auto-approve write-mode commands (skip the `Type YES to continue:` prompt). |
+| `--json`      | off     | Print structured JSON output instead of the rendered text template.         |
 
 Write-mode commands prompt for explicit confirmation unless `--yes` is passed.
+
+### Environments
+
+When a template declares an `environments` block, `earl call` selects an active environment using this priority order:
+
+1. `--env <name>` flag (highest)
+2. `environments.default` in `~/.config/earl/config.toml`
+3. `environments.default` in the template file
+4. No active environment (lowest)
+
+When an environment is active, its `vars.*` values are available in template expressions and a `[env: <name>]` line is printed to stderr. In `--json` mode the output object includes an `"environment"` field.
+
+```bash
+# Use the staging environment for this call
+earl call myservice.ping --env staging
+
+# Use the production environment as a JSON response
+earl call myservice.get_status --env production --json
+```
 
 ### Examples
 

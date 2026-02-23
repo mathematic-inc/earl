@@ -8,14 +8,66 @@ Templates are `version = 1` HCL files. Each file declares a provider namespace a
 
 ## Root Fields
 
-| Field              | Type       | Required | Default | Description                                                    |
-| ------------------ | ---------- | -------- | ------- | -------------------------------------------------------------- |
-| `version`          | `integer`  | Yes      | --      | Must be `1`.                                                   |
-| `provider`         | `string`   | Yes      | --      | Namespace for commands (e.g., `github`). Must not be empty.    |
-| `categories`       | `string[]` | No       | `[]`    | Provider-level categories applied to all commands in the file. |
-| `command "<name>"` | block      | Yes      | --      | One or more named command blocks. At least one is required.    |
+| Field                | Type       | Required | Default | Description                                                    |
+| -------------------- | ---------- | -------- | ------- | -------------------------------------------------------------- |
+| `version`            | `integer`  | Yes      | --      | Must be `1`.                                                   |
+| `provider`           | `string`   | Yes      | --      | Namespace for commands (e.g., `github`). Must not be empty.    |
+| `categories`         | `string[]` | No       | `[]`    | Provider-level categories applied to all commands in the file. |
+| `environments`       | block      | No       | --      | Named environments with shared variables. See [environments](#environments). |
+| `command "<name>"`   | block      | Yes      | --      | One or more named command blocks. At least one is required.    |
 
 Commands are identified by `provider.command` (e.g., `github.search_issues`).
+
+## `environments`
+
+The optional `environments` block at the provider level declares named environments and their shared variables. When an environment is active, its key-value pairs are available as `vars.*` in all template expressions.
+
+```hcl
+environments {
+  default = "production"
+  secrets = ["myservice.staging_token"]
+
+  production {
+    base_url = "https://api.example.com"
+  }
+
+  staging {
+    base_url  = "https://staging-api.example.com"
+    api_token = "{{ secrets.myservice.staging_token }}"
+  }
+}
+```
+
+| Field              | Type               | Required | Default | Description                                                                                          |
+| ------------------ | ------------------ | -------- | ------- | ---------------------------------------------------------------------------------------------------- |
+| `default`          | `string`           | No       | --      | Environment name used when no `--env` flag or config default is set.                                 |
+| `secrets`          | `string[]`         | No       | `[]`    | Secret keys that vars values are allowed to reference via `{{ secrets.* }}`.                         |
+| `<name> { ... }`   | block              | No       | --      | Named environment. Each key inside the block becomes a `vars.<key>` variable.                        |
+
+Environment names must match `[a-zA-Z0-9_-]` and be 1–64 characters. The same rule applies to `default` and to per-command `environment "<name>"` labels.
+
+### `vars` in template expressions
+
+Within `operation`, `result.output`, and other Jinja2 fields, active environment variables are accessible as `vars.<key>`:
+
+```hcl
+operation {
+  protocol = "http"
+  method   = "GET"
+  url      = "{{ vars.base_url }}/items"
+}
+```
+
+If no environment is active, `vars` is an empty map and any `vars.*` reference resolves to an empty string.
+
+### Active environment resolution
+
+The environment is resolved in this priority order:
+
+1. `--env <name>` flag on the command line (highest)
+2. `environments.default` in `~/.config/earl/config.toml`
+3. `environments.default` in this `environments` block
+4. No active environment (lowest)
 
 ## `command`
 
@@ -30,19 +82,21 @@ command "search_issues" {
   param "query" { ... }
   operation { ... }
   result { ... }
+  environment "staging" { ... }
 }
 ```
 
-| Field         | Type       | Required | Default | Description                                                 |
-| ------------- | ---------- | -------- | ------- | ----------------------------------------------------------- |
-| `title`       | `string`   | Yes      | --      | Human-readable title. Must not be empty.                    |
-| `summary`     | `string`   | Yes      | --      | One-line summary. Must not be empty.                        |
-| `description` | `string`   | Yes      | --      | Detailed markdown description. Must not be empty.           |
-| `categories`  | `string[]` | No       | `[]`    | Command-level categories (merged with provider categories). |
-| `annotations` | block      | Yes      | --      | Mode and secret declarations.                               |
-| `param`       | block(s)   | No       | `[]`    | Repeatable typed input parameters.                          |
-| `operation`   | block      | Yes      | --      | Protocol-specific execution definition.                     |
-| `result`      | block      | Yes      | --      | Output decoding, extraction, and rendering.                 |
+| Field                    | Type       | Required | Default | Description                                                                     |
+| ------------------------ | ---------- | -------- | ------- | ------------------------------------------------------------------------------- |
+| `title`                  | `string`   | Yes      | --      | Human-readable title. Must not be empty.                                        |
+| `summary`                | `string`   | Yes      | --      | One-line summary. Must not be empty.                                            |
+| `description`            | `string`   | Yes      | --      | Detailed markdown description. Must not be empty.                               |
+| `categories`             | `string[]` | No       | `[]`    | Command-level categories (merged with provider categories).                     |
+| `annotations`            | block      | Yes      | --      | Mode and secret declarations.                                                   |
+| `param`                  | block(s)   | No       | `[]`    | Repeatable typed input parameters.                                              |
+| `operation`              | block      | Yes      | --      | Protocol-specific execution definition.                                         |
+| `result`                 | block      | Yes      | --      | Output decoding, extraction, and rendering.                                     |
+| `environment "<name>"`   | block(s)   | No       | --      | Per-environment operation/result override. See [environment overrides](#environment-name). |
 
 ## `annotations`
 
@@ -53,10 +107,11 @@ annotations {
 }
 ```
 
-| Field     | Type                  | Required | Default | Description                                                                                              |
-| --------- | --------------------- | -------- | ------- | -------------------------------------------------------------------------------------------------------- |
-| `mode`    | `"read"` \| `"write"` | Yes      | --      | Safety mode. Write-mode commands require user confirmation.                                              |
-| `secrets` | `string[]`            | No       | `[]`    | Secret keys this command is allowed to access. Auth blocks that reference a secret must declare it here. |
+| Field                                    | Type                  | Required | Default | Description                                                                                              |
+| ---------------------------------------- | --------------------- | -------- | ------- | -------------------------------------------------------------------------------------------------------- |
+| `mode`                                   | `"read"` \| `"write"` | Yes      | --      | Safety mode. Write-mode commands require user confirmation.                                              |
+| `secrets`                                | `string[]`            | No       | `[]`    | Secret keys this command is allowed to access. Auth blocks that reference a secret must declare it here. |
+| `allow_environment_protocol_switching`   | `boolean`             | No       | `false` | Allow an `environment "<name>"` override to use a different protocol than the default `operation`. |
 
 ## `param`
 
@@ -742,6 +797,51 @@ The `result.output` field is a Jinja2 template with access to:
   `secrets.*` is not available in `result.output`. This prevents secrets from
   leaking through command output.
 </Callout>
+
+## `environment "<name>"`
+
+The optional `environment "<name>"` block inside a `command` replaces the command's `operation` and optionally its `result` when the named environment is active.
+
+```hcl
+command "ping" {
+  title       = "Ping"
+  summary     = "Health check"
+  description = "HTTP in production, bash locally."
+  annotations {
+    mode                                 = "read"
+    secrets                              = []
+    allow_environment_protocol_switching = true
+  }
+  operation {
+    protocol = "http"
+    method   = "GET"
+    url      = "{{ vars.base_url }}/ping"
+  }
+  environment "local" {
+    operation {
+      protocol = "bash"
+      bash {
+        script = "echo pong"
+      }
+    }
+    result {
+      decode = "text"
+      output = "local: {{ result }}"
+    }
+  }
+  result {
+    decode = "text"
+    output = "{{ result }}"
+  }
+}
+```
+
+| Field       | Type   | Required | Description                                                                            |
+| ----------- | ------ | -------- | -------------------------------------------------------------------------------------- |
+| `operation` | block  | Yes      | Replacement operation. Must follow the same protocol rules as a top-level `operation`. |
+| `result`    | block  | No       | Replacement result block. Falls back to the command's `result` if omitted.             |
+
+When the override `operation` uses a different protocol than the command's default `operation`, `annotations.allow_environment_protocol_switching = true` must be set or validation will fail.
 
 ## HCL Functions
 
