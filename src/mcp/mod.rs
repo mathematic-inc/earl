@@ -1095,6 +1095,7 @@ mod tests {
                 },
                 environment_overrides: BTreeMap::new(),
             },
+            provider_environments: None,
         }
     }
 

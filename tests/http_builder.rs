@@ -70,6 +70,7 @@ fn base_entry(
             },
             environment_overrides: BTreeMap::new(),
         },
+        provider_environments: None,
     }
 }
 
