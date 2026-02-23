@@ -70,7 +70,8 @@ earl templates list
 ```
 
 If the expected `provider.command` is not listed:
-- Check that the file is in `./templates/` or `~/.config/earl/templates/`
+- Check that the file is in `./templates/` or the global template directory:
+  `~/.config/earl/templates/` (macOS/Linux) or `%APPDATA%\earl\templates\` (Windows)
 - Check that `provider` in the HCL matches what you're calling (`earl call <provider>.<command>`)
 - Re-run `earl templates validate` to catch parse errors
 

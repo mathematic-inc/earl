@@ -76,7 +76,8 @@ earl templates list
 
 ## Phase 3: Connect to Agent Platform
 
-Detect the agent platform by checking paths in this order:
+Detect the agent platform by checking all of these — multiple can match (e.g. a project may
+have both `.claude/` and `.cursor/`). Configure every matching platform:
 
 | Check | Platform | MCP config path |
 |-------|----------|-----------------|
