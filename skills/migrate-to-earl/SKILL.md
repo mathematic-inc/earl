@@ -150,10 +150,10 @@ For each approved call site, rewrite to the Earl equivalent:
 
 ```bash
 # Before:
-curl -H "Authorization: Bearer $GITHUB_TOKEN" https://api.github.com/repos/owner/repo
+curl -H "Authorization: Bearer $GITHUB_TOKEN" https://api.github.com/repos/$OWNER/$REPO
 
 # After:
-earl call --yes --json github.get_repo --owner owner --repo repo
+earl call --yes --json github.get_repo --owner $OWNER --repo $REPO
 ```
 
 **For source files (Python, JavaScript, etc.):** curl calls typically appear inside subprocess

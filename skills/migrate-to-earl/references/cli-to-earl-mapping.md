@@ -5,8 +5,8 @@ Use this during the `migrate-to-earl` scan phase to identify which providers to 
 
 ## Pre-built Provider Mapping
 
-**Note:** All `curl.*` patterns should also be run with `wget` substituted for `curl` — codebases
-may use either tool for the same API calls.
+**Note:** All `curl.*` patterns should also be run with `wget` and `http` (httpie) substituted
+for `curl` — codebases may use any of these tools for the same API calls.
 
 **Note:** Always use `grep -E` (ERE mode) for all patterns in this table. `grep -E` works on
 both macOS (BSD grep) and Linux (GNU grep) and is a strict superset for these patterns.
