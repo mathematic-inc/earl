@@ -328,24 +328,61 @@ where
                 .and_then(|v| v.to_str().ok())
                 .map(|v| v.to_string());
 
+            // Detect SSE responses so we can parse individual events.
+            let is_sse = content_type
+                .as_deref()
+                .map(|ct| ct.starts_with("text/event-stream"))
+                .unwrap_or(false);
+
             // Stream chunks instead of buffering the entire response body.
             let mut response = response;
             let mut total_bytes = 0usize;
             while let Some(chunk) = response.chunk().await? {
-                total_bytes = total_bytes.saturating_add(chunk.len());
-                if total_bytes > ctx.transport.max_response_bytes {
-                    bail!(
-                        "streaming response exceeded configured max_response_bytes ({} bytes)",
-                        ctx.transport.max_response_bytes
-                    );
-                }
-                let stream_chunk = StreamChunk {
-                    data: chunk.to_vec(),
-                    content_type: content_type.clone(),
-                };
-                if sender.send(stream_chunk).await.is_err() {
-                    // Receiver dropped — stop streaming gracefully.
-                    break;
+                if is_sse {
+                    let text = std::str::from_utf8(&chunk)
+                        .context("SSE response contains invalid UTF-8")?;
+                    let events = crate::sse::parse_sse_events(text);
+                    for event in events {
+                        total_bytes = total_bytes.saturating_add(event.data.len());
+                        if total_bytes > ctx.transport.max_response_bytes {
+                            bail!(
+                                "streaming response exceeded configured max_response_bytes ({} bytes)",
+                                ctx.transport.max_response_bytes
+                            );
+                        }
+                        if sender
+                            .send(StreamChunk {
+                                data: event.data.into_bytes(),
+                                content_type: Some("application/json".to_string()),
+                            })
+                            .await
+                            .is_err()
+                        {
+                            return Ok(StreamMeta {
+                                status,
+                                url: url.to_string(),
+                            });
+                        }
+                    }
+                } else {
+                    total_bytes = total_bytes.saturating_add(chunk.len());
+                    if total_bytes > ctx.transport.max_response_bytes {
+                        bail!(
+                            "streaming response exceeded configured max_response_bytes ({} bytes)",
+                            ctx.transport.max_response_bytes
+                        );
+                    }
+                    if sender
+                        .send(StreamChunk {
+                            data: chunk.to_vec(),
+                            content_type: content_type.clone(),
+                        })
+                        .await
+                        .is_err()
+                    {
+                        // Receiver dropped — stop streaming gracefully.
+                        break;
+                    }
                 }
             }
 
