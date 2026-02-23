@@ -15,7 +15,7 @@ use earl_core::with::AsJson;
 // Also bump when adding or removing cfg-gated variants from OperationTemplate: rkyv
 // serializes enum variants by index, so changing which features are compiled in shifts
 // indices and corrupts existing caches.
-pub const CACHE_VERSION: u32 = 2;
+pub const CACHE_VERSION: u32 = 1;
 
 /// Serialized catalog cache file stored at `~/.cache/earl/catalog-{CACHE_VERSION}.bin`.
 #[derive(Archive, RkyvSerialize, RkyvDeserialize)]
@@ -134,7 +134,7 @@ mod tests {
     #[test]
     fn save_and_load_roundtrips_catalog() {
         let tmp = tempfile::tempdir().unwrap();
-        let cache_path = tmp.path().join("catalog-2.bin");
+        let cache_path = tmp.path().join("catalog-1.bin");
         let fp = vec![(PathBuf::from("/tmp/foo.hcl"), 12345u64)];
 
         save_cache(&cache_path, &fp, &TemplateCatalog::empty()).unwrap();
@@ -146,7 +146,7 @@ mod tests {
     #[test]
     fn stale_mtime_returns_none() {
         let tmp = tempfile::tempdir().unwrap();
-        let cache_path = tmp.path().join("catalog-2.bin");
+        let cache_path = tmp.path().join("catalog-1.bin");
         let fp = vec![(PathBuf::from("/tmp/foo.hcl"), 12345u64)];
 
         save_cache(&cache_path, &fp, &TemplateCatalog::empty()).unwrap();
@@ -158,14 +158,14 @@ mod tests {
     #[test]
     fn missing_cache_returns_none() {
         let tmp = tempfile::tempdir().unwrap();
-        let cache_path = tmp.path().join("catalog-2.bin");
+        let cache_path = tmp.path().join("catalog-1.bin");
         assert!(try_load_cache(&cache_path, &[]).is_none());
     }
 
     #[test]
     fn corrupt_cache_returns_none() {
         let tmp = tempfile::tempdir().unwrap();
-        let cache_path = tmp.path().join("catalog-2.bin");
+        let cache_path = tmp.path().join("catalog-1.bin");
         std::fs::write(&cache_path, b"garbage").unwrap();
         assert!(try_load_cache(&cache_path, &[]).is_none());
     }
