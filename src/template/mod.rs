@@ -1,3 +1,4 @@
+pub mod cache;
 pub mod catalog;
 pub mod import;
 pub mod loader;
