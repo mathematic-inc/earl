@@ -192,19 +192,22 @@ command "{command}" {{
     #[test]
     fn load_catalog_returns_correct_entries() {
         let tmp = TempDir::new().unwrap();
+        let global = TempDir::new().unwrap();
         write_bash_template(&tmp, "myprovider", "mycommand");
 
-        let catalog = load_catalog(tmp.path()).unwrap();
+        let catalog = load_catalog_from_dirs(global.path(), &tmp.path().join("templates")).unwrap();
         assert!(catalog.get("myprovider.mycommand").is_some());
     }
 
     #[test]
     fn load_catalog_is_idempotent_across_two_calls() {
         let tmp = TempDir::new().unwrap();
+        let global = TempDir::new().unwrap();
         write_bash_template(&tmp, "myprovider2", "cmd");
 
-        let c1 = load_catalog(tmp.path()).unwrap();
-        let c2 = load_catalog(tmp.path()).unwrap();
+        let local = tmp.path().join("templates");
+        let c1 = load_catalog_from_dirs(global.path(), &local).unwrap();
+        let c2 = load_catalog_from_dirs(global.path(), &local).unwrap();
 
         let e1 = c1.get("myprovider2.cmd").unwrap();
         let e2 = c2.get("myprovider2.cmd").unwrap();

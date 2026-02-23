@@ -7,6 +7,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::template::catalog::TemplateCatalog;
 
+// Bump this whenever any type transitively included in TemplateCatalog changes its
+// serialized shape (field added, removed, or reordered). bincode 1.x is not
+// self-describing — it will silently deserialize stale data if the version is not bumped.
 pub const CACHE_VERSION: u32 = 1;
 
 /// Serialized catalog cache file stored at ~/.cache/earl/catalog-1.bin.
@@ -26,14 +29,14 @@ pub fn collect_fingerprint(global_dir: &Path, local_dir: &Path) -> Result<Vec<(P
     for dir in [global_dir, local_dir] {
         for path in super::loader::template_files_in_dir(dir)? {
             let mtime = std::fs::metadata(&path)?
-                .modified()?
-                .duration_since(UNIX_EPOCH)
+                .modified()
+                .ok()
+                .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
                 .map(|d| d.as_secs())
                 .unwrap_or(0);
             entries.push((path, mtime));
         }
     }
-    // Sort for stable comparison; dedup keeps first occurrence (global before local).
     entries.sort_by(|a, b| a.0.cmp(&b.0));
     entries.dedup_by(|a, b| a.0 == b.0);
     Ok(entries)
