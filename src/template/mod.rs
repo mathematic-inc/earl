@@ -1,4 +1,6 @@
+pub(crate) mod cache;
 pub mod catalog;
+pub mod files;
 pub mod import;
 pub mod loader;
 pub mod parser;
