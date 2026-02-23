@@ -21,6 +21,14 @@ pub struct Config {
     pub sandbox: SandboxConfig,
     #[serde(default)]
     pub policy: Vec<PolicyRule>,
+    #[serde(default)]
+    pub environments: EnvironmentsConfig,
+}
+
+#[derive(Debug, Clone, Default, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct EnvironmentsConfig {
+    pub default: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -450,5 +458,34 @@ effect = "deny"
         let loaded: Config = toml::from_str("").unwrap();
         assert!(loaded.auth.jwt.is_none());
         assert!(loaded.policy.is_empty());
+    }
+
+    #[test]
+    fn deserialize_environments_config() {
+        let cfg: Config = toml::from_str(
+            r#"
+[environments]
+default = "staging"
+"#,
+        )
+        .unwrap();
+        assert_eq!(cfg.environments.default.as_deref(), Some("staging"));
+    }
+
+    #[test]
+    fn default_environments_config_has_no_default() {
+        let cfg: Config = toml::from_str("").unwrap();
+        assert!(cfg.environments.default.is_none());
+    }
+
+    #[test]
+    fn environments_config_rejects_unknown_field() {
+        let result: Result<Config, _> = toml::from_str(
+            r#"
+[environments]
+defaullt = "staging"
+"#,
+        );
+        assert!(result.is_err());
     }
 }

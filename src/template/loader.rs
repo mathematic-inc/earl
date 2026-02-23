@@ -94,6 +94,8 @@ fn load_file_into_catalog(
     validate_template_file(&parsed)
         .with_context(|| format!("validation failed for {}", path.display()))?;
 
+    let provider_environments = parsed.environments.clone();
+
     for (command_name, template) in parsed.commands {
         let key = format!("{}.{}", parsed.provider, command_name);
 
@@ -118,6 +120,7 @@ fn load_file_into_catalog(
                 scope,
             },
             template,
+            provider_environments: provider_environments.clone(),
         };
 
         catalog.upsert(key, entry);
@@ -179,6 +182,52 @@ command "{command}" {{
         let e1 = c1.get("myprovider2.cmd").unwrap();
         let e2 = c2.get("myprovider2.cmd").unwrap();
         assert_eq!(e1.title, e2.title);
+    }
+
+    #[test]
+    fn provider_environments_stored_in_catalog_entry() {
+        let tmp = TempDir::new().unwrap();
+        let global = TempDir::new().unwrap();
+        let tdir = tmp.path().join("templates");
+        std::fs::create_dir_all(&tdir).unwrap();
+        std::fs::write(
+            tdir.join("envtest.hcl"),
+            r#"version = 1
+provider = "envtest"
+
+environments {
+  default = "production"
+  secrets = []
+  production { base_url = "https://prod.example.com" }
+  staging    { base_url = "https://staging.example.com" }
+}
+
+command "ping" {
+  title = "Ping"
+  summary = "Ping"
+  description = "Ping"
+  annotations {
+    mode = "read"
+    secrets = []
+  }
+  operation {
+    protocol = "bash"
+    bash { script = "echo {{ vars.base_url }}" }
+  }
+}
+"#,
+        )
+        .unwrap();
+
+        let catalog = load_catalog_from_dirs(global.path(), &tdir).unwrap();
+        let entry = catalog.get("envtest.ping").expect("entry should exist");
+        let envs = entry
+            .provider_environments
+            .as_ref()
+            .expect("provider_environments should be set");
+        assert_eq!(envs.default.as_deref(), Some("production"));
+        assert!(envs.environments.contains_key("production"));
+        assert!(envs.environments.contains_key("staging"));
     }
 
     #[test]

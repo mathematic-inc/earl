@@ -19,6 +19,11 @@ Config file: `~/.config/earl/config.toml`. All sections are optional.
 ## Full Example
 
 ```toml
+# --- Environments ---
+
+[environments]
+default = "staging"
+
 # --- Network ---
 
 [[network.allow]]
@@ -68,6 +73,21 @@ rerank_path = "/rerank"
 openai_compatible = true
 timeout_ms = 10000
 ```
+
+## Environments
+
+The `[environments]` section sets a global default environment, applied when no `--env` flag is given on the command line.
+
+| Key       | Type     | Required | Description                                           |
+| --------- | -------- | -------- | ----------------------------------------------------- |
+| `default` | `string` | No       | Name of the environment to activate for all commands. |
+
+```toml
+[environments]
+default = "staging"
+```
+
+The value must match an environment name declared in the template's `environments` block. An invalid or misspelled name is rejected at startup. See [Template Schema](/docs/template-schema#environments) for how templates define named environments and their variables.
 
 ## Network Allowlist
 
