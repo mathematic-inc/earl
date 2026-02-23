@@ -33,6 +33,7 @@ earl-core = { version = "0.4.1", path = "crates/earl-core" }
 anyhow = "1.0"
 axum = "0.8"
 base64 = "0.22"
+rkyv = { version = "0.8", features = ["std", "bytecheck"] }
 chrono = { version = "0.4", features = ["serde"] }
 clap = { version = "4.5", features = ["derive"] }
 clap_complete = "4.5"

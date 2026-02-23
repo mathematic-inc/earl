@@ -10,6 +10,7 @@ documentation.workspace = true
 
 [dependencies]
 anyhow = "1.0"
+rkyv = { version = "0.8", features = ["std", "bytecheck"] }
 earl-core = { version = "0.4.1", path = "../earl-core" }
 libc = "0.2"
 serde = { version = "1.0", features = ["derive"] }

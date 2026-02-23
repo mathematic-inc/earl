@@ -4,6 +4,9 @@ pub mod redact;
 pub mod render;
 pub mod schema;
 pub mod transport;
+pub mod with;
+
+pub use with::{AsJson, AsPath};
 
 use std::future::Future;
 

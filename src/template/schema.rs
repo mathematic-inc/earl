@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 
+use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
 use serde::{Deserialize, Serialize};
 
 pub use earl_core::schema::{
@@ -18,7 +19,7 @@ pub struct TemplateFile {
     pub commands: BTreeMap<String, CommandTemplate>,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, Archive, RkyvSerialize, RkyvDeserialize)]
 #[serde(deny_unknown_fields)]
 pub struct CommandTemplate {
     pub title: String,
@@ -35,7 +36,9 @@ pub struct CommandTemplate {
     pub result: ResultTemplate,
 }
 
-#[derive(Debug, Clone, Default, Deserialize, Serialize)]
+#[derive(
+    Debug, Clone, Default, Deserialize, Serialize, Archive, RkyvSerialize, RkyvDeserialize,
+)]
 #[serde(deny_unknown_fields)]
 pub struct Annotations {
     #[serde(default)]
@@ -44,7 +47,7 @@ pub struct Annotations {
     pub secrets: Vec<String>,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, Archive, RkyvSerialize, RkyvDeserialize)]
 #[serde(tag = "protocol", rename_all = "snake_case")]
 pub enum OperationTemplate {
     #[cfg(feature = "http")]
