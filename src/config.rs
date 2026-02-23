@@ -261,6 +261,10 @@ pub fn search_index_path() -> PathBuf {
     cache_dir().join("search-index-v1.json")
 }
 
+pub fn catalog_cache_path() -> PathBuf {
+    cache_dir().join("catalog-1.bin")
+}
+
 fn home_dir() -> PathBuf {
     std::env::var_os("HOME")
         .map(PathBuf::from)
