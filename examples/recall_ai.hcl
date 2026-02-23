@@ -261,3 +261,286 @@ command "delete_bot" {
     output = "Bot {{ args.bot_id }} deleted."
   }
 }
+
+command "start_recording" {
+  title       = "Start recording"
+  summary     = "Begin recording in an active bot session"
+  description = <<-EOT
+    Starts audio/video recording for a bot that has joined a meeting.
+    Call this after get_bot shows status == "joined".
+
+    Parameters:
+    - bot_id: UUID of the joined bot
+
+    ## Guidance for AI agents
+    Call this after the bot has joined (status == "joined"). Recording does not
+    start automatically on join.
+    Example: `earl call --yes --json recall_ai.start_recording --bot_id <id>`
+  EOT
+
+  annotations {
+    mode    = "write"
+    secrets = ["recall_ai.api_key"]
+  }
+
+  param "bot_id" {
+    type        = "string"
+    required    = true
+    description = "Bot UUID"
+  }
+
+  operation {
+    protocol = "http"
+    method   = "POST"
+    url      = "https://api.recall.ai/api/v1/bot/{{ args.bot_id }}/start_recording/"
+
+    auth {
+      kind   = "bearer"
+      secret = "recall_ai.api_key"
+    }
+  }
+
+  result {
+    decode = "json"
+    output = "Recording started for bot {{ args.bot_id }}."
+  }
+}
+
+command "stop_recording" {
+  title       = "Stop recording"
+  summary     = "Stop recording and begin transcript processing"
+  description = <<-EOT
+    Stops the active recording for a bot. Triggers transcript and media processing.
+    After stopping, poll get_bot until media_shortcuts.transcript.status.code == "done"
+    before retrieving the transcript.
+
+    Parameters:
+    - bot_id: UUID of the recording bot
+
+    ## Guidance for AI agents
+    Call this when the meeting ends or when you want to stop recording early.
+    After stopping, the transcript will be processed asynchronously — poll get_bot
+    for status before calling get_transcript.
+    Example: `earl call --yes --json recall_ai.stop_recording --bot_id <id>`
+  EOT
+
+  annotations {
+    mode    = "write"
+    secrets = ["recall_ai.api_key"]
+  }
+
+  param "bot_id" {
+    type        = "string"
+    required    = true
+    description = "Bot UUID"
+  }
+
+  operation {
+    protocol = "http"
+    method   = "POST"
+    url      = "https://api.recall.ai/api/v1/bot/{{ args.bot_id }}/stop_recording/"
+
+    auth {
+      kind   = "bearer"
+      secret = "recall_ai.api_key"
+    }
+  }
+
+  result {
+    decode = "json"
+    output = "Recording stopped for bot {{ args.bot_id }}. Transcript processing will begin shortly — poll get_bot until media_shortcuts.transcript.status.code == \"done\"."
+  }
+}
+
+command "pause_recording" {
+  title       = "Pause recording"
+  summary     = "Temporarily pause an active recording"
+  description = <<-EOT
+    Pauses the active recording without ending the session. Use resume_recording
+    to continue. Useful for compliance scenarios (skip sensitive segments).
+
+    Parameters:
+    - bot_id: UUID of the recording bot
+
+    ## Guidance for AI agents
+    Use this to pause recording during sensitive discussion. Follow with
+    resume_recording to continue.
+    Example: `earl call --yes --json recall_ai.pause_recording --bot_id <id>`
+  EOT
+
+  annotations {
+    mode    = "write"
+    secrets = ["recall_ai.api_key"]
+  }
+
+  param "bot_id" {
+    type        = "string"
+    required    = true
+    description = "Bot UUID"
+  }
+
+  operation {
+    protocol = "http"
+    method   = "POST"
+    url      = "https://api.recall.ai/api/v1/bot/{{ args.bot_id }}/pause_recording/"
+
+    auth {
+      kind   = "bearer"
+      secret = "recall_ai.api_key"
+    }
+  }
+
+  result {
+    decode = "json"
+    output = "Recording paused for bot {{ args.bot_id }}."
+  }
+}
+
+command "resume_recording" {
+  title       = "Resume recording"
+  summary     = "Resume a paused recording"
+  description = <<-EOT
+    Resumes a previously paused recording session.
+
+    Parameters:
+    - bot_id: UUID of the paused bot
+
+    ## Guidance for AI agents
+    Call this after pause_recording to resume capturing audio/video.
+    Example: `earl call --yes --json recall_ai.resume_recording --bot_id <id>`
+  EOT
+
+  annotations {
+    mode    = "write"
+    secrets = ["recall_ai.api_key"]
+  }
+
+  param "bot_id" {
+    type        = "string"
+    required    = true
+    description = "Bot UUID"
+  }
+
+  operation {
+    protocol = "http"
+    method   = "POST"
+    url      = "https://api.recall.ai/api/v1/bot/{{ args.bot_id }}/resume_recording/"
+
+    auth {
+      kind   = "bearer"
+      secret = "recall_ai.api_key"
+    }
+  }
+
+  result {
+    decode = "json"
+    output = "Recording resumed for bot {{ args.bot_id }}."
+  }
+}
+
+command "leave_call" {
+  title       = "Leave call"
+  summary     = "Remove the bot from an active meeting"
+  description = <<-EOT
+    Instructs the bot to leave the meeting immediately. Recording will stop and
+    transcript processing will begin. Use this to end a recording session early
+    or remove the bot when it is no longer needed.
+
+    Parameters:
+    - bot_id: UUID of the bot in the meeting
+
+    ## Guidance for AI agents
+    Use this when you want the bot to exit the meeting. After calling leave_call,
+    poll get_bot until status == "done" and then retrieve the transcript.
+    Example: `earl call --yes --json recall_ai.leave_call --bot_id <id>`
+  EOT
+
+  annotations {
+    mode    = "write"
+    secrets = ["recall_ai.api_key"]
+  }
+
+  param "bot_id" {
+    type        = "string"
+    required    = true
+    description = "Bot UUID"
+  }
+
+  operation {
+    protocol = "http"
+    method   = "POST"
+    url      = "https://api.recall.ai/api/v1/bot/{{ args.bot_id }}/leave_call/"
+
+    auth {
+      kind   = "bearer"
+      secret = "recall_ai.api_key"
+    }
+  }
+
+  result {
+    decode = "json"
+    output = "Bot {{ args.bot_id }} is leaving the call. Poll get_bot until status == \"done\" before retrieving transcript."
+  }
+}
+
+command "send_chat_message" {
+  title       = "Send chat message"
+  summary     = "Send a message to the meeting chat"
+  description = <<-EOT
+    Posts a chat message visible to all meeting participants. Only works while
+    the bot is in an active meeting session.
+
+    Parameters:
+    - bot_id: UUID of the bot in the meeting
+    - message: Text content to send
+
+    ## Guidance for AI agents
+    Use this to communicate with meeting participants during a live session,
+    e.g. to share a note, ask a clarifying question, or post a summary.
+    Example: `earl call --yes --json recall_ai.send_chat_message --bot_id <id> --message "Here are the action items so far: ..."`
+  EOT
+
+  annotations {
+    mode    = "write"
+    secrets = ["recall_ai.api_key"]
+  }
+
+  param "bot_id" {
+    type        = "string"
+    required    = true
+    description = "Bot UUID"
+  }
+
+  param "message" {
+    type        = "string"
+    required    = true
+    description = "Text message to send to the meeting chat"
+  }
+
+  operation {
+    protocol = "http"
+    method   = "POST"
+    url      = "https://api.recall.ai/api/v1/bot/{{ args.bot_id }}/send_chat_message/"
+
+    auth {
+      kind   = "bearer"
+      secret = "recall_ai.api_key"
+    }
+
+    headers = {
+      Accept = "application/json"
+    }
+
+    body {
+      kind = "json"
+      value = {
+        message = "{{ args.message }}"
+      }
+    }
+  }
+
+  result {
+    decode = "json"
+    output = "Chat message sent to meeting."
+  }
+}
