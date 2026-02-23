@@ -1,6 +1,7 @@
 use std::fs;
 
 use earl::secrets::metadata_index::{load_index, save_index};
+use earl::secrets::resolver::SecretResolver;
 use earl::secrets::store::{InMemorySecretStore, SecretIndex, SecretStore, require_secret};
 use secrecy::SecretString;
 use tempfile::tempdir;
@@ -46,12 +47,67 @@ fn require_secret_works_with_in_memory_store() {
         )
         .unwrap();
 
-    let value = require_secret(&store, "github.token").unwrap();
+    let resolvers: Vec<Box<dyn SecretResolver>> = vec![];
+
+    let value = require_secret(&store, &resolvers, "github.token").unwrap();
     assert_eq!(value, "secret-value");
 
-    let err = require_secret(&store, "missing").unwrap_err();
+    let err = require_secret(&store, &resolvers, "missing").unwrap_err();
     assert!(
         err.to_string()
             .contains("missing required secret `missing`")
     );
+}
+
+// ── SecretResolver dispatch tests ────────────────────────────
+
+struct MockResolver {
+    scheme: String,
+    value: String,
+}
+
+impl SecretResolver for MockResolver {
+    fn scheme(&self) -> &str {
+        &self.scheme
+    }
+    fn resolve(&self, _reference: &str) -> anyhow::Result<SecretString> {
+        Ok(SecretString::new(self.value.clone().into()))
+    }
+}
+
+#[test]
+fn require_secret_dispatches_to_resolver_by_scheme() {
+    let store = InMemorySecretStore::default();
+    let resolver = MockResolver {
+        scheme: "mock".to_string(),
+        value: "resolved-value".to_string(),
+    };
+    let resolvers: Vec<Box<dyn SecretResolver>> = vec![Box::new(resolver)];
+
+    let value = require_secret(&store, &resolvers, "mock://some/path").unwrap();
+    assert_eq!(value, "resolved-value");
+}
+
+#[test]
+fn require_secret_falls_back_to_store_for_plain_keys() {
+    let store = InMemorySecretStore::default();
+    store
+        .set_secret(
+            "github.token",
+            SecretString::new("keychain-value".to_string().into()),
+        )
+        .unwrap();
+    let resolvers: Vec<Box<dyn SecretResolver>> = vec![];
+
+    let value = require_secret(&store, &resolvers, "github.token").unwrap();
+    assert_eq!(value, "keychain-value");
+}
+
+#[test]
+fn require_secret_errors_for_unknown_scheme() {
+    let store = InMemorySecretStore::default();
+    let resolvers: Vec<Box<dyn SecretResolver>> = vec![];
+
+    let err = require_secret(&store, &resolvers, "unknown://path").unwrap_err();
+    assert!(err.to_string().contains("unknown://"));
 }

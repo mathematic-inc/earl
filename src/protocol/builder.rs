@@ -123,7 +123,7 @@ where
     let mut secrets_context = Map::new();
 
     for secret_key in &entry.template.annotations.secrets {
-        let secret = require_secret(secret_manager.store(), secret_key)?;
+        let secret = require_secret(secret_manager.store(), secret_manager.resolvers(), secret_key)?;
         insert_dotted_key(
             &mut secrets_context,
             secret_key,
@@ -137,7 +137,7 @@ where
     if let Some(envs) = &entry.provider_environments {
         for secret_key in &envs.secrets {
             if !entry.template.annotations.secrets.contains(secret_key) {
-                let secret = require_secret(secret_manager.store(), secret_key)?;
+                let secret = require_secret(secret_manager.store(), secret_manager.resolvers(), secret_key)?;
                 insert_dotted_key(
                     &mut secrets_context,
                     secret_key,
@@ -335,7 +335,7 @@ where
                 );
             }
 
-            let connection_url = require_secret(secret_manager.store(), connection_secret_key)?;
+            let connection_url = require_secret(secret_manager.store(), secret_manager.resolvers(), connection_secret_key)?;
             secret_values.push(connection_url.clone());
 
             let mut data = earl_protocol_sql::builder::build_sql_request(
@@ -390,7 +390,7 @@ where
             name,
             secret,
         } => {
-            let value = require_secret(secret_manager.store(), secret)?;
+            let value = require_secret(secret_manager.store(), secret_manager.resolvers(), secret)?;
             outputs.secret_values.push(value.clone());
             match location {
                 ApiKeyLocation::Header => outputs.headers.push((name.clone(), value)),
@@ -399,7 +399,7 @@ where
             }
         }
         AuthTemplate::Bearer { secret } => {
-            let token = require_secret(secret_manager.store(), secret)?;
+            let token = require_secret(secret_manager.store(), secret_manager.resolvers(), secret)?;
             outputs.secret_values.push(token.clone());
             outputs
                 .headers
@@ -410,7 +410,7 @@ where
             password_secret,
         } => {
             let user = render_string_raw(username, context)?;
-            let password = require_secret(secret_manager.store(), password_secret)?;
+            let password = require_secret(secret_manager.store(), secret_manager.resolvers(), password_secret)?;
             outputs.secret_values.push(password.clone());
             let encoded =
                 base64::engine::general_purpose::STANDARD.encode(format!("{user}:{password}"));

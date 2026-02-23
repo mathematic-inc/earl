@@ -1,5 +1,6 @@
 pub mod keychain;
 pub mod metadata_index;
+pub mod resolver;
 pub mod store;
 
 use anyhow::Result;
@@ -10,10 +11,12 @@ use crate::config;
 
 use self::keychain::KeychainSecretStore;
 use self::metadata_index::{load_index, save_index};
+use self::resolver::SecretResolver;
 use self::store::{SecretIndex, SecretMetadata, SecretStore};
 
 pub struct SecretManager {
     store: Box<dyn SecretStore + Send + Sync>,
+    resolvers: Vec<Box<dyn SecretResolver>>,
     index_path: std::path::PathBuf,
 }
 
@@ -21,6 +24,7 @@ impl SecretManager {
     pub fn new() -> Self {
         Self {
             store: Box::new(KeychainSecretStore),
+            resolvers: Vec::new(),
             index_path: config::secrets_index_path(),
         }
     }
@@ -29,7 +33,11 @@ impl SecretManager {
         store: Box<dyn SecretStore + Send + Sync>,
         index_path: PathBuf,
     ) -> Self {
-        Self { store, index_path }
+        Self {
+            store,
+            resolvers: Vec::new(),
+            index_path,
+        }
     }
 
     pub fn set(&self, key: &str, secret: SecretString) -> Result<()> {
@@ -70,6 +78,10 @@ impl SecretManager {
 
     pub fn store(&self) -> &dyn SecretStore {
         self.store.as_ref()
+    }
+
+    pub fn resolvers(&self) -> &[Box<dyn SecretResolver>] {
+        &self.resolvers
     }
 
     fn load_index(&self) -> Result<SecretIndex> {

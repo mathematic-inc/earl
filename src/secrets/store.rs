@@ -1,10 +1,12 @@
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 
-use anyhow::{Result, anyhow};
+use anyhow::{Result, anyhow, bail};
 use chrono::{DateTime, Utc};
 use secrecy::{ExposeSecret, SecretString};
 use serde::{Deserialize, Serialize};
+
+use super::resolver::SecretResolver;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SecretMetadata {
@@ -84,7 +86,21 @@ impl SecretStore for InMemorySecretStore {
     }
 }
 
-pub fn require_secret(store: &dyn SecretStore, key: &str) -> Result<String> {
+pub fn require_secret(
+    store: &dyn SecretStore,
+    resolvers: &[Box<dyn SecretResolver>],
+    key: &str,
+) -> Result<String> {
+    // URI-prefixed keys dispatch to the matching resolver
+    if let Some((scheme, _)) = key.split_once("://") {
+        for resolver in resolvers {
+            if resolver.scheme() == scheme {
+                return Ok(resolver.resolve(key)?.expose_secret().to_string());
+            }
+        }
+        bail!("no secret resolver registered for scheme `{scheme}://`");
+    }
+    // Plain keys fall back to the keychain store
     let secret = store
         .get_secret(key)?
         .ok_or_else(|| anyhow!("missing required secret `{key}`"))?;

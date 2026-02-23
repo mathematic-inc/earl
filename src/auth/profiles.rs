@@ -62,7 +62,7 @@ pub async fn resolve_profile(
         token_url.ok_or_else(|| anyhow::anyhow!("profile `{name}` missing token_url"))?;
 
     let client_secret = match &profile.client_secret_key {
-        Some(secret_key) => Some(require_secret(secrets.store(), secret_key)?),
+        Some(secret_key) => Some(require_secret(secrets.store(), secrets.resolvers(), secret_key)?),
         None => None,
     };
 
