@@ -54,7 +54,7 @@ For these patterns, no pre-built template exists. Use `create-template` to autho
 |---|---|
 | `psql ` / `mysql ` / `sqlite3 ` | `sql` |
 | `grpcurl ` | `grpc` |
-| Any other `curl` / `wget` URL | `http` |
+| Any other `curl` / `wget` / `http` URL | `http` |
 | Shell scripts | `bash` |
 
 ## Files to Scan
