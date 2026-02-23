@@ -70,8 +70,6 @@ pub enum TemplateSubcommand {
     Validate,
     /// Import a template file from a local path or direct HTTP(S) URL.
     Import(TemplateImportArgs),
-    /// Generate a template by delegating to a coding CLI.
-    Generate(TemplateGenerateArgs),
 }
 
 #[derive(Debug, Args)]
@@ -112,18 +110,6 @@ pub enum TemplateImportScope {
     Local,
     #[value(name = "global")]
     Global,
-}
-
-#[derive(Debug, Args)]
-pub struct TemplateGenerateArgs {
-    /// Coding CLI invocation after `--` (example: `-- claude --dangerously-skip-permissions`).
-    #[arg(
-        required = true,
-        num_args = 1..,
-        trailing_var_arg = true,
-        allow_hyphen_values = true
-    )]
-    pub command: Vec<String>,
 }
 
 #[derive(Debug, Args)]
