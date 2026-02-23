@@ -3,23 +3,27 @@ use std::path::PathBuf;
 use std::time::UNIX_EPOCH;
 
 use anyhow::Result;
-use serde::{Deserialize, Serialize};
+use rkyv::rancor::Error as RkyvError;
+use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
 
 use crate::template::catalog::TemplateCatalog;
+use earl_core::with::AsJson;
 
 // Bump this whenever any type transitively included in TemplateCatalog changes its
-// serialized shape (field added, removed, or reordered). bincode 1.x is not
-// self-describing — it will silently deserialize stale data if the version is not bumped.
-// Also bump when adding or removing cfg-gated variants from OperationTemplate: bincode
+// serialized shape (field added, removed, or reordered). rkyv is not self-describing
+// — it will silently deserialize stale data if the version is not bumped.
+// Also bump when adding or removing cfg-gated variants from OperationTemplate: rkyv
 // serializes enum variants by index, so changing which features are compiled in shifts
 // indices and corrupts existing caches.
-pub const CACHE_VERSION: u32 = 1;
+pub const CACHE_VERSION: u32 = 2;
 
 /// Serialized catalog cache file stored at `~/.cache/earl/catalog-{CACHE_VERSION}.bin`.
-#[derive(Serialize, Deserialize)]
+#[derive(Archive, RkyvSerialize, RkyvDeserialize)]
 pub struct CacheFile {
     pub version: u32,
     /// Sorted list of (absolute_path, mtime_unix_secs) for every .hcl file.
+    /// Archived as a JSON string via `AsJson` since `PathBuf` is not `Archive`.
+    #[rkyv(with = AsJson)]
     pub fingerprint: Vec<(PathBuf, u64)>,
     pub catalog: TemplateCatalog,
 }
@@ -34,9 +38,9 @@ pub fn collect_fingerprint(global_dir: &Path, local_dir: &Path) -> Result<Vec<(P
     let mut entries: Vec<(PathBuf, u64)> = Vec::new();
     for dir in [global_dir, local_dir] {
         for path in super::loader::template_files_in_dir(dir)? {
-            let mtime = std::fs::metadata(&path)?
-                .modified()
+            let mtime = std::fs::metadata(&path)
                 .ok()
+                .and_then(|m| m.modified().ok())
                 .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
                 .map(|d| d.as_secs())
                 .unwrap_or(0);
@@ -55,7 +59,7 @@ pub fn try_load_cache(
     fingerprint: &[(PathBuf, u64)],
 ) -> Option<TemplateCatalog> {
     let bytes = std::fs::read(cache_path).ok()?;
-    let cached: CacheFile = bincode::deserialize(&bytes).ok()?;
+    let cached: CacheFile = rkyv::from_bytes::<CacheFile, RkyvError>(&bytes).ok()?;
     if cached.version != CACHE_VERSION {
         return None;
     }
@@ -77,10 +81,13 @@ pub fn save_cache(
         fingerprint: fingerprint.to_vec(),
         catalog: catalog.clone(),
     };
-    let bytes = bincode::serialize(&file)?;
+    let bytes = rkyv::to_bytes::<RkyvError>(&file)?;
     let tmp = cache_path.with_extension(format!("{}.tmp", std::process::id()));
     std::fs::write(&tmp, &bytes)?;
-    std::fs::rename(&tmp, cache_path)?;
+    if let Err(e) = std::fs::rename(&tmp, cache_path) {
+        let _ = std::fs::remove_file(&tmp);
+        return Err(e.into());
+    }
     Ok(())
 }
 
@@ -91,14 +98,15 @@ mod tests {
     use std::path::PathBuf;
 
     #[test]
-    fn cache_file_roundtrips_bincode() {
+    fn cache_file_roundtrips_rkyv() {
         let original = CacheFile {
             version: CACHE_VERSION,
             fingerprint: vec![(PathBuf::from("/tmp/foo.hcl"), 1_700_000_000u64)],
             catalog: crate::template::catalog::TemplateCatalog::empty(),
         };
-        let bytes = bincode::serialize(&original).expect("serialize");
-        let decoded: CacheFile = bincode::deserialize(&bytes).expect("deserialize");
+        let bytes = rkyv::to_bytes::<RkyvError>(&original).expect("serialize");
+        let decoded: CacheFile =
+            rkyv::from_bytes::<CacheFile, RkyvError>(&bytes).expect("deserialize");
         assert_eq!(decoded.version, CACHE_VERSION);
         assert_eq!(decoded.fingerprint, original.fingerprint);
         assert_eq!(decoded.catalog.entries.len(), 0);
@@ -126,7 +134,7 @@ mod tests {
     #[test]
     fn save_and_load_roundtrips_catalog() {
         let tmp = tempfile::tempdir().unwrap();
-        let cache_path = tmp.path().join("catalog-1.bin");
+        let cache_path = tmp.path().join("catalog-2.bin");
         let fp = vec![(PathBuf::from("/tmp/foo.hcl"), 12345u64)];
 
         save_cache(&cache_path, &fp, &TemplateCatalog::empty()).unwrap();
@@ -138,7 +146,7 @@ mod tests {
     #[test]
     fn stale_mtime_returns_none() {
         let tmp = tempfile::tempdir().unwrap();
-        let cache_path = tmp.path().join("catalog-1.bin");
+        let cache_path = tmp.path().join("catalog-2.bin");
         let fp = vec![(PathBuf::from("/tmp/foo.hcl"), 12345u64)];
 
         save_cache(&cache_path, &fp, &TemplateCatalog::empty()).unwrap();
@@ -150,14 +158,14 @@ mod tests {
     #[test]
     fn missing_cache_returns_none() {
         let tmp = tempfile::tempdir().unwrap();
-        let cache_path = tmp.path().join("catalog-1.bin");
+        let cache_path = tmp.path().join("catalog-2.bin");
         assert!(try_load_cache(&cache_path, &[]).is_none());
     }
 
     #[test]
     fn corrupt_cache_returns_none() {
         let tmp = tempfile::tempdir().unwrap();
-        let cache_path = tmp.path().join("catalog-1.bin");
+        let cache_path = tmp.path().join("catalog-2.bin");
         std::fs::write(&cache_path, b"garbage").unwrap();
         assert!(try_load_cache(&cache_path, &[]).is_none());
     }

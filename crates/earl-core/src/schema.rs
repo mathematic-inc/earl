@@ -1,9 +1,14 @@
 use std::collections::BTreeMap;
 
+use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
+use crate::with::AsJson;
+
+#[derive(
+    Debug, Clone, Deserialize, Serialize, PartialEq, Eq, Archive, RkyvSerialize, RkyvDeserialize,
+)]
 #[serde(deny_unknown_fields)]
 pub struct AllowRule {
     pub scheme: String,
@@ -12,7 +17,19 @@ pub struct AllowRule {
     pub path_prefix: String,
 }
 
-#[derive(Debug, Clone, Copy, Default, Deserialize, Serialize, PartialEq, Eq)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    Default,
+    Deserialize,
+    Serialize,
+    PartialEq,
+    Eq,
+    Archive,
+    RkyvSerialize,
+    RkyvDeserialize,
+)]
 pub enum CommandMode {
     #[serde(rename = "read")]
     Read,
@@ -30,7 +47,7 @@ impl CommandMode {
     }
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, Archive, RkyvSerialize, RkyvDeserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ParamSpec {
     pub name: String,
@@ -38,11 +55,23 @@ pub struct ParamSpec {
     pub r#type: ParamType,
     #[serde(default)]
     pub required: bool,
+    #[rkyv(with = AsJson)]
     pub default: Option<Value>,
     pub description: Option<String>,
 }
 
-#[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq, Eq)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    Deserialize,
+    Serialize,
+    PartialEq,
+    Eq,
+    Archive,
+    RkyvSerialize,
+    RkyvDeserialize,
+)]
 #[serde(rename_all = "lowercase")]
 pub enum ParamType {
     String,
@@ -69,7 +98,7 @@ impl std::fmt::Display for ParamType {
     }
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, Archive, RkyvSerialize, RkyvDeserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum AuthTemplate {
     None,
@@ -90,7 +119,7 @@ pub enum AuthTemplate {
     },
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, Archive, RkyvSerialize, RkyvDeserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ApiKeyLocation {
     Header,
@@ -98,14 +127,16 @@ pub enum ApiKeyLocation {
     Cookie,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, Archive, RkyvSerialize, RkyvDeserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum BodyTemplate {
     None,
     Json {
+        #[rkyv(with = AsJson)]
         value: Value,
     },
     FormUrlencoded {
+        #[rkyv(with = AsJson)]
         fields: BTreeMap<String, Value>,
     },
     Multipart {
@@ -125,7 +156,7 @@ pub enum BodyTemplate {
     },
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, Archive, RkyvSerialize, RkyvDeserialize)]
 #[serde(deny_unknown_fields)]
 pub struct MultipartPartTemplate {
     pub name: String,
@@ -136,7 +167,7 @@ pub struct MultipartPartTemplate {
     pub filename: Option<String>,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, Archive, RkyvSerialize, RkyvDeserialize)]
 #[serde(deny_unknown_fields)]
 pub struct TransportTemplate {
     pub timeout_ms: Option<u64>,
@@ -148,7 +179,7 @@ pub struct TransportTemplate {
     pub proxy_profile: Option<String>,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, Archive, RkyvSerialize, RkyvDeserialize)]
 #[serde(deny_unknown_fields)]
 pub struct RedirectTemplate {
     #[serde(default = "default_follow_redirects")]
@@ -157,7 +188,7 @@ pub struct RedirectTemplate {
     pub max_hops: usize,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, Archive, RkyvSerialize, RkyvDeserialize)]
 #[serde(deny_unknown_fields)]
 pub struct RetryTemplate {
     #[serde(default)]
@@ -168,13 +199,13 @@ pub struct RetryTemplate {
     pub retry_on_status: Vec<u16>,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, Archive, RkyvSerialize, RkyvDeserialize)]
 #[serde(deny_unknown_fields)]
 pub struct TlsTemplate {
     pub min_version: Option<String>,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, Archive, RkyvSerialize, RkyvDeserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ResultTemplate {
     #[serde(default)]
@@ -200,7 +231,9 @@ fn default_result_output() -> String {
     "{{ result }}".to_string()
 }
 
-#[derive(Debug, Clone, Copy, Default, Deserialize, Serialize)]
+#[derive(
+    Debug, Clone, Copy, Default, Deserialize, Serialize, Archive, RkyvSerialize, RkyvDeserialize,
+)]
 #[serde(rename_all = "snake_case")]
 pub enum ResultDecode {
     #[default]
@@ -212,7 +245,7 @@ pub enum ResultDecode {
     Binary,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, Archive, RkyvSerialize, RkyvDeserialize)]
 #[serde(untagged)]
 pub enum ResultExtract {
     JsonPointer { json_pointer: String },

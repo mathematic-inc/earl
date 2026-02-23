@@ -1,11 +1,13 @@
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 
+use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
 use serde::{Deserialize, Serialize};
 
 use super::schema::{CommandMode, CommandTemplate};
+use earl_core::with::AsPath;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Archive, RkyvSerialize, RkyvDeserialize)]
 pub struct TemplateCatalog {
     pub entries: BTreeMap<String, TemplateCatalogEntry>,
 }
@@ -30,7 +32,7 @@ impl TemplateCatalog {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Archive, RkyvSerialize, RkyvDeserialize)]
 pub struct TemplateCatalogEntry {
     pub key: String,
     pub provider: String,
@@ -44,13 +46,25 @@ pub struct TemplateCatalogEntry {
     pub template: CommandTemplate,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Archive, RkyvSerialize, RkyvDeserialize)]
 pub struct TemplateSource {
+    #[rkyv(with = AsPath)]
     pub path: PathBuf,
     pub scope: TemplateScope,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    Serialize,
+    Deserialize,
+    PartialEq,
+    Eq,
+    Archive,
+    RkyvSerialize,
+    RkyvDeserialize,
+)]
 pub enum TemplateScope {
     Local,
     Global,
