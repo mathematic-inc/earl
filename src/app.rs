@@ -1,7 +1,6 @@
 use std::env;
 use std::io::{self, Read, Write};
 use std::net::SocketAddr;
-use std::process::{Command as ProcessCommand, Stdio};
 
 use anyhow::{Context, Result, bail};
 use clap::CommandFactory;
@@ -12,7 +11,7 @@ use tracing_subscriber::EnvFilter;
 use crate::auth::oauth2::OAuthManager;
 use crate::cli::{
     AuthSubcommand, Cli, Command, CompletionArgs, CompletionShell, DoctorArgs, McpArgs,
-    McpMode as CliMcpMode, McpTransport, SecretsSubcommand, TemplateGenerateArgs,
+    McpMode as CliMcpMode, McpTransport, SecretsSubcommand,
     TemplateImportScope, TemplateMode, TemplateSubcommand, WebArgs,
 };
 use crate::config::{self, Config};
@@ -328,9 +327,6 @@ async fn run_templates(command: TemplateSubcommand, json_mode: bool, cfg: Config
                 }
             }
         }
-        TemplateSubcommand::Generate(args) => {
-            run_template_generate(args, json_mode)?;
-        }
     }
 
     Ok(())
@@ -534,63 +530,6 @@ fn prompt_write_confirmation(command: &str) -> Result<()> {
     Ok(())
 }
 
-#[derive(Debug)]
-struct TemplateGenerateInput {
-    request: String,
-}
-
-fn run_template_generate(args: TemplateGenerateArgs, json_mode: bool) -> Result<()> {
-    if json_mode {
-        bail!("`earl templates generate` does not support --json");
-    }
-
-    println!("Template generation wizard");
-    let request =
-        prompt_required("Describe the template you want (include provider.command if known): ")?;
-
-    let generate_input = TemplateGenerateInput {
-        request: request.clone(),
-    };
-    let generated_prompt = build_template_generation_prompt(&generate_input);
-
-    let (program, cli_args) = args
-        .command
-        .split_first()
-        .context("missing coding CLI command")?;
-    println!("Sending prompt to coding CLI: {}", args.command.join(" "));
-
-    let mut child = ProcessCommand::new(program)
-        .args(cli_args)
-        .stdin(Stdio::piped())
-        .stdout(Stdio::inherit())
-        .stderr(Stdio::inherit())
-        .spawn()
-        .with_context(|| format!("failed to start coding CLI `{program}`"))?;
-
-    {
-        let mut stdin = child
-            .stdin
-            .take()
-            .context("failed opening coding CLI stdin")?;
-        stdin
-            .write_all(generated_prompt.as_bytes())
-            .context("failed writing prompt to coding CLI stdin")?;
-        stdin
-            .write_all(b"\n")
-            .context("failed writing newline to coding CLI stdin")?;
-    }
-
-    let status = child
-        .wait()
-        .context("failed waiting for coding CLI process")?;
-    if !status.success() {
-        bail!("coding CLI exited with status {status}");
-    }
-
-    println!("Template request sent.");
-    Ok(())
-}
-
 #[derive(Debug, serde::Serialize)]
 struct TemplateListRow {
     command: String,
@@ -653,82 +592,6 @@ fn template_scope_label(scope: TemplateScope) -> &'static str {
         TemplateScope::Local => "local",
         TemplateScope::Global => "global",
     }
-}
-
-fn prompt_required(label: &str) -> Result<String> {
-    loop {
-        let value = prompt(label)?;
-        if !value.trim().is_empty() {
-            return Ok(value);
-        }
-        println!("A value is required.");
-    }
-}
-
-fn build_template_generation_prompt(input: &TemplateGenerateInput) -> String {
-    let command_hint = extract_command_hint(&input.request);
-    let hint_block = if let Some((provider, command)) = command_hint {
-        format!(
-            "- likely command key: `{provider}.{command}`\n- likely file: `templates/{provider}.hcl`"
-        )
-    } else {
-        "- infer command key and file path from the user request".to_string()
-    };
-
-    format!(
-        r#"You are editing templates for the earl CLI project.
-
-User request:
-{request}
-
-Hints:
-{hint_block}
-
-Constraints:
-- Do most of the design work yourself; avoid asking follow-up questions unless strictly necessary.
-- Follow the earl template schema (`version`, `provider`, `commands`, `params`, `operation`, `result`).
-- Create or update the command in the provider file (prefer `templates/<provider>.hcl`).
-- Determine `annotations.mode` (`read` vs `write`) from the requested behavior.
-- Keep existing commands in the same file unless they must be adjusted for schema correctness.
-- Include a useful `title`, `summary`, and markdown `description`.
-- Add a `## Guidance for AI agents` section and an `earl call provider.command --param value` usage example in the description.
-- Model parameters in `params` with appropriate `type`, `required`, and `default`.
-- Prefer least-privilege handling for secrets/auth and avoid overbroad network behavior.
-
-After editing:
-1. Run `earl templates validate`.
-2. If validation fails, fix the template and rerun validation.
-3. Return a brief summary of what changed and any assumptions.
-"#,
-        request = input.request,
-        hint_block = hint_block,
-    )
-}
-
-fn extract_command_hint(raw: &str) -> Option<(String, String)> {
-    for token in raw.split(|ch: char| {
-        ch.is_whitespace()
-            || matches!(
-                ch,
-                ',' | ';' | ':' | '(' | ')' | '[' | ']' | '{' | '}' | '"' | '\''
-            )
-    }) {
-        let Some((provider, command)) = token.split_once('.') else {
-            continue;
-        };
-        if is_identifier(provider) && is_identifier(command) {
-            return Some((provider.to_string(), command.to_string()));
-        }
-    }
-
-    None
-}
-
-fn is_identifier(raw: &str) -> bool {
-    !raw.is_empty()
-        && raw
-            .chars()
-            .all(|ch| ch.is_ascii_alphanumeric() || ch == '_')
 }
 
 fn render_doctor_report(report: &DoctorReport, cwd: &str) {
