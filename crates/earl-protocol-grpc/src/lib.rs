@@ -4,6 +4,7 @@ pub mod grpc;
 pub mod schema;
 
 pub use executor::GrpcExecutor;
+pub use executor::GrpcStreamExecutor;
 pub use schema::{GrpcOperationTemplate, GrpcTemplate};
 
 /// Prepared gRPC request data, ready for execution.

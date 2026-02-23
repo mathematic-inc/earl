@@ -15,12 +15,14 @@ use earl_core::{ExecutionContext, PreparedBody, RawExecutionResult};
 
 use crate::PreparedGrpcData;
 
-/// Execute a single gRPC request and return the result.
-pub async fn execute_grpc_once_with_host_validator<F, Fut>(
+/// Shared helper: validates the URL, resolves DNS, connects a tonic channel,
+/// and performs the dynamic gRPC call.  Returns the RPC URL and the raw
+/// `DynamicResponse` so callers can decide how to consume the result.
+async fn grpc_connect_and_call<F, Fut>(
     grpc_data: &PreparedGrpcData,
     ctx: &ExecutionContext,
     host_validator: &mut F,
-) -> Result<RawExecutionResult>
+) -> Result<(Url, DynamicResponse)>
 where
     F: FnMut(Url) -> Fut,
     Fut: Future<Output = Result<Vec<IpAddr>>>,
@@ -76,6 +78,22 @@ where
             .map_err(|err| anyhow!("gRPC reflection request failed: {err}"))?
     };
 
+    Ok((rpc_url, dynamic_response))
+}
+
+/// Execute a single gRPC request and return the result.
+pub async fn execute_grpc_once_with_host_validator<F, Fut>(
+    grpc_data: &PreparedGrpcData,
+    ctx: &ExecutionContext,
+    host_validator: &mut F,
+) -> Result<RawExecutionResult>
+where
+    F: FnMut(Url) -> Fut,
+    Fut: Future<Output = Result<Vec<IpAddr>>>,
+{
+    let (rpc_url, dynamic_response) =
+        grpc_connect_and_call(grpc_data, ctx, host_validator).await?;
+
     let (status, payload) = normalize_dynamic_response(dynamic_response);
     let payload_bytes = serde_json::to_vec(&payload).context("failed serializing gRPC payload")?;
     if payload_bytes.len() > ctx.transport.max_response_bytes {
@@ -115,6 +133,117 @@ where
         ctx: &ExecutionContext,
     ) -> Result<RawExecutionResult> {
         execute_grpc_once_with_host_validator(data, ctx, &mut self.host_validator).await
+    }
+}
+
+use earl_core::{StreamChunk, StreamMeta, StreamingProtocolExecutor};
+use tokio::sync::mpsc;
+
+/// Streaming gRPC protocol executor.
+///
+/// Sends each gRPC response message as an individual [`StreamChunk`] instead
+/// of buffering all messages into a single JSON array.  For unary responses
+/// the single message is sent as one chunk.
+pub struct GrpcStreamExecutor<F> {
+    pub host_validator: F,
+}
+
+impl<F, Fut> StreamingProtocolExecutor for GrpcStreamExecutor<F>
+where
+    F: FnMut(Url) -> Fut + Send,
+    Fut: Future<Output = Result<Vec<IpAddr>>> + Send,
+{
+    type PreparedData = PreparedGrpcData;
+
+    async fn execute_stream(
+        &mut self,
+        data: &PreparedGrpcData,
+        ctx: &ExecutionContext,
+        sender: mpsc::Sender<StreamChunk>,
+    ) -> Result<StreamMeta> {
+        let (rpc_url, dynamic_response) =
+            grpc_connect_and_call(data, ctx, &mut self.host_validator).await?;
+
+        let content_type = Some("application/json".to_string());
+
+        let status = match dynamic_response {
+            DynamicResponse::Unary(Ok(value)) => {
+                let bytes = serde_json::to_vec(&value)
+                    .context("failed serializing gRPC unary payload")?;
+                let _ = sender
+                    .send(StreamChunk {
+                        data: bytes,
+                        content_type: content_type.clone(),
+                    })
+                    .await;
+                0
+            }
+            DynamicResponse::Unary(Err(status)) => {
+                let code = grpc_code(status.code());
+                let payload = grpc_status_payload(&status);
+                let bytes = serde_json::to_vec(&payload)
+                    .context("failed serializing gRPC error payload")?;
+                let _ = sender
+                    .send(StreamChunk {
+                        data: bytes,
+                        content_type: content_type.clone(),
+                    })
+                    .await;
+                code
+            }
+            DynamicResponse::Streaming(Ok(values)) => {
+                let mut first_error_code = 0_u16;
+                for value in values {
+                    let (chunk_bytes, err_code) = match value {
+                        Ok(item) => {
+                            let bytes = serde_json::to_vec(&item)
+                                .context("failed serializing gRPC stream message")?;
+                            (bytes, 0)
+                        }
+                        Err(err) => {
+                            let code = grpc_code(err.code());
+                            let payload = grpc_status_payload(&err);
+                            let bytes = serde_json::to_vec(&payload)
+                                .context("failed serializing gRPC stream error")?;
+                            (bytes, code)
+                        }
+                    };
+                    if err_code != 0 && first_error_code == 0 {
+                        first_error_code = err_code;
+                    }
+                    if sender
+                        .send(StreamChunk {
+                            data: chunk_bytes,
+                            content_type: content_type.clone(),
+                        })
+                        .await
+                        .is_err()
+                    {
+                        // Receiver dropped — stop streaming gracefully.
+                        break;
+                    }
+                }
+                first_error_code
+            }
+            DynamicResponse::Streaming(Err(status)) => {
+                let code = grpc_code(status.code());
+                let payload = grpc_status_payload(&status);
+                let bytes = serde_json::to_vec(&payload)
+                    .context("failed serializing gRPC stream error payload")?;
+                let _ = sender
+                    .send(StreamChunk {
+                        data: bytes,
+                        content_type: content_type.clone(),
+                    })
+                    .await;
+                code
+            }
+        };
+
+        Ok(StreamMeta {
+            status,
+            url: rpc_url.to_string(),
+        })
     }
 }
 
