@@ -81,7 +81,7 @@ Detect the agent platform by checking paths in this order:
 | Check | Platform | MCP config path |
 |-------|----------|-----------------|
 | `.claude/` directory exists in project | Claude Code | `.claude/settings.json` |
-| `~/Library/Application Support/Claude/claude_desktop_config.json` exists (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows) | Claude Desktop | Same file |
+| `~/Library/Application Support/Claude/claude_desktop_config.json` exists (macOS), `%APPDATA%\Claude\claude_desktop_config.json` (Windows), or `~/.config/Claude/claude_desktop_config.json` (Linux) | Claude Desktop | Same file |
 | `.cursor/` directory exists in project | Cursor | `.cursor/mcp.json` |
 | `.windsurf/` directory exists in project | Windsurf | `.windsurf/mcp.json` |
 | None of the above | Non-MCP agent | System prompt only |
@@ -162,7 +162,7 @@ shell commands — do not use raw curl, gh, stripe-cli, or similar tools directl
 - Discover commands: `earl templates list`
 - Search commands: `earl templates search --json "what you want to do"`
 - CLI fallback (if MCP tools unavailable): `earl call --yes --json provider.command --param value`
-- Always use `--yes` for write-mode commands (without it, Earl prompts interactively and hangs)
+- Always use `--yes` for all automated `earl call` invocations (without it, Earl may prompt interactively and hang)
 - Troubleshooting: `earl doctor`
 ```
 
