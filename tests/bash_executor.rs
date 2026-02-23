@@ -284,13 +284,10 @@ async fn bash_sandbox_cpu_limit_enforced() {
     };
 
     // Tight CPU-bound loop; 1 CPU-second limit.
-    let mut prepared = prepared_bash_request(
-        "python3 -c \"while True: pass\"",
-        result_template,
-    );
+    let mut prepared = prepared_bash_request("python3 -c \"while True: pass\"", result_template);
     if let PreparedProtocolData::Bash(ref mut bash) = prepared.protocol_data {
         bash.sandbox.max_cpu_time_ms = Some(1_000); // 1 CPU-second
-        bash.sandbox.max_time_ms = Some(5_000);     // 5s wall-clock guard
+        bash.sandbox.max_time_ms = Some(5_000); // 5s wall-clock guard
     }
 
     let start = std::time::Instant::now();

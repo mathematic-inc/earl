@@ -35,7 +35,7 @@ pub async fn execute_bash_once(
     }
 
     let max_memory = data.sandbox.max_memory_bytes;
-    let max_cpu_secs = data.sandbox.max_cpu_time_ms.map(|ms| (ms + 999) / 1000);
+    let max_cpu_secs = data.sandbox.max_cpu_time_ms.map(|ms| ms.div_ceil(1000));
 
     // SAFETY: setsid() creates a new session / process group so that we can
     // kill the entire group on timeout without leaking children.
@@ -205,7 +205,7 @@ impl StreamingProtocolExecutor for BashStreamExecutor {
         }
 
         let max_memory = data.sandbox.max_memory_bytes;
-        let max_cpu_secs = data.sandbox.max_cpu_time_ms.map(|ms| (ms + 999) / 1000);
+        let max_cpu_secs = data.sandbox.max_cpu_time_ms.map(|ms| ms.div_ceil(1000));
 
         // SAFETY: setsid() creates a new session / process group so that we
         // can kill the entire group on timeout without leaking children.
