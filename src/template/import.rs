@@ -327,6 +327,7 @@ mod tests {
                     cookies: None,
                     auth: None,
                     body: None,
+                    stream: false,
                     transport: None,
                 }),
                 result: ResultTemplate {
@@ -362,6 +363,7 @@ mod tests {
                     cookies: None,
                     auth: None,
                     body: None,
+                    stream: false,
                     transport: None,
                 }),
                 result: ResultTemplate {

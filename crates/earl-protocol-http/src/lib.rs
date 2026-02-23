@@ -1,8 +1,9 @@
 pub mod builder;
 pub mod executor;
 pub mod schema;
+pub mod sse;
 
-pub use executor::HttpExecutor;
+pub use executor::{HttpExecutor, HttpStreamExecutor};
 pub use schema::{GraphqlOperationTemplate, GraphqlTemplate, HttpOperationTemplate};
 
 /// Prepared HTTP/GraphQL request data, ready for execution.
