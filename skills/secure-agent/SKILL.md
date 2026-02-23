@@ -27,6 +27,7 @@ common case. For stronger containment, pair with OS-level firewall rules or a ne
 |---|---|---|
 | **Claude Code** | `deniedTools` in `.claude/settings.json` | Yes — platform enforced |
 | **Cursor** | `.cursor/mcp.json` or Cursor settings UI | Partial — check Cursor docs for per-tool restrictions |
+| **Windsurf** | `.windsurf/mcp.json` or Windsurf settings UI | Partial — check Windsurf docs for per-tool restrictions |
 | **Claude Desktop** | No bash access | N/A |
 | **Non-MCP CLI agents** | CLAUDE.md instructions only | No — advisory only |
 

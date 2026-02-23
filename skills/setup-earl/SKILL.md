@@ -122,8 +122,9 @@ Discovery mode MCP config:
 
 ### Apply MCP config
 
-**Claude Code or Cursor:** Read the existing config file (create it if it doesn't exist). Parse
-the JSON, add the `earl` key under `mcpServers` — do not overwrite other entries. Write it back.
+**Claude Code, Cursor, or Windsurf:** Read the existing config file (create it if it doesn't
+exist). Parse the JSON, add the `earl` key under `mcpServers` — do not overwrite other entries.
+Write it back.
 
 **Claude Desktop:** The config file lives outside the project directory. Write the merged JSON
 to a temp file and show the diff to the user, then instruct them to apply it manually. If the
