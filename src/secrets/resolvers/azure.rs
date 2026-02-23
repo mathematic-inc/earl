@@ -88,7 +88,7 @@ impl SecretResolver for AzureResolver {
         let az_ref = AzureReference::parse(reference)?;
 
         let access_token =
-            obtain_access_token(&az_ref.vault_name).context("failed to obtain Azure AD access token")?;
+            obtain_access_token().context("failed to obtain Azure AD access token")?;
 
         let url = format!(
             "https://{}.vault.azure.net/secrets/{}?api-version=7.4",
@@ -150,7 +150,7 @@ struct TokenResponse {
 ///
 /// Requires `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, and `AZURE_CLIENT_SECRET`
 /// environment variables to be set.
-fn obtain_access_token(vault_name: &str) -> Result<String> {
+fn obtain_access_token() -> Result<String> {
     let tenant_id = std::env::var("AZURE_TENANT_ID")
         .ok()
         .filter(|v| !v.is_empty())
@@ -173,9 +173,8 @@ fn obtain_access_token(vault_name: &str) -> Result<String> {
         tenant_id
     );
 
-    // The scope for Azure Key Vault is https://{vault-name}.vault.azure.net/.default
-    // but the standard scope works across all vaults.
-    let scope = format!("https://{}.vault.azure.net/.default", vault_name);
+    // Tenant-wide scope that works across all Azure Key Vaults.
+    let scope = "https://vault.azure.net/.default";
 
     let client = reqwest::Client::builder()
         .timeout(Duration::from_secs(10))
@@ -188,7 +187,7 @@ fn obtain_access_token(vault_name: &str) -> Result<String> {
             ("grant_type", "client_credentials"),
             ("client_id", &client_id),
             ("client_secret", &client_secret),
-            ("scope", &scope),
+            ("scope", scope),
         ])
         .build()
         .context("failed to build Azure AD token request")?;

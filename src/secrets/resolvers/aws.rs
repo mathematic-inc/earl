@@ -3,6 +3,24 @@ use secrecy::SecretString;
 
 use crate::secrets::resolver::SecretResolver;
 
+/// Characters that are unsafe in AWS secret references (query/fragment delimiters).
+const UNSAFE_CHARS: &[char] = &['?', '#'];
+
+/// Validate that an AWS reference component does not contain `?`, `#`,
+/// whitespace, or control characters. Slashes are allowed in secret names.
+fn validate_aws_component(value: &str, field_name: &str) -> Result<()> {
+    for ch in value.chars() {
+        if UNSAFE_CHARS.contains(&ch) || ch.is_whitespace() || ch.is_control() {
+            bail!(
+                "{field_name} contains invalid character '{}' — \
+                 must not contain '?', '#', whitespace, or control characters",
+                ch.escape_debug()
+            );
+        }
+    }
+    Ok(())
+}
+
 /// A parsed `aws://secret-name` or `aws://secret-name#json-key` reference.
 #[derive(Debug)]
 struct AwsReference {
@@ -33,6 +51,11 @@ impl AwsReference {
             }
             None => (after_scheme.to_string(), None),
         };
+
+        validate_aws_component(&secret_id, "secret name")?;
+        if let Some(ref key) = json_key {
+            validate_aws_component(key, "JSON key")?;
+        }
 
         Ok(Self {
             secret_id,
@@ -193,5 +216,32 @@ mod tests {
     fn parse_rejects_wrong_scheme() {
         let err = AwsReference::parse("vault://secret/path#field").unwrap_err();
         assert!(err.to_string().contains("invalid"), "got: {}", err);
+    }
+
+    #[test]
+    fn parse_rejects_question_mark_in_secret_id() {
+        let err = AwsReference::parse("aws://my-secret?inject=1").unwrap_err();
+        assert!(
+            err.to_string().contains("invalid character"),
+            "got: {err}"
+        );
+    }
+
+    #[test]
+    fn parse_rejects_control_char_in_secret_id() {
+        let err = AwsReference::parse("aws://my\x00secret").unwrap_err();
+        assert!(
+            err.to_string().contains("invalid character"),
+            "got: {err}"
+        );
+    }
+
+    #[test]
+    fn parse_rejects_whitespace_in_json_key() {
+        let err = AwsReference::parse("aws://secret#my key").unwrap_err();
+        assert!(
+            err.to_string().contains("invalid character"),
+            "got: {err}"
+        );
     }
 }

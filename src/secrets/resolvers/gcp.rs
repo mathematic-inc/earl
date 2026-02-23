@@ -405,6 +405,8 @@ fn token_from_metadata_server() -> Result<String> {
         .build()
         .context("failed to build HTTP client for metadata server")?;
 
+    // The GCE metadata server is link-local (169.254.169.254) and only supports
+    // plain HTTP. This is intentional and VM-internal only.
     let request = client
         .get("http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token")
         .header("Metadata-Flavor", "Google")
