@@ -477,4 +477,15 @@ default = "staging"
         let cfg: Config = toml::from_str("").unwrap();
         assert!(cfg.environments.default.is_none());
     }
+
+    #[test]
+    fn environments_config_rejects_unknown_field() {
+        let result: Result<Config, _> = toml::from_str(
+            r#"
+[environments]
+defaullt = "staging"
+"#,
+        );
+        assert!(result.is_err());
+    }
 }
