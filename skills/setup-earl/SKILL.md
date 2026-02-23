@@ -92,11 +92,11 @@ Infer the protocol from their answer:
 
 | User mentions                                                 | Protocol | Reference file                                          |
 | ------------------------------------------------------------- | -------- | ------------------------------------------------------- |
-| REST, HTTP, API, endpoint, webhook, JSON API                  | HTTP     | [http-templates.md](references/http-templates.md)       |
-| GraphQL, query/mutation (in API context)                      | GraphQL  | [graphql-templates.md](references/graphql-templates.md) |
-| gRPC, protobuf, service mesh                                  | gRPC     | [grpc-templates.md](references/grpc-templates.md)       |
-| shell, bash, CLI, script, command line                        | Bash     | [bash-templates.md](references/bash-templates.md)       |
-| SQL, database, postgres, mysql, sqlite, query (in DB context) | SQL      | [sql-templates.md](references/sql-templates.md)         |
+| REST, HTTP, API, endpoint, webhook, JSON API                  | HTTP     | [http-templates.md](../references/http-templates.md)       |
+| GraphQL, query/mutation (in API context)                      | GraphQL  | [graphql-templates.md](../references/graphql-templates.md) |
+| gRPC, protobuf, service mesh                                  | gRPC     | [grpc-templates.md](../references/grpc-templates.md)       |
+| shell, bash, CLI, script, command line                        | Bash     | [bash-templates.md](../references/bash-templates.md)       |
+| SQL, database, postgres, mysql, sqlite, query (in DB context) | SQL      | [sql-templates.md](../references/sql-templates.md)         |
 
 Only ask a follow-up if the answer is genuinely ambiguous. If the user says "I want to call the GitHub API," infer HTTP with bearer auth — do not ask "which protocol?"
 
@@ -147,6 +147,6 @@ Suggest next steps based on what the user built. Do not give a generic list.
 - **JSON output for scripting:** `earl call --json provider.command | jq .`
 - **Shell completions:** `earl completion bash >> ~/.bashrc` (or zsh/fish equivalent)
 - **Add more commands:** Add another `command` block to the same template file
-- **MCP integration:** See [mcp-integration.md](references/mcp-integration.md) to expose templates as tools for Claude Desktop or Claude Code
-- **Advanced auth:** See [secrets-and-auth.md](references/secrets-and-auth.md) for OAuth, API keys, and advanced auth flows
-- **Template schema reference:** See [template-quick-ref.md](references/template-quick-ref.md) for all protocol shapes and field options
+- **MCP integration:** See [mcp-integration.md](../references/mcp-integration.md) to expose templates as tools for Claude Desktop or Claude Code
+- **Advanced auth:** See [secrets-and-auth.md](../references/secrets-and-auth.md) for OAuth, API keys, and advanced auth flows
+- **Template schema reference:** See [template-quick-ref.md](../references/template-quick-ref.md) for all protocol shapes and field options
