@@ -11,6 +11,8 @@ pub struct GlobalBashLimits {
     pub allow_network: bool,
     pub max_time_ms: Option<u64>,
     pub max_output_bytes: Option<u64>,
+    pub max_memory_bytes: Option<u64>,
+    pub max_cpu_time_ms: Option<u64>,
 }
 
 /// Build a complete `PreparedBashScript` from a Bash operation template.
@@ -61,6 +63,17 @@ pub fn build_bash_request(
     )
     .map(|v| v as usize);
 
+    let max_memory_bytes = most_restrictive_option(
+        template_sandbox.as_ref().and_then(|s| s.max_memory_bytes),
+        global_limits.max_memory_bytes,
+    )
+    .map(|v| v as usize);
+
+    let max_cpu_time_ms = most_restrictive_option(
+        template_sandbox.as_ref().and_then(|s| s.max_cpu_time_ms),
+        global_limits.max_cpu_time_ms,
+    );
+
     Ok(PreparedBashScript {
         script,
         env,
@@ -71,8 +84,8 @@ pub fn build_bash_request(
             writable_paths,
             max_time_ms,
             max_output_bytes,
-            max_memory_bytes: None, // filled in next task
-            max_cpu_time_ms: None,  // filled in next task
+            max_memory_bytes,
+            max_cpu_time_ms,
         },
     })
 }
