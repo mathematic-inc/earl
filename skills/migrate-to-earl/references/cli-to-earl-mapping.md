@@ -34,7 +34,7 @@ both macOS (BSD grep) and Linux (GNU grep) and is a strict superset for these pa
 | `curl.*shopify\.com/admin` | `shopify` | `earl templates import https://raw.githubusercontent.com/brwse/earl/main/examples/shopify.hcl` |
 | `curl.*api\.hub(api|spot)\.com` | `hubspot` | `earl templates import https://raw.githubusercontent.com/brwse/earl/main/examples/hubspot.hcl` |
 | `curl.*api\.mailchimp\.com` | `mailchimp` | `earl templates import https://raw.githubusercontent.com/brwse/earl/main/examples/mailchimp.hcl` |
-| `curl.*api\.datadoghq\.com` / `datadog ` | `datadog` | `earl templates import https://raw.githubusercontent.com/brwse/earl/main/examples/datadog.hcl` |
+| `curl.*datadoghq\.com` / `datadog ` | `datadog` | `earl templates import https://raw.githubusercontent.com/brwse/earl/main/examples/datadog.hcl` |
 | `curl.*sentry\.io/api` | `sentry` | `earl templates import https://raw.githubusercontent.com/brwse/earl/main/examples/sentry.hcl` |
 | `curl.*api\.airtable\.com` | `airtable` | `earl templates import https://raw.githubusercontent.com/brwse/earl/main/examples/airtable.hcl` |
 | `curl.*api\.resend\.com` | `resend` | `earl templates import https://raw.githubusercontent.com/brwse/earl/main/examples/resend.hcl` |
