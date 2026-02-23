@@ -1334,3 +1334,25 @@ command "ping" {
         "unexpected error: {msg}"
     );
 }
+
+// ── External secret reference validation ────────────────────────────
+
+#[test]
+#[cfg(feature = "http")]
+fn validates_external_secret_uri_references() {
+    let dir = tempdir().unwrap();
+    let local_dir = dir.path().join("local");
+    let global_dir = dir.path().join("global");
+    fs::create_dir_all(&local_dir).unwrap();
+    fs::create_dir_all(&global_dir).unwrap();
+
+    fs::write(
+        local_dir.join("external_secret_ref.hcl"),
+        include_str!("fixtures/templates/external_secret_ref.hcl"),
+    )
+    .unwrap();
+
+    let files = validate_all_from_dirs(&global_dir, &local_dir).unwrap();
+    assert_eq!(files.len(), 1);
+    assert!(files[0].to_string_lossy().contains("external_secret_ref.hcl"));
+}
