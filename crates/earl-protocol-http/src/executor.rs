@@ -337,11 +337,34 @@ where
             // Stream chunks instead of buffering the entire response body.
             let mut response = response;
             let mut total_bytes = 0usize;
+            let mut sse_parser = if is_sse {
+                Some(crate::sse::SseParser::new())
+            } else {
+                None
+            };
+            // Buffer for incomplete UTF-8 sequences at chunk boundaries (SSE only).
+            let mut utf8_buffer: Vec<u8> = Vec::new();
+
             while let Some(chunk) = response.chunk().await? {
-                if is_sse {
-                    let text = std::str::from_utf8(&chunk)
-                        .context("SSE response contains invalid UTF-8")?;
-                    let events = crate::sse::parse_sse_events(text);
+                if let Some(parser) = &mut sse_parser {
+                    utf8_buffer.extend_from_slice(&chunk);
+                    // Find the last valid UTF-8 boundary — bytes beyond it
+                    // are an incomplete multi-byte character.
+                    let valid_up_to = match std::str::from_utf8(&utf8_buffer) {
+                        Ok(_) => utf8_buffer.len(),
+                        Err(e) => e.valid_up_to(),
+                    };
+                    if valid_up_to == 0 {
+                        // No complete UTF-8 characters yet — wait for more data.
+                        continue;
+                    }
+                    let text = std::str::from_utf8(&utf8_buffer[..valid_up_to])
+                        .expect("validated UTF-8 boundary");
+                    let events = parser.feed(text);
+                    // Keep any incomplete trailing bytes for the next chunk.
+                    let remainder = utf8_buffer[valid_up_to..].to_vec();
+                    utf8_buffer.clear();
+                    utf8_buffer.extend_from_slice(&remainder);
                     for event in events {
                         total_bytes = total_bytes.saturating_add(event.data.len());
                         if total_bytes > ctx.transport.max_response_bytes {
@@ -353,7 +376,7 @@ where
                         if sender
                             .send(StreamChunk {
                                 data: event.data.into_bytes(),
-                                content_type: Some("application/json".to_string()),
+                                content_type: content_type.clone(),
                             })
                             .await
                             .is_err()
@@ -382,6 +405,37 @@ where
                     {
                         // Receiver dropped — stop streaming gracefully.
                         break;
+                    }
+                }
+            }
+
+            // Feed remaining UTF-8 bytes and flush trailing SSE event.
+            if let Some(mut parser) = sse_parser {
+                if let Ok(text) = std::str::from_utf8(&utf8_buffer)
+                    && !text.is_empty()
+                {
+                    for event in parser.feed(text) {
+                        total_bytes = total_bytes.saturating_add(event.data.len());
+                        if total_bytes <= ctx.transport.max_response_bytes {
+                            let _ = sender
+                                .send(StreamChunk {
+                                    data: event.data.into_bytes(),
+                                    content_type: content_type.clone(),
+                                })
+                                .await;
+                        }
+                    }
+                }
+
+                if let Some(event) = parser.flush() {
+                    total_bytes = total_bytes.saturating_add(event.data.len());
+                    if total_bytes <= ctx.transport.max_response_bytes {
+                        let _ = sender
+                            .send(StreamChunk {
+                                data: event.data.into_bytes(),
+                                content_type: content_type.clone(),
+                            })
+                            .await;
                     }
                 }
             }

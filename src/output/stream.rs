@@ -2,7 +2,6 @@ use anyhow::Result;
 use serde_json::{Map, Value};
 use tokio::sync::mpsc;
 
-use earl_core::decode::DecodedBody;
 use earl_core::schema::ResultTemplate;
 use earl_core::{Redactor, StreamChunk, decode_response};
 
@@ -20,25 +19,42 @@ pub async fn render_streaming_output(
     redactor: &Redactor,
     json_mode: bool,
 ) -> Result<()> {
+    use std::io::Write;
+
     while let Some(chunk) = rx.recv().await {
-        let decoded_body: DecodedBody = decode_response(
+        let decoded_body = match decode_response(
             result_template.decode,
             chunk.content_type.as_deref(),
             &chunk.data,
-        )?;
-        let extracted = extract_result(result_template.extract.as_ref(), &decoded_body)?;
+        ) {
+            Ok(d) => d,
+            Err(e) => {
+                tracing::warn!("skipping stream chunk: failed to decode: {e}");
+                continue;
+            }
+        };
+        let extracted = match extract_result(result_template.extract.as_ref(), &decoded_body) {
+            Ok(v) => v,
+            Err(e) => {
+                tracing::warn!("skipping stream chunk: failed to extract: {e}");
+                continue;
+            }
+        };
 
+        let stdout = std::io::stdout();
+        let mut out = stdout.lock();
         if json_mode {
             let obj = Value::Object(Map::from_iter([
                 ("result".to_string(), extracted.clone()),
                 ("decoded".to_string(), decoded_body.to_json_value()),
             ]));
             let redacted = redactor.redact_json(&obj);
-            println!("{}", serde_json::to_string(&redacted)?);
+            writeln!(out, "{}", serde_json::to_string(&redacted)?)?;
         } else {
             let output = render_human_output(result_template, args, &extracted)?;
-            println!("{}", redactor.redact(&output));
+            writeln!(out, "{}", redactor.redact(&output))?;
         }
+        out.flush()?;
     }
 
     Ok(())

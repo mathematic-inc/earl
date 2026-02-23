@@ -106,9 +106,32 @@ async fn run_call(
         let redactor = prepared.redactor.clone();
 
         let (rx, handle) = start_streaming_request(prepared);
-        render_streaming_output(rx, &result_template, &args, &redactor, json_mode).await?;
-        // Wait for the producer to finish and propagate any errors
-        handle.await??;
+        let render_result =
+            render_streaming_output(rx, &result_template, &args, &redactor, json_mode).await;
+
+        if render_result.is_err() {
+            // Abort the producer so it doesn't leak.
+            handle.abort();
+            render_result?;
+        }
+
+        // Wait for the producer to finish and propagate any errors.
+        match handle.await {
+            Ok(Ok(meta)) => {
+                tracing::debug!(
+                    status = meta.status,
+                    url = %meta.url,
+                    "streaming request completed"
+                );
+            }
+            Ok(Err(e)) => {
+                return Err(e).context("streaming producer failed");
+            }
+            Err(e) => {
+                // JoinError — task panicked or was cancelled.
+                return Err(anyhow::anyhow!("streaming producer task failed: {e}"));
+            }
+        }
     } else {
         let execution = execute_prepared_request(&prepared).await?;
         if json_mode {

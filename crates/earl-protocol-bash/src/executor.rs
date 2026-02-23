@@ -227,39 +227,6 @@ impl StreamingProtocolExecutor for BashStreamExecutor {
                 .context("failed writing stdin to bash process")?;
         }
 
-        // Stream stdout line-by-line.
-        let mut reader = BufReader::new(stdout);
-        let mut line = String::new();
-        let mut total_bytes: usize = 0;
-
-        loop {
-            line.clear();
-            let bytes_read = reader
-                .read_line(&mut line)
-                .await
-                .context("failed reading bash stdout")?;
-            if bytes_read == 0 {
-                break;
-            }
-
-            total_bytes = total_bytes.saturating_add(bytes_read);
-            if total_bytes > max_bytes {
-                bail!("bash stdout exceeded configured max output bytes ({max_bytes} bytes)");
-            }
-
-            let chunk = StreamChunk {
-                data: line.as_bytes().to_vec(),
-                content_type: None,
-            };
-            if sender.send(chunk).await.is_err() {
-                // Receiver dropped — stop streaming gracefully.
-                break;
-            }
-        }
-
-        // Drop the sender so the consumer sees the end of the stream.
-        drop(sender);
-
         // Use sandbox timeout if set, otherwise fall back to transport timeout.
         let timeout = data
             .sandbox
@@ -267,31 +234,84 @@ impl StreamingProtocolExecutor for BashStreamExecutor {
             .map(Duration::from_millis)
             .unwrap_or(ctx.transport.timeout);
 
-        let status = match tokio::time::timeout(timeout, child.wait()).await {
-            Ok(wait_result) => wait_result.context("failed waiting for bash process")?,
+        // Helper closure to kill the process group.
+        let kill_process = |pid: u32| {
+            if let Ok(pgid) = i32::try_from(pid) {
+                unsafe { libc::killpg(pgid, libc::SIGKILL) };
+            }
+        };
+
+        // Wrap the entire streaming operation (stdout reading + wait) in a
+        // single timeout so that a long-running process cannot stream forever.
+        let stream_result = tokio::time::timeout(timeout, async {
+            let mut reader = BufReader::new(stdout);
+            let mut buf = Vec::new();
+            let mut total_bytes: usize = 0;
+
+            loop {
+                buf.clear();
+                let bytes_read = reader
+                    .read_until(b'\n', &mut buf)
+                    .await
+                    .context("failed reading bash stdout")?;
+                if bytes_read == 0 {
+                    break;
+                }
+
+                total_bytes = total_bytes.saturating_add(bytes_read);
+                if total_bytes > max_bytes {
+                    // Kill the process before bailing.
+                    kill_process(pid);
+                    bail!("bash stdout exceeded configured max output bytes ({max_bytes} bytes)");
+                }
+
+                let line = String::from_utf8_lossy(&buf).into_owned();
+                let chunk = StreamChunk {
+                    data: line.into_bytes(),
+                    content_type: None,
+                };
+                if sender.send(chunk).await.is_err() {
+                    // Receiver dropped — kill the process and stop.
+                    kill_process(pid);
+                    break;
+                }
+            }
+
+            // Drop the sender so the consumer sees the end of the stream.
+            drop(sender);
+
+            // Wait for the child to finish.
+            let status = child
+                .wait()
+                .await
+                .context("failed waiting for bash process")?;
+            Ok::<_, anyhow::Error>(status)
+        })
+        .await;
+
+        // Abort the stderr task — we don't need it anymore.
+        stderr_task.abort();
+
+        match stream_result {
+            Ok(Ok(status)) => {
+                let exit_code = status
+                    .code()
+                    .map(|c| c.clamp(0, u16::MAX as i32) as u16)
+                    .unwrap_or(1);
+                Ok(StreamMeta {
+                    status: exit_code,
+                    url: "bash://script".into(),
+                })
+            }
+            Ok(Err(e)) => Err(e),
             Err(_) => {
                 // Timeout: kill the entire process group.
-                if let Ok(pgid) = i32::try_from(pid) {
-                    unsafe { libc::killpg(pgid, libc::SIGKILL) };
-                }
+                kill_process(pid);
                 let _ = child.kill().await;
                 let _ = child.wait().await;
                 bail!("bash script timed out after {timeout:?}");
             }
-        };
-
-        // Wait for stderr drain to finish (ignore errors — we don't stream stderr).
-        let _ = stderr_task.await;
-
-        let exit_code = status
-            .code()
-            .map(|c| c.clamp(0, u16::MAX as i32) as u16)
-            .unwrap_or(1);
-
-        Ok(StreamMeta {
-            status: exit_code,
-            url: "bash://script".into(),
-        })
+        }
     }
 }
 

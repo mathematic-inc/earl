@@ -164,11 +164,19 @@ where
             grpc_connect_and_call(data, ctx, &mut self.host_validator).await?;
 
         let content_type = Some("application/json".to_string());
+        let mut total_bytes = 0usize;
 
         let status = match dynamic_response {
             DynamicResponse::Unary(Ok(value)) => {
                 let bytes =
                     serde_json::to_vec(&value).context("failed serializing gRPC unary payload")?;
+                total_bytes = total_bytes.saturating_add(bytes.len());
+                if total_bytes > ctx.transport.max_response_bytes {
+                    bail!(
+                        "gRPC streaming response exceeded configured max_response_bytes ({} bytes)",
+                        ctx.transport.max_response_bytes
+                    );
+                }
                 let _ = sender
                     .send(StreamChunk {
                         data: bytes,
@@ -182,6 +190,13 @@ where
                 let payload = grpc_status_payload(&status);
                 let bytes = serde_json::to_vec(&payload)
                     .context("failed serializing gRPC error payload")?;
+                total_bytes = total_bytes.saturating_add(bytes.len());
+                if total_bytes > ctx.transport.max_response_bytes {
+                    bail!(
+                        "gRPC streaming response exceeded configured max_response_bytes ({} bytes)",
+                        ctx.transport.max_response_bytes
+                    );
+                }
                 let _ = sender
                     .send(StreamChunk {
                         data: bytes,
@@ -207,6 +222,13 @@ where
                             (bytes, code)
                         }
                     };
+                    total_bytes = total_bytes.saturating_add(chunk_bytes.len());
+                    if total_bytes > ctx.transport.max_response_bytes {
+                        bail!(
+                            "gRPC streaming response exceeded configured max_response_bytes ({} bytes)",
+                            ctx.transport.max_response_bytes
+                        );
+                    }
                     if err_code != 0 && first_error_code == 0 {
                         first_error_code = err_code;
                     }
@@ -229,6 +251,13 @@ where
                 let payload = grpc_status_payload(&status);
                 let bytes = serde_json::to_vec(&payload)
                     .context("failed serializing gRPC stream error payload")?;
+                total_bytes = total_bytes.saturating_add(bytes.len());
+                if total_bytes > ctx.transport.max_response_bytes {
+                    bail!(
+                        "gRPC streaming response exceeded configured max_response_bytes ({} bytes)",
+                        ctx.transport.max_response_bytes
+                    );
+                }
                 let _ = sender
                     .send(StreamChunk {
                         data: bytes,

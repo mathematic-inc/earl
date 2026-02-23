@@ -194,3 +194,39 @@ async fn bash_streaming_env_vars_passed() {
         "expected env var value in: {combined}"
     );
 }
+
+#[tokio::test]
+async fn bash_streaming_stops_when_receiver_drops() {
+    // Start a long-running script that would run for a while.
+    let script = PreparedBashScript {
+        script: "for i in $(seq 1 1000); do echo line$i; sleep 0.01; done".to_string(),
+        env: vec![],
+        cwd: None,
+        stdin: None,
+        sandbox: default_sandbox(),
+    };
+
+    let (tx, mut rx) = mpsc::channel::<StreamChunk>(4);
+    let context = default_context();
+
+    let mut executor = BashStreamExecutor;
+    let handle = tokio::spawn(async move { executor.execute_stream(&script, &context, tx).await });
+
+    // Read a few chunks then drop the receiver.
+    let mut received = 0;
+    while let Some(_chunk) = rx.recv().await {
+        received += 1;
+        if received >= 3 {
+            break;
+        }
+    }
+    drop(rx);
+
+    // The executor should finish without error (or finish within a reasonable time).
+    let result = tokio::time::timeout(Duration::from_secs(5), handle).await;
+    assert!(
+        result.is_ok(),
+        "executor should finish quickly after receiver is dropped"
+    );
+    // The result can be Ok or Err depending on timing — the important thing is it stops.
+}
