@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.5.0](https://github.com/brwse/earl/compare/earl-core-v0.4.1...earl-core-v0.5.0) (2026-02-24)
+
+
+### ⚠ BREAKING CHANGES
+
+* handle optional params gracefully and validate template args ([#49](https://github.com/brwse/earl/issues/49))
+
+### Features
+
+* compiled catalog cache for faster CLI startup ([#34](https://github.com/brwse/earl/issues/34)) ([0349a86](https://github.com/brwse/earl/commit/0349a86973b003a7c532190737e334e4142664ac))
+* handle optional params gracefully and validate template args ([#49](https://github.com/brwse/earl/issues/49)) ([b0f1654](https://github.com/brwse/earl/commit/b0f1654616c4f19cd7f586904bfe986fee148112))
+
 ## [0.4.1](https://github.com/brwse/earl/compare/earl-core-v0.4.0...earl-core-v0.4.1) (2026-02-23)
 
 
