@@ -29,7 +29,7 @@ Earl stores secret values in the OS keychain — macOS Keychain, Linux Secret Se
 
 The `earl secrets get` command returns metadata only: key name, created timestamp, updated timestamp. It never returns the plaintext value. Output templates, which shape what the agent sees in the result, have no access to the `secrets.*` namespace at all.
 
-An AI agent with full shell access to the `earl` binary still cannot read your secret values. See [Secrets](/docs/secrets) for the complete safety model.
+An AI agent with full shell access to the `earl` binary still cannot read your secret values. See [Secrets](/docs/secrets-and-auth) for the complete safety model.
 
 ## Network Egress Rules
 
