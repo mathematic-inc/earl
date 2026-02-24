@@ -82,6 +82,12 @@ where
                     .execute(sql_data, &to_context(prepared))
                     .await
             }
+            #[cfg(feature = "browser")]
+            PreparedProtocolData::Browser(browser_data) => {
+                earl_protocol_browser::BrowserExecutor
+                    .execute(browser_data, &to_context(prepared))
+                    .await
+            }
             _ => Err(anyhow::anyhow!(
                 "unsupported protocol (feature not enabled)"
             )),
@@ -185,6 +191,12 @@ pub fn start_streaming_request(
             #[cfg(feature = "sql")]
             PreparedProtocolData::Sql(_) => {
                 Err(anyhow::anyhow!("streaming not supported for SQL protocol"))
+            }
+            #[cfg(feature = "browser")]
+            PreparedProtocolData::Browser(_) => {
+                Err(anyhow::anyhow!(
+                    "streaming not supported for browser protocol"
+                ))
             }
             _ => Err(anyhow::anyhow!(
                 "unsupported protocol (feature not enabled)"
