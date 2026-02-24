@@ -23,9 +23,11 @@ This goes at the top of the template file, before any `command` blocks:
 environments {
   default = "production"
   secrets = ["github.token"]
-  environments {
-    production = { base_url = "https://api.github.com" }
-    staging    = { base_url = "https://staging.github.internal" }
+  production {
+    base_url = "https://api.github.com"
+  }
+  staging {
+    base_url = "https://staging.github.internal"
   }
 }
 ```
@@ -38,9 +40,12 @@ When a command runs, the active environment's fields are available as `{{ vars.<
 environments {
   default = "production"
   secrets = ["github.token"]
-  environments {
-    production = { base_url = "https://api.github.com" }
-    staging    = { base_url = "https://staging.github.internal"; token_key = "github.staging_token" }
+  production {
+    base_url = "https://api.github.com"
+  }
+  staging {
+    base_url  = "https://staging.github.internal"
+    token_key = "github.staging_token"
   }
 }
 ```
@@ -78,7 +83,7 @@ command "search_repos" {
 
   annotations {
     mode    = "read"
-    secrets = ["github.token"]
+    secrets = ["github.token", "github.staging_token"]
   }
 
   param "query" {
@@ -164,9 +169,11 @@ categories = ["scm"]
 environments {
   default = "production"
   secrets = ["github.token"]
-  environments {
-    production = { base_url = "https://api.github.com" }
-    staging    = { base_url = "https://staging.github.internal" }
+  production {
+    base_url = "https://api.github.com"
+  }
+  staging {
+    base_url = "https://staging.github.internal"
   }
 }
 

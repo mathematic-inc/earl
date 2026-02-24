@@ -165,7 +165,10 @@ operation {
   protocol = "graphql"
   url      = "https://api.github.com/graphql"
 
-  auth { kind = "bearer"; secret = "github.token" }
+  auth {
+    kind   = "bearer"
+    secret = "github.token"
+  }
 
   graphql {
     query = <<-GQL
@@ -216,7 +219,10 @@ operation {
   protocol = "grpc"
   url      = "https://grpc.example.com"
 
-  auth { kind = "bearer"; secret = "provider.token" }
+  auth {
+    kind   = "bearer"
+    secret = "provider.token"
+  }
 
   grpc {
     service             = "example.v1.ExampleService"
@@ -647,10 +653,11 @@ The `result` override inside an environment is optional. If omitted, the command
 environments {
   default = "production"
   secrets = ["myapp.prod_token"]
-
-  environments {
-    production = { base_url = "https://api.myapp.com" }
-    staging    = { base_url = "https://staging.myapp.com" }
+  production {
+    base_url = "https://api.myapp.com"
+  }
+  staging {
+    base_url = "https://staging.myapp.com"
   }
 }
 ```

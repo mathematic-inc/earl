@@ -191,7 +191,10 @@ operation {
   protocol = "graphql"
   url      = "https://api.github.com/graphql"
 
-  auth { kind = "bearer"; secret = "github.token" }
+  auth {
+    kind   = "bearer"
+    secret = "github.token"
+  }
 
   graphql {
     query = <<-GQL
@@ -277,7 +280,10 @@ SQL parameters go through the driver's parameter interface, not string interpola
 
 ```hcl
 # Bearer token
-auth { kind = "bearer"; secret = "provider.token" }
+auth {
+  kind   = "bearer"
+  secret = "provider.token"
+}
 
 # API key in a header
 auth {
@@ -355,9 +361,11 @@ categories = ["scm", "issues"]
 environments {
   default = "production"
   secrets = ["github.token"]
-  environments {
-    production = { base_url = "https://api.github.com" }
-    staging    = { base_url = "https://staging.github.internal" }
+  production {
+    base_url = "https://api.github.com"
+  }
+  staging {
+    base_url = "https://staging.github.internal"
   }
 }
 
@@ -430,17 +438,40 @@ command "create_issue" {
     secrets = ["github.token"]
   }
 
-  param "owner" { type = "string"; required = true;  description = "Repository owner" }
-  param "repo"  { type = "string"; required = true;  description = "Repository name" }
-  param "title" { type = "string"; required = true;  description = "Issue title" }
-  param "body"  { type = "string"; required = false; default = ""; description = "Issue body (Markdown)" }
+  param "owner" {
+    type        = "string"
+    required    = true
+    description = "Repository owner"
+  }
+
+  param "repo" {
+    type        = "string"
+    required    = true
+    description = "Repository name"
+  }
+
+  param "title" {
+    type        = "string"
+    required    = true
+    description = "Issue title"
+  }
+
+  param "body" {
+    type        = "string"
+    required    = false
+    default     = ""
+    description = "Issue body (Markdown)"
+  }
 
   operation {
     protocol = "http"
     method   = "POST"
     url      = "https://api.github.com/repos/{{ args.owner }}/{{ args.repo }}/issues"
 
-    auth { kind = "bearer"; secret = "github.token" }
+    auth {
+      kind   = "bearer"
+      secret = "github.token"
+    }
 
     headers = {
       Accept               = "application/vnd.github+json"

@@ -36,7 +36,10 @@ operation {
   url      = "https://api.example.com/stream"
   stream   = true
 
-  auth { kind = "bearer"; secret = "provider.token" }
+  auth {
+    kind   = "bearer"
+    secret = "provider.token"
+  }
 
   body {
     kind  = "json"
@@ -89,14 +92,20 @@ command "stream_completion" {
     url      = "https://api.openai.com/v1/chat/completions"
     stream   = true
 
-    auth { kind = "bearer"; secret = "openai.api_key" }
+    auth {
+      kind   = "bearer"
+      secret = "openai.api_key"
+    }
 
     body {
       kind = "json"
       value = {
         model    = "gpt-4o"
         stream   = true
-        messages = [{ role = "user"; content = "{{ args.prompt }}" }]
+        messages = [{
+          role    = "user"
+          content = "{{ args.prompt }}"
+        }]
       }
     }
   }
@@ -147,12 +156,17 @@ command "tail_events" {
     url      = "https://api.myapp.com/events/stream"
     stream   = true
 
-    auth { kind = "api_key"; secret = "myapp.api_key"; location = "header"; name = "X-Api-Key" }
+    auth {
+      kind     = "api_key"
+      secret   = "myapp.api_key"
+      location = "header"
+      name     = "X-Api-Key"
+    }
   }
 
   result {
     decode = "json"
-    output = "[{{ result.event }}] order {{ result.id }} — ${{ (result.amount / 100) | round(2) }}"
+    output = "[{{ result.event }}] order {{ result.id }} — {{ (result.amount / 100) | round(2) }}"
   }
 }
 ```
@@ -194,7 +208,10 @@ command "watch_logs" {
     url      = "https://logging.example.com"
     stream   = true
 
-    auth { kind = "bearer"; secret = "logging.api_key" }
+    auth {
+      kind   = "bearer"
+      secret = "logging.api_key"
+    }
 
     grpc {
       service = "logging.v1.LogService"
