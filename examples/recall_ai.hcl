@@ -701,7 +701,7 @@ command "get_video" {
 
   result {
     decode = "json"
-    output = "Video recording ({{ result.format | default('mp4') }}) — status: {{ result.status.code }}\n\nDownload link (expires ~5 hours, share with user):\n{{ result.data.download_url if result.data else 'not ready yet — wait for status == done' }}"
+    output = "Video recording ({{ result.format | default('mp4') }}) — status: {{ result.status.code | default(result.status) | default('unknown') }}\n\nDownload link (expires ~5 hours, share with user):\n{{ result.data.download_url if result.data else 'not ready yet — wait for status == done' }}"
   }
 }
 
@@ -752,6 +752,6 @@ command "get_audio" {
 
   result {
     decode = "json"
-    output = "Audio recording ({{ result.format | default('mp3') }}) — status: {{ result.status.code }}\n\nDownload link (expires ~5 hours, share with user):\n{{ result.data.download_url if result.data else 'not ready yet — wait for status == done' }}"
+    output = "Audio recording ({{ result.format | default('mp3') }}) — status: {{ result.status.code | default(result.status) | default('unknown') }}\n\nDownload link (expires ~5 hours, share with user):\n{{ result.data.download_url if result.data else 'not ready yet — wait for status == done' }}"
   }
 }
