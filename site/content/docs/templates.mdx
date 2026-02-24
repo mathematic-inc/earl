@@ -173,7 +173,7 @@ operation {
   query = { filter = "{{ args.filter }}" }
 
   body {
-    kind  = "json"   # json, form, multipart
+    kind  = "json"   # json, form_urlencoded, multipart
     value = {
       name  = "{{ args.name }}"
       count = "{{ args.count }}"

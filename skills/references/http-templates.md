@@ -117,7 +117,7 @@ auth {
   password_secret = "myapi.password"
 }
 
-# API key in header (use headers instead of auth block)
+# Alternative: API key in header directly (use api_key auth block for structured auth)
 headers = {
   X-API-Key = "{{ secrets.myapi_key }}"
 }
