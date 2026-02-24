@@ -167,7 +167,7 @@ command "<command_name>" {
   }
 
   result {
-    output = "{{ operation.response }}"
+    output = "{{ result }}"
   }
 }
 ```
