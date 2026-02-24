@@ -108,8 +108,8 @@ Shell commands or SQL queries executed without constraints can read arbitrary fi
 
 Every Bash script runs inside an OS-level sandbox. Earl requires a sandbox tool to be present:
 
-<Tabs>
-  <Tab value="linux" label="Linux (bubblewrap)">
+<Tabs items={["Linux (bubblewrap)", "macOS (sandbox-exec)"]}>
+  <Tab value="Linux (bubblewrap)">
     On Linux, Earl uses [bubblewrap](https://github.com/containers/bubblewrap) (`bwrap`) with:
 
     - Targeted read-only mounts of `/usr`, `/bin`, `/sbin`, `/lib`, `/lib64`, `/etc` — not the entire root filesystem
@@ -121,7 +121,7 @@ Every Bash script runs inside an OS-level sandbox. Earl requires a sandbox tool 
     - The working directory is mounted read-only; only paths listed in `sandbox.writable_paths` get read-write mounts
 
   </Tab>
-  <Tab value="macos" label="macOS (sandbox-exec)">
+  <Tab value="macOS (sandbox-exec)">
     On macOS, Earl uses `sandbox-exec` with a dynamically generated Seatbelt profile:
 
     - Deny-default policy — everything is denied unless explicitly allowed
