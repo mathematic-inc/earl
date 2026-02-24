@@ -1,5 +1,38 @@
 # Changelog
 
+## [0.5.0](https://github.com/brwse/earl/compare/v0.4.1...v0.5.0) (2026-02-24)
+
+
+### ⚠ BREAKING CHANGES
+
+* handle optional params gracefully and validate template args ([#49](https://github.com/brwse/earl/issues/49))
+
+### Features
+
+* add named environments support ([#41](https://github.com/brwse/earl/issues/41)) ([98773b1](https://github.com/brwse/earl/commit/98773b17f44a3a6e7461f66e5cb3d9676e1f62e7))
+* **bash:** add memory and CPU resource limits to sandbox ([#39](https://github.com/brwse/earl/issues/39)) ([6f57817](https://github.com/brwse/earl/commit/6f578170cf12b53f7e1d597a74d3546e203aa3c5))
+* compiled catalog cache for faster CLI startup ([#34](https://github.com/brwse/earl/issues/34)) ([0349a86](https://github.com/brwse/earl/commit/0349a86973b003a7c532190737e334e4142664ac))
+* earl agent skills suite (setup-earl, create-template, migrate-to-earl, troubleshoot-earl, secure-agent) ([#40](https://github.com/brwse/earl/issues/40)) ([c75a399](https://github.com/brwse/earl/commit/c75a399023d2c5072b39c84941660c0a6e7a61ea))
+* external secret manager support ([#43](https://github.com/brwse/earl/issues/43)) ([e6afe3c](https://github.com/brwse/earl/commit/e6afe3cef58a65c3bdd62ed7f530eb1ce34b2f69))
+* handle optional params gracefully and validate template args ([#49](https://github.com/brwse/earl/issues/49)) ([b0f1654](https://github.com/brwse/earl/commit/b0f1654616c4f19cd7f586904bfe986fee148112))
+* recall.ai integration (14-command template + agent skill) ([#44](https://github.com/brwse/earl/issues/44)) ([4fee573](https://github.com/brwse/earl/commit/4fee573dd2ff14801be5453ac7972e7f70ccbe9e))
+
+
+### Bug Fixes
+
+* serialize onepassword env-var tests to prevent parallel races ([#54](https://github.com/brwse/earl/issues/54)) ([427d689](https://github.com/brwse/earl/commit/427d6892c85f7fcb3631657ec207f1e8895b8afa))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * earl-core bumped from 0.4.1 to 0.5.0
+    * earl-protocol-grpc bumped from 0.4.1 to 0.5.0
+    * earl-protocol-http bumped from 0.4.1 to 0.5.0
+    * earl-protocol-bash bumped from 0.4.1 to 0.5.0
+    * earl-protocol-sql bumped from 0.4.1 to 0.5.0
+
 ## [0.4.1](https://github.com/brwse/earl/compare/v0.4.0...v0.4.1) (2026-02-23)
 
 

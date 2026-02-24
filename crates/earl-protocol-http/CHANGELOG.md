@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.5.0](https://github.com/brwse/earl/compare/earl-protocol-http-v0.4.1...earl-protocol-http-v0.5.0) (2026-02-24)
+
+
+### Features
+
+* compiled catalog cache for faster CLI startup ([#34](https://github.com/brwse/earl/issues/34)) ([0349a86](https://github.com/brwse/earl/commit/0349a86973b003a7c532190737e334e4142664ac))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * earl-core bumped from 0.4.1 to 0.5.0
+
 ## [0.4.1](https://github.com/brwse/earl/compare/earl-protocol-http-v0.4.0...earl-protocol-http-v0.4.1) (2026-02-23)
 
 
