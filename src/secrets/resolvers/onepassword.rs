@@ -250,9 +250,10 @@ impl SecretResolver for OpResolver {
 
 /// Resolve a secret via the 1Password Connect Server API.
 ///
-/// Note: 4-segment references (`op://vault/item/section/field`) are only
-/// supported via the `op` CLI fallback — the Connect Server API uses
-/// field label/id matching which does not support section-scoped lookups.
+/// Both 3-segment (`op://vault/item/field`) and 4-segment
+/// (`op://vault/item/section/field`) references are supported. Section-scoped
+/// lookups are handled client-side: the item is fetched in full and the
+/// `section.label`/`section.id` fields in the response are matched locally.
 fn resolve_via_connect(op_ref: &OpReference, auth: &OpAuth) -> Result<SecretString> {
     // The Connect Server API uses SCIM filters; validate names are injection-safe.
     validate_scim_value(&op_ref.vault, "vault name")?;
