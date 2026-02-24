@@ -13,8 +13,14 @@ operation {
   url      = "https://..."
   query    = { key = "value" }
   headers  = { Accept = "application/json" }
-  auth     { kind = "bearer"; secret = "key" }
-  body     { kind = "json"; value = { ... } }
+  auth {
+    kind   = "bearer"
+    secret = "key"
+  }
+  body {
+    kind  = "json"
+    value = { ... }
+  }
 }
 ```
 
@@ -28,7 +34,10 @@ operation {
     query     = "query { ... }"
     variables = { key = "value" }
   }
-  auth { kind = "bearer"; secret = "key" }
+  auth {
+    kind   = "bearer"
+    secret = "key"
+  }
 }
 ```
 

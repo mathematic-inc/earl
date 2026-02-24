@@ -32,6 +32,14 @@ auth {
   secret = "myapi.token"
 }
 
+# API key in header or query param
+auth {
+  kind     = "api_key"
+  secret   = "myapi.key"
+  location = "header"   # header, query, or cookie
+  name     = "X-Api-Key"
+}
+
 # Basic auth
 auth {
   kind            = "basic"
