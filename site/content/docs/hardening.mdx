@@ -8,9 +8,7 @@ Running Earl for yourself is straightforward. Deploying it in front of a team re
 
 ## 1. Lock down config and template files
 
-Earl's guarantees hold as long as agents cannot modify the config or template files. If an agent can edit `~/.config/earl/config.toml`, it can whitelist arbitrary network destinations. If it can edit templates, it can add operations that exfiltrate secrets.
-
-After initial setup, lock both:
+Do this first, before anything else. Earl's security guarantees only hold as long as agents cannot modify the config or template files. If an agent can edit `~/.config/earl/config.toml`, it can whitelist arbitrary network destinations. If it can edit templates, it can add operations that exfiltrate secrets.
 
 ```bash
 chmod 700 ~/.config/earl
@@ -19,23 +17,23 @@ chmod -R go-w ~/.config/earl/templates
 chmod -R 700 ./templates/
 ```
 
-For stronger isolation, run the agent as a separate, less-privileged OS user that can execute `earl` but cannot write to the config directory.
+For stronger isolation, run the agent as a separate, less-privileged OS user that can execute `earl` but cannot write to the config directory. File permissions are a good start; process isolation is better.
 
 ## 2. Choose your transport
 
-Stdio is the right choice for single-agent use. Each agent process gets its own Earl instance. No port, no auth overhead.
+Stdio is the right choice for single-agent use. Each agent process gets its own Earl instance with no port to expose and no auth overhead.
 
 ```bash
 earl mcp stdio --mode full --yes
 ```
 
-HTTP makes sense when multiple agents share an Earl server, or when you need to reach Earl from a different machine. HTTP requires either JWT auth (recommended) or an explicit `--allow-unauthenticated` flag — not for production.
+HTTP makes sense when multiple agents share an Earl server, or when you need to reach Earl from a different machine. If you use HTTP without authentication, anyone who can reach the port can call your tools. Don't do that in production.
 
 ```bash
 # With JWT auth (recommended for production)
 earl mcp http --listen 127.0.0.1:8977 --mode full --yes
 
-# Development only — anyone who can reach the port can call your tools
+# Development only
 earl mcp http --listen 127.0.0.1:8977 --allow-unauthenticated
 ```
 
@@ -65,15 +63,13 @@ port = 443
 path_prefix = "/v1"
 ```
 
-When any `[[network.allow]]` rule exists, all other outbound requests are blocked. Without any rules, all public destinations are reachable — which is fine for a single developer but too permissive for a shared deployment.
+Once any `[[network.allow]]` rule exists, everything not on the list is blocked. Without any rules, all public destinations are reachable — fine for a single developer, too permissive for a shared deployment.
 
-Earl also blocks requests to private, reserved, and metadata IP addresses regardless of your allowlist. DNS resolution happens before the SSRF check, so a public hostname that resolves to a private IP is still blocked. This is not configurable.
+Earl always blocks requests to private, reserved, and metadata IP addresses regardless of your allowlist. DNS resolution happens before the SSRF check, so a public hostname that resolves to a private IP is still blocked. This cannot be configured away.
 
 ## 4. Set sandbox limits
 
-Bash templates run inside an OS-level sandbox (bubblewrap on Linux, `sandbox-exec` on macOS). The sandbox is always active; you're configuring its limits, not enabling it.
-
-Set resource limits globally in `~/.config/earl/config.toml` to cap what any Bash template can consume:
+Bash templates run inside an OS-level sandbox (bubblewrap on Linux, `sandbox-exec` on macOS). The sandbox is always active; you are configuring its limits, not enabling it.
 
 ```toml
 [sandbox]
@@ -83,7 +79,7 @@ bash_max_memory_bytes = 536870912  # 512 MB, Linux only
 bash_max_cpu_time_ms = 10000
 ```
 
-Templates can also set limits per-command inside the `sandbox` block. The more restrictive value wins.
+Templates can also set limits per-command inside their own `sandbox` block. The more restrictive value wins.
 
 For SQL templates, enforce read-only mode globally:
 
@@ -94,7 +90,7 @@ sql_max_rows = 1000
 sql_connection_allowlist = ["myapp.db_url"]
 ```
 
-The `sql_connection_allowlist` is worth paying attention to. Without it, any secret that contains a valid connection string can be used as a database connection. List the specific secret keys you intend to allow.
+The `sql_connection_allowlist` is worth paying attention to. Without it, any secret containing a valid connection string can be used as a database connection. List the specific secret keys you intend to allow.
 
 For per-template SQL sandboxing, the template itself can also declare:
 
@@ -121,21 +117,21 @@ Decide which write-mode tools your agents actually need before passing `--yes`. 
 
 ## 6. Verify with `earl doctor`
 
-Run `earl doctor` after setup. It checks that your config file is loadable, templates parse without errors, and required secrets are present.
-
 ```bash
 earl doctor
 ```
 
-Fix any reported issues before connecting agents. The `doctor` command will not report every misconfiguration — it does not check file permissions or network reachability — but it catches the common ones.
+Run this after setup. It checks that your config is loadable, templates parse without errors, and required secrets are present. Fix anything it reports before connecting agents.
+
+`earl doctor` will not catch everything — it does not check file permissions or network reachability — but it catches the common setup mistakes.
 
 ## 7. Configure external secret managers (optional)
 
-If your team already uses 1Password Connect, HashiCorp Vault, AWS Secrets Manager, or similar, Earl can pull secrets directly from those instead of the OS keychain. See [External Secret Managers](/docs/external-secrets).
+If your team already uses 1Password Connect, HashiCorp Vault, AWS Secrets Manager, or similar, Earl can pull secrets directly from those instead of the OS keychain. This is purely optional. See [External Secret Managers](/docs/external-secrets).
 
 ## 8. Configure access control policies (optional)
 
-If multiple agents or users share an Earl HTTP server, the policy engine lets you control which subjects can call which tools. Policies are evaluated with deny-overrides: if any matching policy denies a call, it is denied regardless of other rules. If no policy matches, the call is denied by default.
+If multiple agents or users share an Earl HTTP server, the policy engine lets you control which subjects can call which tools. Policies use deny-overrides: a matching deny blocks the call regardless of other rules, and a call with no matching policies is denied by default.
 
 ```toml
 [[policy]]

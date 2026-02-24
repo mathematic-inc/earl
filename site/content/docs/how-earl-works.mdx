@@ -51,11 +51,11 @@ port = 443
 path_prefix = "/v1"
 ```
 
-When any `[[network.allow]]` entry is present, every outbound request must match at least one rule. A rule matches when all four fields match: scheme (case-insensitive), host (case-insensitive), port (including default ports like 443 for HTTPS), and path prefix. Requests to unlisted destinations are blocked.
+When any `[[network.allow]]` entry is present, every outbound request must match at least one rule. A rule matches when all four fields agree: scheme (case-insensitive), host (case-insensitive), port (including default ports like 443 for HTTPS), and path prefix. Earl blocks requests to unlisted destinations.
 
 ## SSRF Protection
 
-DNS rebinding is a specific and underappreciated attack. A public hostname like `api.evil.com` can be configured to resolve to `169.254.169.254`, the AWS instance metadata endpoint. If Earl validated destinations before DNS resolution, that check would see a public hostname and pass it. Earl validates destinations after DNS resolution, so a hostname that resolves to a private IP is blocked regardless of what the hostname looks like.
+DNS rebinding is a specific attack worth naming directly. A public hostname like `api.evil.com` can be configured to resolve to `169.254.169.254`, the AWS instance metadata endpoint. If Earl validated destinations before DNS resolution, that check would see a public hostname and pass it. Earl validates after DNS resolution, so a hostname that resolves to a private IP is blocked regardless of what the hostname looks like.
 
 OAuth endpoint URLs — `token_url`, `authorization_url`, `device_authorization_url`, and OIDC issuer URLs — go through the same SSRF checks. Only `https` URLs are permitted, with one exception: `http` to loopback addresses (`127.0.0.1`, `::1`, `localhost`) is allowed for local development.
 
@@ -160,9 +160,9 @@ If neither `sandbox.max_time_ms` nor `sandbox.max_output_bytes` is set, the tran
 
 SQL queries run through parameterized queries, which prevents injection by construction. Additional controls are available per-template:
 
-- Read-only mode (`sandbox.read_only = true`) enforces read-only at the database level: PostgreSQL wraps the query in `BEGIN READ ONLY` / `ROLLBACK`, MySQL uses `START TRANSACTION READ ONLY` / `ROLLBACK`, SQLite appends `mode=ro` to the connection URL.
-- Row limits (`sandbox.max_rows`) cap the number of returned rows.
-- Timeouts (`sandbox.max_time_ms` or transport-level `timeout_ms`) abort long-running queries.
+- `sandbox.read_only = true` enforces read-only at the database level: PostgreSQL wraps the query in `BEGIN READ ONLY` / `ROLLBACK`, MySQL uses `START TRANSACTION READ ONLY` / `ROLLBACK`, SQLite appends `mode=ro` to the connection URL.
+- `sandbox.max_rows` caps the number of returned rows.
+- `sandbox.max_time_ms` (or transport-level `timeout_ms`) aborts long-running queries.
 - Connection credentials are stored in the OS keychain and referenced by secret key (`connection_secret`) — never embedded in templates.
 
 ```hcl

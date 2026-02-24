@@ -72,10 +72,7 @@ The server also sends an `instructions` field during initialization that tells t
 
 ## Claude Desktop
 
-Add earl to your `claude_desktop_config.json`:
-
-- **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
-- **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+Add earl to your `claude_desktop_config.json`. The file lives at `~/Library/Application Support/Claude/claude_desktop_config.json` on macOS and `%APPDATA%\Claude\claude_desktop_config.json` on Windows.
 
 <Tabs items={["Full Mode", "Discovery Mode"]}>
 <Tab value="Full Mode">
@@ -144,12 +141,7 @@ The default transport. Earl reads JSON-RPC requests from stdin and writes respon
 earl mcp stdio --mode full --yes
 ```
 
-The stdio transport supports two framing formats:
-
-- **Content-Length framing** — HTTP-style headers (`Content-Length: N\r\n\r\n<body>`). This is the format earl uses when writing responses.
-- **Line-delimited JSON** — One JSON object per line (newline-terminated). Earl accepts this as input for compatibility with simpler clients.
-
-Both formats can be mixed on the input side; earl auto-detects which format each incoming message uses.
+The stdio transport supports two framing formats. Earl writes responses using Content-Length framing (HTTP-style headers: `Content-Length: N\r\n\r\n<body>`). On the input side, earl also accepts line-delimited JSON (one object per line) for compatibility with simpler clients, and auto-detects which format each incoming message uses.
 
 ### HTTP
 
@@ -169,16 +161,13 @@ The `--listen` flag defaults to `127.0.0.1:8977`.
 The HTTP transport requires either JWT authentication (see [Configuration](/docs/configuration)) or `--allow-unauthenticated` for development. The two options are mutually exclusive — earl will refuse to start if both are set.
 
 <Callout type="warn">
-  Using `--allow-unauthenticated` is not recommended for production. Without
-  authentication, anyone who can reach the server can call your tools.
+  Don't use `--allow-unauthenticated` outside of local development. Anyone who
+  can reach the server can call your tools.
 </Callout>
 
 ## Write-Mode Safety
 
-Write-mode tools (templates with `annotations.mode = "write"`) are **blocked by default**. When a write-mode tool is called without opt-in, the server returns an error:
-
-- **Error code:** `-32001`
-- **Message:** `write-mode tools are disabled on this server instance`
+Write-mode tools (templates with `annotations.mode = "write"`) are **blocked by default**. Calling one without opt-in returns error `-32001` with the message `write-mode tools are disabled on this server instance`.
 
 Pass `--yes` when starting the server to allow write-mode tool execution:
 
@@ -186,7 +175,7 @@ Pass `--yes` when starting the server to allow write-mode tool execution:
 earl mcp stdio --mode full --yes
 ```
 
-This prevents agents from performing destructive actions without explicit operator opt-in.
+Without `--yes`, agents cannot perform write operations no matter what they try. You have to explicitly turn it on.
 
 ## Troubleshooting
 
