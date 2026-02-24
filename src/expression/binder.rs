@@ -68,6 +68,9 @@ pub fn bind_arguments(
     for param in params {
         if let Some(value) = out.get(&param.name) {
             // Null means the optional param was not provided — no type to validate.
+            // Note: a caller passing `null` explicitly for a typed param also bypasses
+            // this check. In practice null propagates through rendering to be omitted
+            // from the request, so this is benign.
             if !value.is_null() && !matches_type(value, param.r#type) {
                 return Err(BindError::InvalidType {
                     name: param.name.clone(),

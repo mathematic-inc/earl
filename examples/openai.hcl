@@ -43,7 +43,7 @@ command "create_chat_completion" {
     type        = "integer"
     required    = false
     default     = 4096
-    description = "Maximum number of tokens to generate"
+    description = "Maximum number of tokens to generate (default 4096 is conservative; newer models support 16k+)"
   }
 
   operation {

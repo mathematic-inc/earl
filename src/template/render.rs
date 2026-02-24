@@ -74,7 +74,7 @@ fn pure_expression(input: &str) -> Option<&str> {
     let trimmed = input.trim();
     if trimmed.starts_with("{{") && trimmed.ends_with("}}") {
         let inner = &trimmed[2..trimmed.len() - 2];
-        if !inner.contains("{{") {
+        if !inner.contains("{{") && !inner.contains("}}") {
             return Some(inner.trim());
         }
     }

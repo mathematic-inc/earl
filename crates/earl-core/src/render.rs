@@ -31,7 +31,7 @@ pub fn render_key_value_map(
         let rendered_value = renderer.render_value(value, context)?;
 
         match rendered_value {
-            Value::Null => {} // Skip null values — lets templates use `| default("null")` for optional params
+            Value::Null => {} // Absent optional params render to null; skip them so they are omitted from the request.
             Value::Array(values) => {
                 for value in values {
                     let s = value_to_string(value)?;
