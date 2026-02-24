@@ -75,6 +75,11 @@ pub fn lock_file_path(session_id: &str) -> Result<PathBuf> {
 }
 
 pub fn is_pid_alive(pid: u32, _started_at: Option<DateTime<Utc>>) -> bool {
+    if pid == 0 {
+        // pid=0 means we don't know the PID (chromiumoxide doesn't expose it);
+        // return true so the caller falls through to the CDP probe.
+        return true;
+    }
     #[cfg(unix)]
     {
         // Reject PIDs that would wrap to negative pid_t values (e.g. u32::MAX → -1).
@@ -105,6 +110,7 @@ pub async fn acquire_session_lock(session_id: &str) -> Result<tokio::fs::File> {
     let file = tokio::fs::OpenOptions::new()
         .create(true)
         .write(true)
+        .truncate(true)
         .open(&lock_path)
         .await
         .context("opening session lock file")?;

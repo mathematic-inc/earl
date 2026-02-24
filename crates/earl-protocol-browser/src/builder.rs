@@ -53,7 +53,11 @@ fn render_strings_in_value(v: &mut Value, ctx: &Value, r: &dyn TemplateRenderer)
     match v {
         Value::String(s) => *s = r.render_str(s, ctx)?,
         Value::Object(map) => {
-            for val in map.values_mut() {
+            for (k, val) in map.iter_mut() {
+                if k == "action" {
+                    // Never render the serde tag discriminant - it must stay unchanged
+                    continue;
+                }
                 render_strings_in_value(val, ctx, r)?;
             }
         }
@@ -175,6 +179,34 @@ mod tests {
         let ctx = serde_json::json!({});
         let cmd = build_browser_request(&op, &ctx, &UppercaseUrlRenderer).unwrap();
         // The url field is a string containing "://" so it gets uppercased.
+        if let crate::schema::BrowserStep::Navigate { url, .. } = &cmd.steps[0] {
+            assert_eq!(url, "HTTPS://EXAMPLE.COM");
+        } else {
+            panic!("expected Navigate step");
+        }
+    }
+
+    #[test]
+    fn render_does_not_corrupt_action_discriminant() {
+        struct UppercaseRenderer;
+        impl earl_core::TemplateRenderer for UppercaseRenderer {
+            fn render_str(&self, t: &str, _ctx: &Value) -> anyhow::Result<String> {
+                Ok(t.to_uppercase())
+            }
+            fn render_value(&self, v: &Value, _ctx: &Value) -> anyhow::Result<Value> {
+                Ok(v.clone())
+            }
+        }
+        let op: crate::schema::BrowserOperationTemplate = serde_json::from_str(r#"{
+            "browser": {
+                "steps": [{"action":"navigate","url":"https://example.com"}]
+            }
+        }"#).unwrap();
+        let ctx = serde_json::json!({});
+        // This should NOT fail — action discriminant must be preserved
+        let cmd = build_browser_request(&op, &ctx, &UppercaseRenderer).unwrap();
+        assert_eq!(cmd.steps.len(), 1);
+        // URL should be uppercased
         if let crate::schema::BrowserStep::Navigate { url, .. } = &cmd.steps[0] {
             assert_eq!(url, "HTTPS://EXAMPLE.COM");
         } else {

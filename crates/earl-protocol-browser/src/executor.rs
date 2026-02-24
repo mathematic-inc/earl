@@ -52,8 +52,17 @@ async fn run_browser_command(data: &PreparedBrowserCommand) -> Result<serde_json
 async fn run_ephemeral(data: &PreparedBrowserCommand) -> Result<serde_json::Value> {
     let (mut browser, _ws_url) = launch_chrome(data.headless).await?;
 
-    let page = browser.new_page("about:blank").await?;
-    configure_page(&page).await?;
+    let page = match browser.new_page("about:blank").await {
+        Ok(p) => p,
+        Err(e) => {
+            let _ = browser.close().await;
+            return Err(e.into());
+        }
+    };
+    if let Err(e) = configure_page(&page).await {
+        let _ = browser.close().await;
+        return Err(e);
+    }
 
     let result = execute_steps(
         &page,
@@ -118,13 +127,13 @@ async fn run_with_session(
         }
     };
 
-    // Persist the session file so the next invocation can reconnect.
+    // Prepare the session file (will be saved after steps run).
     let target_id = page.target_id().as_ref().to_string();
 
     let now = Utc::now();
     let started_at = existing.as_ref().map(|sf| sf.started_at).unwrap_or(now);
 
-    let sf = SessionFile {
+    let sf_to_save = SessionFile {
         // Use 0 as a placeholder — chromiumoxide does not expose Chrome's PID
         // through its public API.
         pid: 0,
@@ -134,16 +143,23 @@ async fn run_with_session(
         last_used_at: now,
         interrupted: false,
     };
-    sf.save_to(&sf_path)?;
 
     // Run the steps.
-    execute_steps(
+    let step_result = execute_steps(
         &page,
         &data.steps,
         data.timeout_ms,
         data.on_failure_screenshot,
     )
-    .await
+    .await;
+
+    // Save the session file after steps complete, recording whether they failed.
+    let mut updated_sf = sf_to_save;
+    updated_sf.last_used_at = Utc::now();
+    updated_sf.interrupted = step_result.is_err();
+    let _ = updated_sf.save_to(&sf_path); // best-effort; don't mask step error
+
+    step_result
 }
 
 #[cfg(test)]
