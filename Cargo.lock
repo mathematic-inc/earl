@@ -1809,6 +1809,7 @@ dependencies = [
  "minijinja",
  "oauth2",
  "openssl",
+ "percent-encoding",
  "regex",
  "reqwest 0.13.2",
  "rkyv",

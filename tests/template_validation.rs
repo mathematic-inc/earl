@@ -1354,5 +1354,9 @@ fn validates_external_secret_uri_references() {
 
     let files = validate_all_from_dirs(&global_dir, &local_dir).unwrap();
     assert_eq!(files.len(), 1);
-    assert!(files[0].to_string_lossy().contains("external_secret_ref.hcl"));
+    assert!(
+        files[0]
+            .to_string_lossy()
+            .contains("external_secret_ref.hcl")
+    );
 }

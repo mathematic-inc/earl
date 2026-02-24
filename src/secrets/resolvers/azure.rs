@@ -1,14 +1,14 @@
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
-use anyhow::{anyhow, bail, Context, Result};
+use anyhow::{Context, Result, anyhow, bail};
 use secrecy::SecretString;
 use serde::Deserialize;
 
 use crate::secrets::resolver::SecretResolver;
 use crate::secrets::resolvers::{
-    truncate_body, validate_azure_vault_name, validate_path_segment, CachedToken,
-    ERROR_BODY_MAX_LEN,
+    CachedToken, ERROR_BODY_MAX_LEN, truncate_body, validate_azure_vault_name,
+    validate_path_segment,
 };
 
 /// A parsed `az://vault-name/secret-name` reference.
@@ -25,7 +25,9 @@ impl AzureReference {
             .ok_or_else(|| anyhow!("invalid Azure reference: must start with az://"))?;
 
         if after_scheme.is_empty() {
-            bail!("invalid Azure reference: vault name and secret name are required in {reference}");
+            bail!(
+                "invalid Azure reference: vault name and secret name are required in {reference}"
+            );
         }
 
         let segments: Vec<&str> = after_scheme.split('/').collect();
@@ -169,14 +171,15 @@ impl SecretResolver for AzureResolver {
             if let Some(token) = cache.as_ref().and_then(|c| c.get_if_valid()) {
                 token.to_string()
             } else {
-                let result = obtain_access_token()
-                    .context("failed to obtain Azure AD access token")?;
+                let result =
+                    obtain_access_token().context("failed to obtain Azure AD access token")?;
                 // Use server-provided expiry with a safety margin, falling back
                 // to 50 minutes if the server didn't report a lifetime.
                 // Apply a 2-minute safety margin to the server-reported lifetime.
                 // Combined with get_if_valid()'s additional 30-second margin, the
                 // total effective safety buffer is 150 seconds before actual expiry.
-                let ttl_secs = result.expires_in_secs
+                let ttl_secs = result
+                    .expires_in_secs
                     .map(|s| s.saturating_sub(120))
                     .unwrap_or(50 * 60);
                 *cache = Some(CachedToken {
@@ -189,15 +192,14 @@ impl SecretResolver for AzureResolver {
 
         let suffix = vault_suffix()?;
         let base_url = format!("https://{}.{}", az_ref.vault_name, suffix);
-        let mut url = reqwest::Url::parse(&base_url)
-            .context("failed to parse Azure Key Vault base URL")?;
+        let mut url =
+            reqwest::Url::parse(&base_url).context("failed to parse Azure Key Vault base URL")?;
         // Use proper path-segment joining to encode the secret name.
         url.path_segments_mut()
             .map_err(|()| anyhow!("invalid Azure Key Vault URL"))?
             .push("secrets")
             .push(&az_ref.secret_name);
-        url.query_pairs_mut()
-            .append_pair("api-version", "7.4");
+        url.query_pairs_mut().append_pair("api-version", "7.4");
 
         let client = reqwest::Client::builder()
             .timeout(Duration::from_secs(10))
@@ -330,8 +332,8 @@ fn token_via_client_credentials(
 
     // Build token URL using reqwest::Url for structural safety.
     let base = format!("https://{authority}");
-    let mut token_url = reqwest::Url::parse(&base)
-        .context("failed to parse AZURE_AUTHORITY_HOST as URL base")?;
+    let mut token_url =
+        reqwest::Url::parse(&base).context("failed to parse AZURE_AUTHORITY_HOST as URL base")?;
     token_url
         .path_segments_mut()
         .map_err(|()| anyhow!("invalid Azure AD authority URL"))?
@@ -377,10 +379,9 @@ fn token_via_client_credentials(
         );
     }
 
-    let token_resp: TokenResponse = tokio::task::block_in_place(|| {
-        tokio::runtime::Handle::current().block_on(response.json())
-    })
-    .context("failed to parse Azure AD token response")?;
+    let token_resp: TokenResponse =
+        tokio::task::block_in_place(|| tokio::runtime::Handle::current().block_on(response.json()))
+            .context("failed to parse Azure AD token response")?;
 
     Ok(TokenWithExpiry {
         token: token_resp.access_token,
@@ -404,7 +405,10 @@ fn token_via_app_service_identity(client_id: Option<&str>) -> Result<TokenWithEx
     // Validate IDENTITY_HEADER contains only HTTP header-safe bytes.
     // reqwest calls HeaderValue::from_str(&header) which panics on control
     // characters, DEL (0x7F), or non-ASCII bytes.
-    if !header.bytes().all(|b| b == b'\t' || (0x20u8..=0x7E).contains(&b)) {
+    if !header
+        .bytes()
+        .all(|b| b == b'\t' || (0x20u8..=0x7E).contains(&b))
+    {
         bail!(
             "IDENTITY_HEADER contains characters that are not valid in HTTP headers \
              (control characters, DEL, or non-ASCII). \
@@ -422,8 +426,8 @@ fn token_via_app_service_identity(client_id: Option<&str>) -> Result<TokenWithEx
         .build()
         .context("failed to build HTTP client for App Service identity")?;
 
-    let mut url = reqwest::Url::parse(&endpoint)
-        .context("failed to parse IDENTITY_ENDPOINT as URL")?;
+    let mut url =
+        reqwest::Url::parse(&endpoint).context("failed to parse IDENTITY_ENDPOINT as URL")?;
     // Validate scheme — IDENTITY_ENDPOINT must be http or https to prevent
     // requests to file://, ftp://, or other unexpected protocols.
     if !["http", "https"].contains(&url.scheme()) {
@@ -452,15 +456,19 @@ fn token_via_app_service_identity(client_id: Option<&str>) -> Result<TokenWithEx
 
     let status = response.status();
     if !status.is_success() {
-        bail!("App Service identity endpoint returned HTTP {}", status.as_u16());
+        bail!(
+            "App Service identity endpoint returned HTTP {}",
+            status.as_u16()
+        );
     }
 
-    let token_resp: ImdsTokenResponse = tokio::task::block_in_place(|| {
-        tokio::runtime::Handle::current().block_on(response.json())
-    })
-    .context("failed to parse App Service identity response")?;
+    let token_resp: ImdsTokenResponse =
+        tokio::task::block_in_place(|| tokio::runtime::Handle::current().block_on(response.json()))
+            .context("failed to parse App Service identity response")?;
 
-    let expires_in = token_resp.expires_in.as_deref()
+    let expires_in = token_resp
+        .expires_in
+        .as_deref()
         .and_then(|s| s.parse::<u64>().ok());
 
     Ok(TokenWithExpiry {
@@ -485,10 +493,8 @@ fn token_via_imds(client_id: Option<&str>) -> Result<TokenWithExpiry> {
         .context("failed to build HTTP client for Azure IMDS")?;
 
     // Build URL with proper encoding via reqwest::Url to avoid injection.
-    let mut url = reqwest::Url::parse(
-        "http://169.254.169.254/metadata/identity/oauth2/token",
-    )
-    .context("failed to parse IMDS base URL")?;
+    let mut url = reqwest::Url::parse("http://169.254.169.254/metadata/identity/oauth2/token")
+        .context("failed to parse IMDS base URL")?;
     url.query_pairs_mut()
         .append_pair("api-version", "2018-02-01")
         .append_pair("resource", &resource);
@@ -512,12 +518,13 @@ fn token_via_imds(client_id: Option<&str>) -> Result<TokenWithExpiry> {
         bail!("Azure IMDS returned HTTP {}", status.as_u16());
     }
 
-    let token_resp: ImdsTokenResponse = tokio::task::block_in_place(|| {
-        tokio::runtime::Handle::current().block_on(response.json())
-    })
-    .context("failed to parse Azure IMDS token response")?;
+    let token_resp: ImdsTokenResponse =
+        tokio::task::block_in_place(|| tokio::runtime::Handle::current().block_on(response.json()))
+            .context("failed to parse Azure IMDS token response")?;
 
-    let expires_in = token_resp.expires_in.as_deref()
+    let expires_in = token_resp
+        .expires_in
+        .as_deref()
         .and_then(|s| s.parse::<u64>().ok());
 
     Ok(TokenWithExpiry {
@@ -549,10 +556,10 @@ fn token_via_az_cli() -> Result<TokenWithExpiry> {
 
     match output {
         Ok(result) if result.status.success() => {
-            let stdout = String::from_utf8(result.stdout)
-                .context("Azure CLI returned non-UTF-8 output")?;
-            let parsed: serde_json::Value = serde_json::from_str(&stdout)
-                .context("failed to parse Azure CLI JSON output")?;
+            let stdout =
+                String::from_utf8(result.stdout).context("Azure CLI returned non-UTF-8 output")?;
+            let parsed: serde_json::Value =
+                serde_json::from_str(&stdout).context("failed to parse Azure CLI JSON output")?;
             let token = parsed["accessToken"]
                 .as_str()
                 .ok_or_else(|| anyhow!("Azure CLI output missing 'accessToken' field"))?;
@@ -638,10 +645,7 @@ mod tests {
     #[test]
     fn parse_rejects_dot_in_vault_name() {
         let err = AzureReference::parse("az://my.vault/secret").unwrap_err();
-        assert!(
-            err.to_string().contains("alphanumeric"),
-            "got: {err}"
-        );
+        assert!(err.to_string().contains("alphanumeric"), "got: {err}");
     }
 
     #[test]
@@ -679,19 +683,13 @@ mod tests {
     #[test]
     fn parse_rejects_hash_in_secret_name() {
         let err = AzureReference::parse("az://my-vault/sec#ret").unwrap_err();
-        assert!(
-            err.to_string().contains("invalid character"),
-            "got: {err}"
-        );
+        assert!(err.to_string().contains("invalid character"), "got: {err}");
     }
 
     #[test]
     fn parse_rejects_whitespace_in_secret_name() {
         let err = AzureReference::parse("az://my-vault/my secret").unwrap_err();
-        assert!(
-            err.to_string().contains("invalid character"),
-            "got: {err}"
-        );
+        assert!(err.to_string().contains("invalid character"), "got: {err}");
     }
 
     #[test]
@@ -715,10 +713,7 @@ mod tests {
     fn vault_suffix_rejects_dangerous_chars() {
         unsafe { std::env::set_var("AZURE_VAULT_SUFFIX", "evil.com/path#inject") };
         let err = vault_suffix().unwrap_err();
-        assert!(
-            err.to_string().contains("invalid character"),
-            "got: {err}"
-        );
+        assert!(err.to_string().contains("invalid character"), "got: {err}");
         unsafe { std::env::remove_var("AZURE_VAULT_SUFFIX") };
     }
 
@@ -730,10 +725,7 @@ mod tests {
     #[test]
     fn validate_azure_id_rejects_path_traversal() {
         let err = validate_azure_id("../../../etc/passwd", "tenant").unwrap_err();
-        assert!(
-            err.to_string().contains("invalid character"),
-            "got: {err}"
-        );
+        assert!(err.to_string().contains("invalid character"), "got: {err}");
     }
 
     #[test]

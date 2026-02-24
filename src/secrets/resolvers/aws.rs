@@ -1,6 +1,6 @@
 use std::sync::Mutex;
 
-use anyhow::{anyhow, bail, Context, Result};
+use anyhow::{Context, Result, anyhow, bail};
 use aws_sdk_secretsmanager::error::ProvideErrorMetadata;
 use secrecy::SecretString;
 
@@ -48,7 +48,9 @@ impl AwsReference {
                     bail!("invalid AWS reference: secret name must not be empty in {reference}");
                 }
                 if key.is_empty() {
-                    bail!("invalid AWS reference: JSON key after '#' must not be empty in {reference}");
+                    bail!(
+                        "invalid AWS reference: JSON key after '#' must not be empty in {reference}"
+                    );
                 }
                 (name.to_string(), Some(key.to_string()))
             }
@@ -119,8 +121,9 @@ impl SecretResolver for AwsResolver {
                 client.clone()
             } else {
                 let config = tokio::task::block_in_place(|| {
-                    tokio::runtime::Handle::current()
-                        .block_on(aws_config::load_defaults(aws_config::BehaviorVersion::latest()))
+                    tokio::runtime::Handle::current().block_on(aws_config::load_defaults(
+                        aws_config::BehaviorVersion::latest(),
+                    ))
                 });
                 let new_client = aws_sdk_secretsmanager::Client::new(&config);
                 *cache = Some(new_client.clone());
@@ -206,14 +209,12 @@ impl SecretResolver for AwsResolver {
             }
         };
 
-        let secret_string = output
-            .secret_string()
-            .ok_or_else(|| {
-                anyhow!(
-                    "AWS secret '{}' does not contain a SecretString (it may be binary)",
-                    aws_ref.secret_id
-                )
-            })?;
+        let secret_string = output.secret_string().ok_or_else(|| {
+            anyhow!(
+                "AWS secret '{}' does not contain a SecretString (it may be binary)",
+                aws_ref.secret_id
+            )
+        })?;
 
         match &aws_ref.json_key {
             Some(key) => {
@@ -302,27 +303,18 @@ mod tests {
     #[test]
     fn parse_rejects_question_mark_in_secret_id() {
         let err = AwsReference::parse("aws://my-secret?inject=1").unwrap_err();
-        assert!(
-            err.to_string().contains("invalid character"),
-            "got: {err}"
-        );
+        assert!(err.to_string().contains("invalid character"), "got: {err}");
     }
 
     #[test]
     fn parse_rejects_control_char_in_secret_id() {
         let err = AwsReference::parse("aws://my\x00secret").unwrap_err();
-        assert!(
-            err.to_string().contains("invalid character"),
-            "got: {err}"
-        );
+        assert!(err.to_string().contains("invalid character"), "got: {err}");
     }
 
     #[test]
     fn parse_rejects_whitespace_in_json_key() {
         let err = AwsReference::parse("aws://secret#my key").unwrap_err();
-        assert!(
-            err.to_string().contains("invalid character"),
-            "got: {err}"
-        );
+        assert!(err.to_string().contains("invalid character"), "got: {err}");
     }
 }

@@ -18,7 +18,8 @@ impl MockResolver {
     }
 
     fn with_secret(mut self, reference: &str, value: &str) -> Self {
-        self.secrets.insert(reference.to_string(), value.to_string());
+        self.secrets
+            .insert(reference.to_string(), value.to_string());
         self
     }
 }
@@ -43,8 +44,7 @@ fn mixed_keychain_and_external_secrets() {
         .set_secret("local.key", SecretString::new("local-value".into()))
         .unwrap();
 
-    let mock =
-        MockResolver::new("mock").with_secret("mock://vault/item/field", "external-value");
+    let mock = MockResolver::new("mock").with_secret("mock://vault/item/field", "external-value");
 
     let resolvers: Vec<Box<dyn SecretResolver>> = vec![Box::new(mock)];
 
@@ -62,8 +62,7 @@ fn multiple_resolvers_dispatch_correctly() {
     let resolver_a = MockResolver::new("alpha").with_secret("alpha://secret1", "value-a");
     let resolver_b = MockResolver::new("beta").with_secret("beta://secret2", "value-b");
 
-    let resolvers: Vec<Box<dyn SecretResolver>> =
-        vec![Box::new(resolver_a), Box::new(resolver_b)];
+    let resolvers: Vec<Box<dyn SecretResolver>> = vec![Box::new(resolver_a), Box::new(resolver_b)];
 
     assert_eq!(
         require_secret(&store, &resolvers, "alpha://secret1").unwrap(),

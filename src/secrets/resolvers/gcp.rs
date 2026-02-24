@@ -1,14 +1,14 @@
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
-use anyhow::{anyhow, bail, Context, Result};
+use anyhow::{Context, Result, anyhow, bail};
 use base64::Engine;
 use secrecy::SecretString;
 use serde::Deserialize;
 
 use crate::secrets::resolver::SecretResolver;
 use crate::secrets::resolvers::{
-    truncate_body, validate_path_segment, CachedToken, ERROR_BODY_MAX_LEN,
+    CachedToken, ERROR_BODY_MAX_LEN, truncate_body, validate_path_segment,
 };
 
 /// A parsed `gcp://project/secret-name` or `gcp://project/secret-name/version` reference.
@@ -146,8 +146,7 @@ impl SecretResolver for GcpResolver {
             if let Some(token) = cache.as_ref().and_then(|c| c.get_if_valid()) {
                 token.to_string()
             } else {
-                let token = obtain_access_token()
-                    .context("failed to obtain GCP access token")?;
+                let token = obtain_access_token().context("failed to obtain GCP access token")?;
                 // Cache with 50-minute expiry (GCP tokens last 60 minutes).
                 *cache = Some(CachedToken {
                     token: token.clone(),
@@ -160,7 +159,7 @@ impl SecretResolver for GcpResolver {
         // URL-encode path segments to handle project IDs or secret names with
         // special characters. Uses percent-encoding (not form-urlencoded) since
         // these values appear in URL path segments, not query strings.
-        use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
+        use percent_encoding::{NON_ALPHANUMERIC, utf8_percent_encode};
         let encoded_project = utf8_percent_encode(&gcp_ref.project, NON_ALPHANUMERIC);
         let encoded_secret = utf8_percent_encode(&gcp_ref.secret, NON_ALPHANUMERIC);
         let encoded_version = utf8_percent_encode(&gcp_ref.version, NON_ALPHANUMERIC);
@@ -211,8 +210,8 @@ impl SecretResolver for GcpResolver {
             .decode(&body.payload.data)
             .context("failed to base64-decode secret payload")?;
 
-        let secret_value = String::from_utf8(decoded)
-            .context("GCP secret payload is not valid UTF-8")?;
+        let secret_value =
+            String::from_utf8(decoded).context("GCP secret payload is not valid UTF-8")?;
 
         Ok(SecretString::from(secret_value))
     }
@@ -340,8 +339,8 @@ fn token_from_credentials_file(path: &std::path::Path) -> Result<String> {
             token_from_service_account(&sa)
         }
         "authorized_user" => {
-            let user: UserCredentials = serde_json::from_str(&content)
-                .context("failed to parse user credentials")?;
+            let user: UserCredentials =
+                serde_json::from_str(&content).context("failed to parse user credentials")?;
             token_from_user_credentials(&user)
         }
         "external_account" => bail!(
@@ -415,10 +414,9 @@ fn token_from_service_account(sa: &ServiceAccountCredentials) -> Result<String> 
         );
     }
 
-    let token_resp: TokenResponse = tokio::task::block_in_place(|| {
-        tokio::runtime::Handle::current().block_on(response.json())
-    })
-    .context("failed to parse token exchange response")?;
+    let token_resp: TokenResponse =
+        tokio::task::block_in_place(|| tokio::runtime::Handle::current().block_on(response.json()))
+            .context("failed to parse token exchange response")?;
 
     Ok(token_resp.access_token)
 }
@@ -461,10 +459,9 @@ fn token_from_user_credentials(user: &UserCredentials) -> Result<String> {
         );
     }
 
-    let token_resp: TokenResponse = tokio::task::block_in_place(|| {
-        tokio::runtime::Handle::current().block_on(response.json())
-    })
-    .context("failed to parse token refresh response")?;
+    let token_resp: TokenResponse =
+        tokio::task::block_in_place(|| tokio::runtime::Handle::current().block_on(response.json()))
+            .context("failed to parse token refresh response")?;
 
     Ok(token_resp.access_token)
 }
@@ -497,10 +494,9 @@ fn token_from_metadata_server() -> Result<String> {
         bail!("GCE metadata server returned HTTP {}", status.as_u16());
     }
 
-    let token_resp: TokenResponse = tokio::task::block_in_place(|| {
-        tokio::runtime::Handle::current().block_on(response.json())
-    })
-    .context("failed to parse metadata server token response")?;
+    let token_resp: TokenResponse =
+        tokio::task::block_in_place(|| tokio::runtime::Handle::current().block_on(response.json()))
+            .context("failed to parse metadata server token response")?;
 
     Ok(token_resp.access_token)
 }
@@ -556,27 +552,18 @@ mod tests {
     #[test]
     fn parse_rejects_question_mark_in_project() {
         let err = GcpReference::parse("gcp://proj?ect/secret").unwrap_err();
-        assert!(
-            err.to_string().contains("invalid character"),
-            "got: {err}"
-        );
+        assert!(err.to_string().contains("invalid character"), "got: {err}");
     }
 
     #[test]
     fn parse_rejects_hash_in_secret() {
         let err = GcpReference::parse("gcp://project/sec#ret").unwrap_err();
-        assert!(
-            err.to_string().contains("invalid character"),
-            "got: {err}"
-        );
+        assert!(err.to_string().contains("invalid character"), "got: {err}");
     }
 
     #[test]
     fn parse_rejects_whitespace_in_project() {
         let err = GcpReference::parse("gcp://my project/secret").unwrap_err();
-        assert!(
-            err.to_string().contains("invalid character"),
-            "got: {err}"
-        );
+        assert!(err.to_string().contains("invalid character"), "got: {err}");
     }
 }

@@ -18,7 +18,7 @@ pub mod azure;
     feature = "secrets-gcp",
     feature = "secrets-azure",
 ))]
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 
 /// Cached bearer token with expiry tracking.
 ///
@@ -120,10 +120,7 @@ pub(crate) fn validate_azure_vault_name(name: &str) -> Result<()> {
         );
     }
 
-    if !name
-        .chars()
-        .all(|c| c.is_ascii_alphanumeric() || c == '-')
-    {
+    if !name.chars().all(|c| c.is_ascii_alphanumeric() || c == '-') {
         bail!(
             "Azure vault name must contain only alphanumeric characters and hyphens, got: {name}"
         );
@@ -246,10 +243,7 @@ mod tests {
     #[cfg(feature = "secrets-azure")]
     fn validate_azure_vault_name_rejects_dots() {
         let err = super::validate_azure_vault_name("my.vault").unwrap_err();
-        assert!(
-            err.to_string().contains("alphanumeric"),
-            "got: {err}"
-        );
+        assert!(err.to_string().contains("alphanumeric"), "got: {err}");
     }
 
     #[test]

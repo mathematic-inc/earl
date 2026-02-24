@@ -20,7 +20,7 @@ fn vault_resolver_requires_env_vars() {
 
     let resolver = VaultResolver::new();
     let err = resolver
-        .resolve("vault://secret/data/myapp#api_key")
+        .resolve("vault://secret/myapp#api_key")
         .unwrap_err();
     assert!(
         err.to_string().contains("VAULT_ADDR") || err.to_string().contains("VAULT_TOKEN"),

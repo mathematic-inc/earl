@@ -1,8 +1,8 @@
-use anyhow::{anyhow, bail, Context, Result};
+use anyhow::{Context, Result, anyhow, bail};
 use secrecy::{ExposeSecret, SecretString};
 
 use crate::secrets::resolver::SecretResolver;
-use crate::secrets::resolvers::{truncate_body, ERROR_BODY_MAX_LEN};
+use crate::secrets::resolvers::{ERROR_BODY_MAX_LEN, truncate_body};
 
 /// Validate a 1Password reference segment (vault, item, section, or field name).
 ///
@@ -134,8 +134,12 @@ struct OpAuth {
 
 impl OpAuth {
     fn from_env() -> Result<Self> {
-        let token = std::env::var("OP_CONNECT_TOKEN").ok().filter(|t| !t.is_empty());
-        let host = std::env::var("OP_CONNECT_HOST").ok().filter(|h| !h.is_empty());
+        let token = std::env::var("OP_CONNECT_TOKEN")
+            .ok()
+            .filter(|t| !t.is_empty());
+        let host = std::env::var("OP_CONNECT_HOST")
+            .ok()
+            .filter(|h| !h.is_empty());
 
         match (token, host) {
             (Some(token), Some(host)) => {
@@ -150,14 +154,12 @@ impl OpAuth {
                              transmitted in cleartext. Use HTTPS in production."
                         );
                     }
-                    other => bail!(
-                        "OP_CONNECT_HOST must use http:// or https:// scheme, got: {other}"
-                    ),
+                    other => {
+                        bail!("OP_CONNECT_HOST must use http:// or https:// scheme, got: {other}")
+                    }
                 }
                 if !parsed.path().is_empty() && parsed.path() != "/" {
-                    bail!(
-                        "OP_CONNECT_HOST must not include a path, got: {host}"
-                    );
+                    bail!("OP_CONNECT_HOST must not include a path, got: {host}");
                 }
                 if !parsed.username().is_empty() || parsed.password().is_some() {
                     bail!(
@@ -165,14 +167,10 @@ impl OpAuth {
                     );
                 }
                 if parsed.query().is_some() {
-                    bail!(
-                        "OP_CONNECT_HOST must not include a query string, got: {host}"
-                    );
+                    bail!("OP_CONNECT_HOST must not include a query string, got: {host}");
                 }
                 if parsed.fragment().is_some() {
-                    bail!(
-                        "OP_CONNECT_HOST must not include a fragment, got: {host}"
-                    );
+                    bail!("OP_CONNECT_HOST must not include a fragment, got: {host}");
                 }
                 Ok(Self {
                     host: host.trim_end_matches('/').to_string(),
@@ -193,7 +191,9 @@ impl OpAuth {
 /// 1Password UUIDs are generated in this specific alphabet and length, so
 /// the false-positive rate on human-readable vault/item names is negligible.
 fn is_op_uuid(s: &str) -> bool {
-    s.len() == 26 && s.chars().all(|c| c.is_ascii_uppercase() || matches!(c, '2'..='7'))
+    s.len() == 26
+        && s.chars()
+            .all(|c| c.is_ascii_uppercase() || matches!(c, '2'..='7'))
 }
 
 /// Validate that a value is safe to use in a SCIM filter string literal.
@@ -287,10 +287,9 @@ fn resolve_via_connect(op_ref: &OpReference, auth: &OpAuth) -> Result<SecretStri
         );
     }
 
-    let body: serde_json::Value = tokio::task::block_in_place(|| {
-        tokio::runtime::Handle::current().block_on(response.json())
-    })
-    .context("failed to parse 1Password API response")?;
+    let body: serde_json::Value =
+        tokio::task::block_in_place(|| tokio::runtime::Handle::current().block_on(response.json()))
+            .context("failed to parse 1Password API response")?;
 
     // The response has a `fields` array; find the one matching our field label or id.
     // For section-scoped fields (section/field), we match the field label directly
@@ -389,12 +388,13 @@ fn resolve_via_cli(reference: &str) -> Result<SecretString> {
         }
     }
 
-    let result = child.wait_with_output()
+    let result = child
+        .wait_with_output()
         .context("failed to read 1Password CLI output")?;
 
     if result.status.success() {
-        let value = String::from_utf8(result.stdout)
-            .context("1Password CLI returned non-UTF-8 output")?;
+        let value =
+            String::from_utf8(result.stdout).context("1Password CLI returned non-UTF-8 output")?;
         Ok(SecretString::from(value))
     } else {
         let stderr = String::from_utf8_lossy(&result.stderr);
@@ -450,10 +450,9 @@ fn resolve_vault_id(
         );
     }
 
-    let vaults: Vec<serde_json::Value> = tokio::task::block_in_place(|| {
-        tokio::runtime::Handle::current().block_on(response.json())
-    })
-    .context("failed to parse 1Password vault lookup response")?;
+    let vaults: Vec<serde_json::Value> =
+        tokio::task::block_in_place(|| tokio::runtime::Handle::current().block_on(response.json()))
+            .context("failed to parse 1Password vault lookup response")?;
 
     if vaults.is_empty() {
         bail!("1Password vault '{}' not found", name_or_id);
@@ -517,10 +516,9 @@ fn resolve_item_id(
         );
     }
 
-    let items: Vec<serde_json::Value> = tokio::task::block_in_place(|| {
-        tokio::runtime::Handle::current().block_on(response.json())
-    })
-    .context("failed to parse 1Password item lookup response")?;
+    let items: Vec<serde_json::Value> =
+        tokio::task::block_in_place(|| tokio::runtime::Handle::current().block_on(response.json()))
+            .context("failed to parse 1Password item lookup response")?;
 
     if items.is_empty() {
         bail!("1Password item '{}' not found in vault", name_or_id);
@@ -592,28 +590,19 @@ mod tests {
     #[test]
     fn parse_rejects_control_char_in_vault() {
         let err = OpReference::parse("op://my\x00vault/item/field").unwrap_err();
-        assert!(
-            err.to_string().contains("invalid character"),
-            "got: {err}"
-        );
+        assert!(err.to_string().contains("invalid character"), "got: {err}");
     }
 
     #[test]
     fn parse_rejects_question_mark_in_item() {
         let err = OpReference::parse("op://vault/item?q=1/field").unwrap_err();
-        assert!(
-            err.to_string().contains("invalid character"),
-            "got: {err}"
-        );
+        assert!(err.to_string().contains("invalid character"), "got: {err}");
     }
 
     #[test]
     fn parse_rejects_hash_in_field() {
         let err = OpReference::parse("op://vault/item/field#frag").unwrap_err();
-        assert!(
-            err.to_string().contains("invalid character"),
-            "got: {err}"
-        );
+        assert!(err.to_string().contains("invalid character"), "got: {err}");
     }
 
     #[test]
