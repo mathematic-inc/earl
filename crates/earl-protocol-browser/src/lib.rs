@@ -1,6 +1,7 @@
 pub mod builder;
 pub mod error;
 pub mod executor;
+pub mod launcher;
 pub mod schema;
 pub mod session;
 pub mod steps;
