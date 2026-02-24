@@ -19,6 +19,8 @@ An AI agent with shell access can read your `.env` file, call any URL, and exfil
 [![Linux](https://img.shields.io/badge/Linux-FCC624?logo=linux&logoColor=black)](https://github.com/brwse/earl/releases/latest)
 [![Windows](https://img.shields.io/badge/Windows-0078D4?logo=windows&logoColor=white)](https://github.com/brwse/earl/releases/latest)
 
+[this is ai slop. we are rewriting our docs]
+
 When you use Earl, agents stop calling raw `curl` and start calling `earl call github.search_repos`. Secrets live in the OS keychain and get injected at request time — they never appear in process arguments, environment variables, or output. Outbound traffic goes only to hosts you've explicitly allowed. Write operations ask for confirmation before they run. The HCL templates that define all of this are plain text files you can read and check into your repo alongside your code. That last part matters: the security boundary is auditable, not just implied by convention.
 
 ## Fastest path
