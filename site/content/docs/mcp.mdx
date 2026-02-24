@@ -4,7 +4,7 @@ description: Use earl templates as tools in AI agents via the Model Context Prot
 icon: Bot
 ---
 
-Earl implements a [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server (protocol version `2024-11-05`), letting AI agents discover and invoke your API templates as native tools.
+Running `earl mcp` exposes your template catalog as native MCP tools — your agent sees them in `tools/list` the same way it sees any other tool, with full parameter schemas and descriptions. The main choice is how many tools to expose at once.
 
 ```bash
 earl mcp [stdio|http] [--mode full|discovery] [--listen ADDR] [--yes] [--allow-unauthenticated]
@@ -12,7 +12,9 @@ earl mcp [stdio|http] [--mode full|discovery] [--listen ADDR] [--yes] [--allow-u
 
 ## Modes
 
-Earl exposes templates to agents in two modes. Choose the one that fits your template library size and agent capabilities.
+**The short answer:** use full mode for small catalogs, discovery mode for large ones.
+
+At 50 templates, full mode sends 50 tool definitions to the agent on every call. That eats context window and slows responses. Discovery mode stays at two tool definitions regardless of catalog size, at the cost of an extra round-trip per operation.
 
 ### Full Mode
 
@@ -20,9 +22,9 @@ Earl exposes templates to agents in two modes. Choose the one that fits your tem
 earl mcp stdio --mode full
 ```
 
-Every template in the catalog becomes a separate MCP tool. The agent sees all tools in its `tools/list` response and can call any of them directly.
+Every template becomes a separate MCP tool. The agent sees all of them in `tools/list` and calls whichever it needs directly. No extra round-trips.
 
-Best when you have a small number of templates (under ~30) and want the agent to see everything at once.
+Works well when you have fewer than ~30 templates and want the simplest possible setup.
 
 ### Discovery Mode
 
@@ -30,7 +32,7 @@ Best when you have a small number of templates (under ~30) and want the agent to
 earl mcp stdio --mode discovery
 ```
 
-Instead of exposing every template, discovery mode registers only two meta-tools:
+Instead of exposing every template, discovery mode registers two meta-tools:
 
 **`earl.tool_search`** — Find matching templates by natural-language query.
 
@@ -51,7 +53,7 @@ Returns a ranked list of matching tools with name, score, summary, mode, categor
 | `name`      | `string` | Yes      | —       | Exact tool name returned by `earl.tool_search` |
 | `arguments` | `object` | No       | `{}`    | Arguments for the selected template tool       |
 
-In discovery mode, the server also returns an `instructions` field during initialization that guides the agent to use the two-step search-then-call workflow.
+The server also sends an `instructions` field during initialization that tells the agent to use the search-then-call workflow.
 
 ### Full vs Discovery Trade-offs
 
@@ -164,107 +166,11 @@ earl mcp http --listen 127.0.0.1:8977 --mode full --yes --allow-unauthenticated
 
 The `--listen` flag defaults to `127.0.0.1:8977`.
 
-The HTTP transport requires authentication by default. You must either configure JWT authentication (see [Authentication](#authentication) below) or explicitly pass `--allow-unauthenticated` to opt out. The two options are mutually exclusive — earl will refuse to start if both are set.
-
-## Authentication
-
-When using the HTTP transport, earl supports JWT-based authentication to control who can access your MCP tools.
-
-### JWT Configuration
-
-Add an `[auth.jwt]` section to your config file (`~/.config/earl/config.toml`):
-
-```toml
-[auth.jwt]
-audience = "https://api.example.com"
-issuer = "https://accounts.example.com"
-jwks_uri = "https://accounts.example.com/.well-known/jwks.json"
-```
-
-Alternatively, use OIDC discovery to auto-resolve the issuer and JWKS URI:
-
-```toml
-[auth.jwt]
-audience = "https://api.example.com"
-oidc_discovery_url = "https://accounts.example.com/.well-known/openid-configuration"
-```
-
-| Field                        | Type       | Required                        | Default     | Description                                                                                |
-| ---------------------------- | ---------- | ------------------------------- | ----------- | ------------------------------------------------------------------------------------------ |
-| `audience`                   | `string`   | Yes                             | —           | Expected `aud` claim in the JWT                                                            |
-| `oidc_discovery_url`         | `string`   | If `issuer`/`jwks_uri` not set  | —           | OIDC discovery endpoint to resolve issuer and JWKS URI                                     |
-| `issuer`                     | `string`   | If `oidc_discovery_url` not set | —           | Expected `iss` claim in the JWT                                                            |
-| `jwks_uri`                   | `string`   | If `oidc_discovery_url` not set | —           | URL to fetch the JSON Web Key Set for token verification                                   |
-| `algorithms`                 | `string[]` | No                              | `["RS256"]` | Allowed signing algorithms (RS256, RS384, RS512, ES256, ES384, PS256, PS384, PS512, EdDSA) |
-| `clock_skew_seconds`         | `integer`  | No                              | `30`        | Maximum clock skew tolerance in seconds (capped at 300)                                    |
-| `jwks_cache_max_age_seconds` | `integer`  | No                              | `900`       | How long to cache JWKS keys before refreshing                                              |
-
-When JWT is configured, clients must include a `Bearer` token in the `Authorization` header. The token must contain `exp`, `sub`, `iss`, and `aud` claims. The `sub` claim identifies the authenticated subject for policy evaluation.
-
-```bash
-earl mcp http --listen 127.0.0.1:8977 --mode full --yes
-```
-
-### Unauthenticated Access
-
-For development or trusted environments, you can skip authentication:
-
-```bash
-earl mcp http --listen 127.0.0.1:8977 --allow-unauthenticated
-```
+The HTTP transport requires either JWT authentication (see [Configuration](/docs/configuration)) or `--allow-unauthenticated` for development. The two options are mutually exclusive — earl will refuse to start if both are set.
 
 <Callout type="warn">
   Using `--allow-unauthenticated` is not recommended for production. Without
   authentication, anyone who can reach the server can call your tools.
-</Callout>
-
-## Policy Engine
-
-When JWT authentication is enabled, you can define access control policies that restrict which subjects can call which tools. Policies are defined as `[[policy]]` entries in your config file.
-
-```toml
-[[policy]]
-subjects = ["user:alice", "group:admins"]
-tools = ["github.*"]
-effect = "allow"
-
-[[policy]]
-subjects = ["*"]
-tools = ["github.delete_repo"]
-modes = ["write"]
-effect = "deny"
-```
-
-| Field      | Type       | Required | Description                                                 |
-| ---------- | ---------- | -------- | ----------------------------------------------------------- |
-| `subjects` | `string[]` | Yes      | JWT `sub` values to match (supports `*` glob)               |
-| `tools`    | `string[]` | Yes      | Tool name patterns to match (supports `*` glob per segment) |
-| `modes`    | `string[]` | No       | Restrict to `read` and/or `write` tools (omit for both)     |
-| `effect`   | `string`   | Yes      | `allow` or `deny`                                           |
-
-### Evaluation Rules
-
-Policies use a **deny-overrides** model:
-
-1. All matching policies (by subject, tool, and mode) are collected.
-2. If **any** matching policy has `effect = "deny"`, the call is denied.
-3. If **any** matching policy has `effect = "allow"` (and none deny), the call is allowed.
-4. If **no** policies match, the call is denied (default deny).
-
-### Glob Patterns
-
-The `*` wildcard matches any characters within a single segment (separated by `.`). A lone `*` matches everything.
-
-| Pattern      | Matches               | Does Not Match        |
-| ------------ | --------------------- | --------------------- |
-| `github.*`   | `github.create_issue` | `slack.send_message`  |
-| `*.delete_*` | `github.delete_repo`  | `github.admin.delete` |
-| `*`          | any tool              | —                     |
-
-<Callout type="info">
-  Policies only apply to authenticated requests. Unauthenticated requests (when
-  using `--allow-unauthenticated`) bypass the policy engine entirely and are
-  gated only by the `--yes` flag for write-mode tools.
 </Callout>
 
 ## Write-Mode Safety
@@ -286,8 +192,55 @@ This prevents agents from performing destructive actions without explicit operat
 
 Run `earl doctor` to validate templates and configuration before starting the MCP server.
 
-Earl logs errors to stderr. To capture logs when running as an MCP server, redirect stderr to a file in your shell before launching, or check your MCP client's server log output.
+### MCP tools not appearing in the agent
+
+After adding earl to your agent config, restart the agent application. Most MCP clients only read server configs at startup and will not pick up changes until they relaunch.
+
+### Write-mode tool is blocked
+
+The server returns error `-32001` when a write-mode tool is called but `--yes` was not passed at startup. Stop the server and restart it with `--yes`:
+
+```bash
+earl mcp stdio --mode full --yes
+```
+
+### JWT validation failing
+
+Check two things: first, that the JWKS endpoint is reachable from the machine running earl. Second, check for clock skew between the token issuer and the earl server — the default tolerance is 30 seconds. You can raise it with `clock_skew_seconds` in your `[auth.jwt]` config. See [Configuration](/docs/configuration) for the full JWT config reference.
+
+### `earl` binary not found
+
+If you installed via `cargo install`, the binary is in `~/.cargo/bin/`, which may not be on `PATH` inside your agent app's environment. Use the full path in your config:
+
+```json
+{
+  "mcpServers": {
+    "earl": {
+      "command": "/Users/yourname/.cargo/bin/earl",
+      "args": ["mcp", "stdio", "--mode", "full", "--yes"]
+    }
+  }
+}
+```
+
+Find the path with `which earl` on macOS/Linux or `where earl` on Windows.
+
+### Capturing server logs
+
+Earl writes errors to stderr. When running as an MCP server, stderr is not visible in the agent UI. Redirect it to a file:
 
 ```bash
 earl mcp stdio --mode full --yes 2>/tmp/earl-mcp.log
 ```
+
+Then tail the file in a separate terminal to watch for errors in real time.
+
+### `unexpected EOF while reading stdio headers`
+
+The stdio transport received an incomplete message. This usually means the MCP client disconnected mid-message. Check the client's own logs for the disconnect reason, and verify the client is sending complete messages with valid `Content-Length` headers.
+
+---
+
+For JWT authentication and OIDC configuration, see [Configuration](/docs/configuration).
+
+For per-subject access control policies, see [Policy Engine](/docs/policy-engine).
