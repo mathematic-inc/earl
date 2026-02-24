@@ -47,6 +47,16 @@ parameters.
 | `--yes`        | off     | Auto-approve write-mode commands (skip the `Type YES to continue:` prompt).                              |
 | `--json`       | off     | Print structured JSON output instead of the rendered text template.                                      |
 
+`--yes` and `--json` are options on the `call` subcommand itself, so they must come before the command name:
+
+```bash
+# Correct
+earl call --yes --json github.search_repos --q "rust"
+
+# Wrong — flags after the command name are silently ignored
+earl call github.search_repos --q "rust" --yes --json
+```
+
 Write-mode commands prompt for explicit confirmation unless `--yes` is passed.
 
 ### Environments
@@ -312,6 +322,7 @@ earl mcp [stdio|http] [--listen <addr>] [--mode full|discovery] [--yes]
 | `--listen <addr>` | `127.0.0.1:8977` | Bind address for the HTTP transport. Ignored when using stdio.                                       |
 | `--mode <mode>`   | `full`           | `full` exposes one MCP tool per template command. `discovery` exposes search and call wrapper tools. |
 | `--yes`           | off              | Auto-approve write-mode tool calls. Without this flag, write-mode tools are rejected at runtime.     |
+| `--allow-unauthenticated` | off    | Skip authentication for the HTTP transport. Mutually exclusive with JWT configuration. Not recommended for production. |
 
 ### Examples
 

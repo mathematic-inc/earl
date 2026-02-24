@@ -87,7 +87,17 @@ Verify the installation:
 earl --version
 ```
 
+```bash
+earl doctor
+```
+
+Doctor validates your config and template files. If it reports errors, check [Troubleshooting](/docs/troubleshooting) before going further.
+
 ## Your First Call
+
+<Callout type="info">
+  On Linux, the Bash protocol requires bubblewrap. Install it first: `sudo apt install bubblewrap` (Fedora: `dnf install bubblewrap`, Arch: `pacman -S bubblewrap`). See [Troubleshooting](/docs/troubleshooting) if your distro isn't listed.
+</Callout>
 
 <Steps>
 <Step>
@@ -185,8 +195,8 @@ Earl resolves the `github.token` secret from your keychain, builds the HTTP requ
 - **Pre-built templates** — Import ready-made templates for Stripe, Slack, Notion, OpenAI, and 21 more providers. See [Templates → Pre-built Templates](/docs/templates#pre-built-templates).
 - **Browse commands** — Run `earl templates search "what you want to do"` for semantic search across all loaded templates.
 - **Web playground** — Run `earl web` to launch a local web UI for browsing and testing commands.
-- **MCP integration** — Run `earl mcp` to expose your templates as MCP tools for AI agents. See [MCP Integration](/docs/mcp).
-- **Lock it down** — Restrict write access to `~/.config/earl/config.toml` and your template files. See [Security](/docs/security).
+- **MCP integration** — Run `earl mcp` to expose your templates as MCP tools for AI agents. See [MCP Integration](/docs/mcp). After adding Earl to your MCP config, restart the agent app — tools aren't available until the next session. In the current session, `earl call` via the Bash tool works right away.
+- **Lock it down** — Restrict write access to `~/.config/earl/config.toml` and your template files. See [Hardening Guide](/docs/hardening).
 - **Write your own templates** — See [Templates](/docs/templates) for the HCL template format.
 
 ## Shell Completions
@@ -203,6 +213,8 @@ Generate completion scripts for your shell:
     ```bash
     earl completion zsh > ~/.zfunc/_earl
     ```
+
+    Then add `fpath=(~/.zfunc $fpath)` to your `.zshrc` before the `compinit` call, if it isn't already there.
   </Tab>
   <Tab value="Fish">
     ```bash
@@ -217,3 +229,13 @@ Generate completion scripts for your shell:
 </Tabs>
 
 Elvish is also supported via `earl completion elvish`.
+
+## Web Playground
+
+If you prefer a browser interface, Earl ships one built into the binary. Run:
+
+```bash
+earl web
+```
+
+Earl starts a local server, prints the URL and a session token, and opens your browser. The URL uses a random port — something like `http://127.0.0.1:52413` — printed in the terminal when it starts. From there you can browse your loaded templates, search commands by name, fill in parameters through a form, and execute them without touching the CLI. Good for getting oriented when you first add a new template catalog.
