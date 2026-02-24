@@ -32,15 +32,24 @@ auth {
   secret = "myapi.token"
 }
 
-# Basic auth (username:password stored as single secret)
+# API key in header or query param
 auth {
-  kind   = "basic"
-  secret = "myapi.credentials"
+  kind     = "api_key"
+  secret   = "myapi.key"
+  location = "header"   # header, query, or cookie
+  name     = "X-Api-Key"
+}
+
+# Basic auth
+auth {
+  kind            = "basic"
+  username        = "myuser"
+  password_secret = "myapi.password"
 }
 
 # OAuth2 profile (uses config.toml profile)
 auth {
-  kind    = "oauth2"
+  kind    = "o_auth2_profile"
   profile = "myservice"
 }
 ```
@@ -97,7 +106,7 @@ Then reference it in templates:
 
 ```hcl
 auth {
-  kind    = "oauth2"
+  kind    = "o_auth2_profile"
   profile = "myservice"
 }
 ```

@@ -87,8 +87,8 @@ body {
 
 # Form body
 body {
-  kind  = "form"
-  value = {
+  kind   = "form_urlencoded"
+  fields = {
     username = "{{ args.username }}"
     password = "{{ args.password }}"
   }
@@ -96,7 +96,7 @@ body {
 
 # Raw text body
 body {
-  kind  = "raw"
+  kind  = "raw_text"
   value = "{{ args.content }}"
 }
 ```
@@ -112,11 +112,12 @@ auth {
 
 # Basic auth
 auth {
-  kind   = "basic"
-  secret = "myapi.credentials"
+  kind            = "basic"
+  username        = "myuser"
+  password_secret = "myapi.password"
 }
 
-# API key in header (use headers instead of auth block)
+# Alternative: API key in header directly (use api_key auth block for structured auth)
 headers = {
   X-API-Key = "{{ secrets.myapi_key }}"
 }
