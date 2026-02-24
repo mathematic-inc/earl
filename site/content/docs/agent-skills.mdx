@@ -1,0 +1,62 @@
+---
+title: Agent Skills
+description: Machine-readable instructions that AI agents follow to install, configure, and use Earl
+icon: Wand2
+---
+
+Setting up Earl involves several distinct workflows: first install, MCP configuration, template authoring, migration from existing scripts, diagnostics. Rather than walking through each step manually, you can give your agent a skill file and let it drive. The [Quick Start](/docs/quick-start) shows this in action.
+
+## How to invoke a skill
+
+Paste a prompt like this into your agent:
+
+```
+Fetch https://raw.githubusercontent.com/brwse/earl/main/skills/setup-earl/SKILL.md
+and any files it references under
+https://raw.githubusercontent.com/brwse/earl/main/skills/references/
+then follow the skill to help me get started with Earl.
+```
+
+The agent fetches the skill file from GitHub, reads any referenced files it needs (protocol references, mapping tables, etc.), and executes the workflow described inside. There is no magic: a skill is a markdown file with structured instructions in it. The agent reads it the same way it reads any document you paste into context, but the content is written for an agent to act on rather than for a human to read step-by-step.
+
+## Built-in skills
+
+| Skill | What it does | When to use it | URL |
+|-------|-------------|----------------|-----|
+| `setup-earl` | Installs Earl, runs a quick demo with the `system` template, configures MCP for Claude Code / Cursor / Windsurf, and writes CLAUDE.md instructions. Routes to template creation or migration at the end | First time setup, onboarding a new developer, or reconnecting Earl to an agent platform | `https://raw.githubusercontent.com/brwse/earl/main/skills/setup-earl/SKILL.md` |
+| `create-template` | Authors a new HCL template for a specific API, database, or shell command. Checks for pre-built templates first, infers the protocol from your description, loads the right reference file, and drafts the template for your review before validating it, setting up secrets, and running a test call | Adding a new service, or adding a command to an existing template | `https://raw.githubusercontent.com/brwse/earl/main/skills/create-template/SKILL.md` |
+| `migrate-to-earl` | Scans a codebase for raw CLI/API calls (curl, gh, stripe-cli, psql, grpcurl, etc.), groups them by provider, imports or creates the matching Earl template, verifies secrets, asks for confirmation, then rewrites call sites one provider at a time | Replacing existing CLI tool usage with reviewed Earl templates | `https://raw.githubusercontent.com/brwse/earl/main/skills/migrate-to-earl/SKILL.md` |
+| `troubleshoot-earl` | Runs `earl doctor`, validates templates, checks the template list, verifies secrets, and inspects MCP config. Then runs the failing command and maps errors to fixes. Tells you which problems it can fix automatically and which ones need you | Earl isn't working, `earl call` returns errors, MCP tools aren't visible, or `earl doctor` reports failures | `https://raw.githubusercontent.com/brwse/earl/main/skills/troubleshoot-earl/SKILL.md` |
+| `secure-agent` | Adds `deniedTools` entries to `.claude/settings.json` to block raw CLI tools (curl, gh, stripe-cli, etc.) at the platform level, then configures `[[network.allow]]` egress rules in Earl's config to restrict which hosts templates can reach | After Earl is working and templates cover your services, to make the security guarantee enforceable rather than advisory | `https://raw.githubusercontent.com/brwse/earl/main/skills/secure-agent/SKILL.md` |
+
+## Third-party skills
+
+The `skills/3p/` directory holds skills for specific services that work on top of Earl. A third-party skill is the same format as a built-in skill: fetch it, follow it.
+
+The recall.ai skill is the existing example. It covers recording video meetings (Zoom, Google Meet, Teams, Webex), retrieving speaker-attributed transcripts, and downloading audio/video. It includes the full async lifecycle: bot creation, status polling intervals, transcript retrieval, and download URL expiry. Invoke it the same way as a built-in skill:
+
+```
+Fetch https://raw.githubusercontent.com/brwse/earl/main/skills/3p/recall_ai/SKILL.md
+then follow the skill to help me record a meeting and get the transcript.
+```
+
+Anyone can write a third-party skill for their service. The format is plain markdown with a YAML front matter block naming the skill and describing when to use it.
+
+## Reference files
+
+The `skills/references/` directory contains files that agents load while executing skills, mostly during template authoring. They are not written for humans to read directly. They give the agent the HCL shapes, required fields, auth patterns, and known edge cases for each protocol.
+
+| File | Contents |
+|------|----------|
+| `http-templates.md` | Full template skeleton for REST APIs, all auth kinds (bearer, basic, OAuth), body shapes (JSON, form), query parameters, and common patterns like pagination |
+| `graphql-templates.md` | Template skeleton for GraphQL endpoints, variable passing, and how the nested `graphql { }` block maps to the HCL structure |
+| `grpc-templates.md` | Template skeleton for gRPC services using server reflection or a descriptor set file, with TOCTOU and TLS notes |
+| `bash-templates.md` | Template skeleton for sandboxed shell scripts, environment variable passing, and sandbox network and filesystem options |
+| `sql-templates.md` | Template skeleton for PostgreSQL, MySQL, and SQLite, including the `params = ["{{ args.x }}"]` quoting rule for HCL/Jinja interaction |
+| `mcp-integration.md` | MCP server configuration for full mode and discovery mode, including when to use each and how agent restart fits in |
+| `secrets-and-auth.md` | Secret management commands, all auth block kinds (bearer, basic, API key, OAuth client credentials, device code, PKCE), and which OAuth flows require human action |
+| `template-quick-ref.md` | Compact reference of all five protocol operation shapes, every field name and type, and a checklist of fields required for every template |
+
+## A note on trust
+
+Skills are instructions you are asking an agent to execute. Loading a skill from an untrusted source is the same as pasting an untrusted prompt into your agent's context. Only load skills from sources you trust.
