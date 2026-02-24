@@ -47,7 +47,7 @@ pub async fn search_remote(
     };
 
     let api_key = match &cfg.api_key_secret {
-        Some(secret_key) => require_secret(secrets.store(), secret_key)?,
+        Some(secret_key) => require_secret(secrets.store(), secrets.resolvers(), secret_key)?,
         None => return Ok(None),
     };
 

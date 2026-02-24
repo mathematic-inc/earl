@@ -341,6 +341,15 @@ fn run_secrets(command: SecretsSubcommand) -> Result<()> {
 
     match command {
         SecretsSubcommand::Set(args) => {
+            if args.key.contains("://") {
+                bail!(
+                    "secret key `{}` looks like an external secret reference (contains ://). \
+                     External secrets are read-only and managed by their respective secret managers. \
+                     Use `earl secrets set <name>` for keychain secrets only.",
+                    args.key
+                );
+            }
+
             let value = if args.stdin {
                 let mut raw = String::new();
                 io::stdin().read_to_string(&mut raw)?;
