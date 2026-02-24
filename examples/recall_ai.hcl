@@ -600,7 +600,7 @@ command "get_transcript" {
 
   result {
     decode = "json"
-    output = "Transcript {{ result.id }}\nStatus: {{ result.status.code }}\nCreated: {{ result.created_at }}\n\nDownload URL (pass to download_transcript):\n{{ result.data.download_url if result.data else 'not ready yet — wait for status == done' }}"
+    output = "Transcript {{ result.id }}\nStatus: {{ result.status.code | default(result.status) | default('unknown') }}\nCreated: {{ result.created_at }}\n\nDownload URL (pass to download_transcript):\n{{ result.data.download_url if result.data else 'not ready yet — wait for status == done' }}"
   }
 }
 

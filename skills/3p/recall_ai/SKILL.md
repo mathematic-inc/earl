@@ -36,7 +36,7 @@ speaker-attributed transcripts, and produces downloadable audio/video files.
 Creating a bot does NOT start recording. The full sequence is async:
 
 ```
-create_bot → [wait: pending→joining] → start_recording → [meeting runs] → leave_call/stop_recording → [wait: processing] → get_transcript → download_transcript
+create_bot → [wait: pending→joining→joined] → start_recording → [meeting runs] → leave_call/stop_recording → [wait: processing] → get_transcript → download_transcript
 ```
 
 **Do NOT call `get_transcript` immediately after `create_bot`.** You will get an error or empty data. Always poll first.
