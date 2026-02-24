@@ -352,7 +352,6 @@ command "list_files" {
   param "purpose" {
     type        = "string"
     required    = false
-    default     = ""
     description = "Filter by purpose (assistants, batch, fine-tune, vision, user_data)"
   }
 

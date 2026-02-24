@@ -509,8 +509,15 @@ fn extract_args_refs(s: &str) -> Vec<&str> {
         if end > 0 {
             refs.push(&after[..end]);
         }
-        // Advance past "args." plus however many ident chars we consumed (at least 1)
-        remaining = &remaining[pos + 5 + end.max(1)..];
+        // Advance past "args." plus the identifier chars consumed, or past the
+        // non-identifier character that immediately followed "args." Use the
+        // character's actual byte length to stay on valid UTF-8 boundaries.
+        let skip = if end > 0 {
+            end
+        } else {
+            after.chars().next().map(|c| c.len_utf8()).unwrap_or(0)
+        };
+        remaining = &remaining[pos + 5 + skip..];
     }
     refs
 }

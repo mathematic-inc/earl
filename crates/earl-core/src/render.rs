@@ -42,6 +42,9 @@ pub fn render_key_value_map(
             }
             other => {
                 let s = value_to_string(other)?;
+                // Empty strings are treated as absent in query/header maps — same
+                // policy as null, since `default = ""` was the old workaround for
+                // optional params that are now handled via null-skipping.
                 if !s.is_empty() {
                     out.push((rendered_key, s));
                 }
