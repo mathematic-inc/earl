@@ -23,6 +23,8 @@ command "create_chat_completion" {
     type        = "string"
     required    = false
     default     = ""
+    # Kept as "" rather than removing: null content in the messages array is
+    # rejected by the OpenAI API, so we must send "" when omitted.
     description = "System message to set the assistant's behavior"
   }
 

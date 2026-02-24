@@ -479,6 +479,12 @@ fn validate_template_args(command_name: &str, cmd: &CommandTemplate) -> Result<(
     let mut strings: Vec<String> = Vec::new();
     collect_operation_strings(&cmd.operation, &mut strings);
     strings.push(cmd.result.output.clone());
+    for env_override in cmd.environment_overrides.values() {
+        collect_operation_strings(&env_override.operation, &mut strings);
+        if let Some(result) = &env_override.result {
+            strings.push(result.output.clone());
+        }
+    }
 
     for s in &strings {
         for arg_ref in extract_args_refs(s) {

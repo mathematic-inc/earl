@@ -274,7 +274,6 @@ command "list_issues" {
   param "labels" {
     type        = "string"
     required    = false
-    default     = ""
     description = "Comma-separated list of label names"
   }
 
@@ -473,22 +472,19 @@ command "update_issue" {
   param "state" {
     type        = "string"
     required    = false
-    default     = ""
-    description = "New state: open or closed"
+    description = "New state: open or closed (omit to keep current)"
   }
 
   param "title" {
     type        = "string"
     required    = false
-    default     = ""
-    description = "New title"
+    description = "New title (omit to keep current)"
   }
 
   param "body" {
     type        = "string"
     required    = false
-    default     = ""
-    description = "New body (Markdown)"
+    description = "New body in Markdown (omit to keep current)"
   }
 
   operation {
@@ -911,14 +907,12 @@ command "list_workflow_runs" {
   param "branch" {
     type        = "string"
     required    = false
-    default     = ""
     description = "Filter by branch name"
   }
 
   param "status" {
     type        = "string"
     required    = false
-    default     = ""
     description = "Filter by status: completed, success, failure, cancelled, in_progress, queued"
   }
 
