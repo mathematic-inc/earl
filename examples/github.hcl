@@ -846,8 +846,7 @@ command "merge_pull" {
   param "commit_title" {
     type        = "string"
     required    = false
-    default     = ""
-    description = "Custom commit title for squash or merge commits"
+    description = "Custom commit title for squash or merge commits (omit to use PR title)"
   }
 
   operation {
