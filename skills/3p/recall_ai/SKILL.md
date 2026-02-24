@@ -36,13 +36,13 @@ speaker-attributed transcripts, and produces downloadable audio/video files.
 Creating a bot does NOT start recording. The full sequence is async:
 
 ```
-create_bot → [wait: joining] → start_recording → [meeting runs] → leave_call/stop_recording → [wait: processing] → get_transcript → download_transcript
+create_bot → [wait: pending→joining] → start_recording → [meeting runs] → leave_call/stop_recording → [wait: processing] → get_transcript → download_transcript
 ```
 
 **Do NOT call `get_transcript` immediately after `create_bot`.** You will get an error or empty data. Always poll first.
 
 **Polling intervals:**
-- While status is `joining`: every 10–15 seconds (max 2 minutes — if longer, the meeting URL may be invalid or the meeting hasn't started)
+- While status is `pending` or `joining`: every 10–15 seconds (max 2 minutes — if longer, the meeting URL may be invalid or the meeting hasn't started)
 - While status is `recording`: every 30 seconds
 - After `stop_recording` or `leave_call`, while transcript is `processing`: every 15 seconds
 

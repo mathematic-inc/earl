@@ -147,7 +147,17 @@ command "get_bot" {
 
   result {
     decode = "json"
-    output = "Bot {{ result.id }} [{{ result.status | default('unknown') }}]\nMeeting: {{ result.meeting_url }}\nName: {{ result.bot_name }}{% if result.join_at %}\nScheduled: {{ result.join_at }}{% endif %}\n\nArtifacts:\n{% if result.media_shortcuts %}  Transcript: {{ result.media_shortcuts.transcript.status.code | default('n/a') }} (id: {{ result.media_shortcuts.transcript.id | default('none') }})\n  Video:      {{ result.media_shortcuts.video_mixed.status.code | default('n/a') }} (id: {{ result.media_shortcuts.video_mixed.id | default('none') }})\n  Audio:      {{ result.media_shortcuts.audio_mixed.status.code | default('n/a') }} (id: {{ result.media_shortcuts.audio_mixed.id | default('none') }}){% else %}  (not yet available — bot is still joining){% endif %}"
+    output = <<-EOT
+      Bot {{ result.id }} [{{ result.status | default('unknown') }}]
+      Meeting: {{ result.meeting_url }}
+      Name: {{ result.bot_name }}{% if result.join_at %}
+      Scheduled: {{ result.join_at }}{% endif %}
+
+      Artifacts:
+      {% if result.media_shortcuts %}  Transcript: {{ result.media_shortcuts.transcript.status.code | default('n/a') }} (id: {{ result.media_shortcuts.transcript.id | default('none') }})
+        Video:      {{ result.media_shortcuts.video_mixed.status.code | default('n/a') }} (id: {{ result.media_shortcuts.video_mixed.id | default('none') }})
+        Audio:      {{ result.media_shortcuts.audio_mixed.status.code | default('n/a') }} (id: {{ result.media_shortcuts.audio_mixed.id | default('none') }}){% else %}  (not yet available — bot is still joining){% endif %}
+    EOT
   }
 }
 
