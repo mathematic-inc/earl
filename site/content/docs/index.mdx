@@ -4,7 +4,7 @@ description: AI-safe CLI for AI agents
 icon: BookOpen
 ---
 
-An AI agent with shell access can read your `.env` file, call any URL, and exfiltrate credentials without leaving a trace. Earl removes those attack surfaces: agents invoke named templates, secrets stay in the OS keychain, and outbound traffic follows an explicit allowlist you define. Earl is a CLI gate between AI agents and external services.
+An AI agent with shell access can read your `.env` file, call any URL, and exfiltrate credentials without leaving a trace. Earl cuts those attack surfaces by giving agents a gate instead of raw shell access: they invoke named templates, secrets stay in the OS keychain, and outbound traffic follows an explicit allowlist you define.
 
 ```
 ┌─────────────┐      ┌──────────────┐      ┌───────────────────┐
@@ -17,7 +17,9 @@ An AI agent with shell access can read your `.env` file, call any URL, and exfil
 
 ## How it works
 
-You define allowed operations as HCL templates that declare the URL, method, parameters, and which secrets the operation can access. You store credentials in the OS keychain with `earl secrets set`. Your agent calls `earl call provider.command --param value`. Earl resolves secrets, checks network rules, and executes — blocking anything that doesn't match a template. That's the whole model: AI agents should be able to do exactly what you've approved, nothing more.
+You define allowed operations as HCL templates. Each template declares the URL, method, parameters, and which secrets the operation can access. You store credentials in the OS keychain with `earl secrets set`. Your agent calls `earl call provider.command --param value`. Earl resolves secrets, checks network rules, and executes — blocking anything that doesn't match a template.
+
+That's the whole model. Agents can do exactly what you've approved. Nothing more.
 
 <Callout type="warn">
   Earl's guarantees hold as long as agents cannot modify config or template files.

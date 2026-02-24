@@ -19,7 +19,7 @@ An AI agent with shell access can read your `.env` file, call any URL, and exfil
 [![Linux](https://img.shields.io/badge/Linux-FCC624?logo=linux&logoColor=black)](https://github.com/brwse/earl/releases/latest)
 [![Windows](https://img.shields.io/badge/Windows-0078D4?logo=windows&logoColor=white)](https://github.com/brwse/earl/releases/latest)
 
-When you use Earl, agents stop calling raw `curl` and start calling `earl call github.search_repos`. Secrets live in the OS keychain and get injected at request time — they never appear in process arguments, environment variables, or output. Outbound traffic goes only to hosts you've explicitly allowed. Write operations ask for confirmation before they run. The HCL templates that define all of this are plain text files you can read, review, and check into your repo alongside your code. That last part matters: the security boundary is auditable, not implied.
+When you use Earl, agents stop calling raw `curl` and start calling `earl call github.search_repos`. Secrets live in the OS keychain and get injected at request time — they never appear in process arguments, environment variables, or output. Outbound traffic goes only to hosts you've explicitly allowed. Write operations ask for confirmation before they run. The HCL templates that define all of this are plain text files you can read and check into your repo alongside your code. That last part matters: the security boundary is auditable, not just implied by convention.
 
 ## Fastest path
 
@@ -91,9 +91,9 @@ Earl resolves the token from your keychain, builds the request, and returns the 
 
 ## Why not a wrapper script
 
-A shell wrapper around `curl` is fine until it isn't. You can't audit what a wrapper script will do before it runs. You can't prevent an agent from modifying it. And nothing stops it from leaking secrets into process arguments or log output.
+A shell wrapper around `curl` is fine until it isn't. You can't audit what a wrapper script will do before it runs. You can't prevent an agent from modifying it. Nothing stops it from leaking secrets into process arguments or log output.
 
-Earl templates are reviewed artifacts, not executable scripts. SSRF protection is on by default and cannot be disabled from inside a template; private IP ranges are blocked in the binary. Secrets are resolved from the OS keychain at call time and never written anywhere. When you run `earl mcp`, agents see only the tools you've loaded, with full parameter schemas, and nothing else. The attack surface is small by construction, not by convention.
+Earl templates are reviewed artifacts, not executable scripts. SSRF protection is on by default and cannot be disabled from inside a template; private IP ranges are blocked in the binary. Secrets are resolved from the OS keychain at call time and never written anywhere. When you run `earl mcp`, agents see only the tools you've loaded, with full parameter schemas. The attack surface is small by construction.
 
 ## Documentation
 
