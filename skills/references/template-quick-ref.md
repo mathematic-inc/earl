@@ -92,12 +92,14 @@ operation {
 
 ## Body Block Kinds (HTTP only)
 
-| Kind                | `value` type | Use case              |
-| ------------------- | ------------ | --------------------- |
-| `json`              | Object/map   | JSON request body     |
-| `form_urlencoded`   | Object/map   | URL-encoded form data |
-| `raw_text`          | String       | Raw text body         |
-| `raw_bytes_base64`  | String       | Raw bytes (base64)    |
+| Kind                | Fields                      | Use case                  |
+| ------------------- | --------------------------- | ------------------------- |
+| `json`              | `value` (object/map)        | JSON request body         |
+| `form_urlencoded`   | `fields` (object/map)       | URL-encoded form data     |
+| `raw_text`          | `value` (string)            | Raw text body             |
+| `raw_bytes_base64`  | `value` (string)            | Raw bytes (base64)        |
+| `multipart`         | `parts` (array)             | File uploads, mixed parts |
+| `file_stream`       | `path`, `content_type`      | Stream a local file       |
 
 ## Parameter Types
 
@@ -115,11 +117,12 @@ extract = { json_pointer = "/data/items" }
 
 ## Template Expression Context
 
-| Context     | Available in         | Example                   |
-| ----------- | -------------------- | ------------------------- |
-| `args.*`    | Everywhere           | `{{ args.query }}`        |
-| `secrets.*` | Operation block only | `{{ secrets.myapi_key }}` |
-| `result`    | Result block only    | `{{ result.total }}`      |
+| Context     | Available in                            | Example                   |
+| ----------- | --------------------------------------- | ------------------------- |
+| `args.*`    | Everywhere                              | `{{ args.query }}`        |
+| `vars.*`    | Operation block (when environments set) | `{{ vars.base_url }}`     |
+| `secrets.*` | Operation block only                    | `{{ secrets.myapi_key }}` |
+| `result`    | Result block only                       | `{{ result.total }}`      |
 
 ## HCL Functions
 
