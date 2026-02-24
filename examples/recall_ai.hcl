@@ -48,7 +48,7 @@ command "create_bot" {
     type        = "string"
     required    = false
     default     = ""
-    description = "ISO 8601 timestamp for scheduled join — omit to join immediately. Use a time at least 10 minutes in the future for reliability."
+    description = "ISO 8601 timestamp for scheduled join (e.g. 2026-02-23T15:00:00Z). Use a time at least 10 minutes in the future for reliability. NOTE: Earl always includes this field in the request body; if the recall.ai API rejects an empty string for this field, always provide a valid timestamp."
   }
 
   param "language_code" {
@@ -156,11 +156,15 @@ command "list_bots" {
   summary     = "List recall.ai bots with optional filters"
   description = <<-EOT
     Lists bots in the workspace. Use join_at_after to filter for upcoming scheduled
-    bots, or leave blank to list all bots.
+    bots, or omit to list all bots.
 
     Parameters:
     - join_at_after: ISO 8601 timestamp — only return bots scheduled after this time
     - page: Page number for pagination (default: 1)
+
+    NOTE: Earl always sends join_at_after in the query string. If omitted, it sends
+    ?join_at_after= (empty string). If the recall.ai API rejects an empty datetime
+    filter, always provide a valid ISO 8601 value for this parameter.
 
     ## Guidance for AI agents
     Use this to find a bot_id when you don't have it. Filter by join_at_after to

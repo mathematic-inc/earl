@@ -155,6 +155,12 @@ For reliable joins, `join_at` must be at least **10 minutes in the future**.
 Ad-hoc bots (no `join_at`) join immediately from a warm pool but may fail with
 507 errors during peak usage. For production workflows, always schedule ahead.
 
+**Earl limitation:** The `create_bot` template always sends `join_at` in the request
+body. When omitted, it sends `"join_at": ""`. If the recall.ai API rejects this,
+always provide `--join_at` with a valid ISO 8601 timestamp. Similarly, `list_bots`
+always sends `join_at_after` in the query — provide a value or expect a possible 400
+if the API validates the empty string.
+
 ---
 
 ## Download URL expiry
