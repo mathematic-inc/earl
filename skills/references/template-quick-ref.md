@@ -13,8 +13,14 @@ operation {
   url      = "https://..."
   query    = { key = "value" }
   headers  = { Accept = "application/json" }
-  auth     { kind = "bearer"; secret = "key" }
-  body     { kind = "json"; value = { ... } }
+  auth {
+    kind   = "bearer"
+    secret = "key"
+  }
+  body {
+    kind  = "json"
+    value = { ... }
+  }
 }
 ```
 
@@ -28,7 +34,10 @@ operation {
     query     = "query { ... }"
     variables = { key = "value" }
   }
-  auth { kind = "bearer"; secret = "key" }
+  auth {
+    kind   = "bearer"
+    secret = "key"
+  }
 }
 ```
 
@@ -83,19 +92,23 @@ operation {
 
 ## Auth Block Kinds
 
-| Kind     | Fields    | Use case                                 |
-| -------- | --------- | ---------------------------------------- |
-| `bearer` | `secret`  | API tokens (most REST/GraphQL APIs)      |
-| `basic`  | `secret`  | Basic HTTP auth (username:password)      |
-| `oauth2` | `profile` | OAuth2 flows (configured in config.toml) |
+| Kind              | Fields                        | Use case                                 |
+| ----------------- | ----------------------------- | ---------------------------------------- |
+| `bearer`          | `secret`                      | API tokens (most REST/GraphQL APIs)      |
+| `api_key`         | `secret`, `location`, `name`  | API key in header or query param         |
+| `basic`           | `username`, `password_secret` | Basic HTTP auth                          |
+| `o_auth2_profile` | `profile`                     | OAuth2 flows (configured in config.toml) |
 
 ## Body Block Kinds (HTTP only)
 
-| Kind   | `value` type | Use case              |
-| ------ | ------------ | --------------------- |
-| `json` | Object/map   | JSON request body     |
-| `form` | Object/map   | URL-encoded form data |
-| `raw`  | String       | Raw text body         |
+| Kind                | Fields                      | Use case                  |
+| ------------------- | --------------------------- | ------------------------- |
+| `json`              | `value` (object/map)        | JSON request body         |
+| `form_urlencoded`   | `fields` (object/map)       | URL-encoded form data     |
+| `raw_text`          | `value` (string)            | Raw text body             |
+| `raw_bytes_base64`  | `value` (string)            | Raw bytes (base64)        |
+| `multipart`         | `parts` (array)             | File uploads, mixed parts |
+| `file_stream`       | `path`, `content_type`      | Stream a local file       |
 
 ## Parameter Types
 
@@ -103,7 +116,7 @@ operation {
 
 ## Result Decode Options
 
-`json`, `html`, `xml`, `text`, `raw`
+`auto`, `json`, `text`, `html`, `xml`, `binary`
 
 ## Result Extract Options
 
@@ -113,11 +126,12 @@ extract = { json_pointer = "/data/items" }
 
 ## Template Expression Context
 
-| Context     | Available in         | Example                   |
-| ----------- | -------------------- | ------------------------- |
-| `args.*`    | Everywhere           | `{{ args.query }}`        |
-| `secrets.*` | Operation block only | `{{ secrets.myapi_key }}` |
-| `result`    | Result block only    | `{{ result.total }}`      |
+| Context     | Available in                            | Example                   |
+| ----------- | --------------------------------------- | ------------------------- |
+| `args.*`    | Everywhere                              | `{{ args.query }}`        |
+| `vars.*`    | Operation block (when environments set) | `{{ vars.base_url }}`     |
+| `secrets.*` | Operation block only                    | `{{ secrets.myapi_key }}` |
+| `result`    | Result block only                       | `{{ result.total }}`      |
 
 ## HCL Functions
 
