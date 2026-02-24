@@ -1,0 +1,193 @@
+---
+title: Environments
+description: Named environments let one template target multiple endpoints — production, staging, local — with per-environment variables and optional per-command overrides.
+icon: Layers
+---
+
+Named environments let a single template file target multiple endpoints.
+Declare them once at the provider level, then switch between them with a
+flag at call time.
+
+## Defining environments
+
+Add an `environments` block at the root of your template file, alongside the
+`provider` declaration:
+
+```hcl
+version  = 1
+provider = "myservice"
+
+environments {
+  default = "production"
+
+  production {
+    base_url = "https://api.example.com"
+    label    = "prod"
+  }
+
+  staging {
+    base_url = "https://staging-api.example.com"
+    label    = "staging"
+  }
+}
+
+command "ping" {
+  title       = "Ping"
+  summary     = "Health check"
+  description = "Returns pong."
+  annotations { mode = "read" }
+  operation {
+    protocol = "http"
+    method   = "GET"
+    url      = "{{ vars.base_url }}/ping"
+  }
+  result {
+    decode = "text"
+    output = "[{{ vars.label }}] {{ result }}"
+  }
+}
+```
+
+Each named block (`production`, `staging`) becomes an environment. Every
+key inside it is injected as a `vars.<key>` variable when that environment
+is active.
+
+| Field            | Type       | Required | Description                                                              |
+| ---------------- | ---------- | -------- | ------------------------------------------------------------------------ |
+| `default`        | `string`   | No       | Environment activated when no `--env` flag or config default is set.     |
+| `secrets`        | `string[]` | No       | Secret keys whose values `vars` entries are allowed to reference.        |
+| `<name> { ... }` | block      | No       | Named environment. Each key becomes a `vars.<key>` variable when active. |
+
+Environment names must match `[a-zA-Z0-9_-]` and be 1–64 characters.
+
+## Using environment variables
+
+Inside any Jinja2 field (`url`, `headers`, `body`, `result.output`, etc.)
+use `vars.<key>` to read the active environment's value:
+
+```hcl
+operation {
+  protocol = "http"
+  method   = "GET"
+  url      = "{{ vars.base_url }}/items"
+  headers  = { "X-Env": "{{ vars.label }}" }
+}
+```
+
+If no environment is active, `vars` is an empty map and any `vars.*`
+reference resolves to an empty string.
+
+## Secrets in environments
+
+To use a secret value inside an environment variable, declare it in the
+`secrets` list on the `environments` block, then reference it with
+`{{ secrets.<key> }}` inside the environment:
+
+```hcl
+environments {
+  default = "production"
+  secrets = ["myservice.staging_token"]
+
+  staging {
+    base_url  = "https://staging-api.example.com"
+    api_token = "{{ secrets.myservice.staging_token }}"
+  }
+}
+```
+
+The `secrets` list is a security guard: Earl will reject a template whose
+environment block references a secret that is not declared there.
+
+## Per-command overrides
+
+An `environment "<name>"` block inside a `command` replaces that command's
+`operation` (and optionally its `result`) when the named environment is
+active:
+
+```hcl
+command "ping" {
+  title       = "Ping"
+  summary     = "Health check"
+  description = "HTTP in production, bash locally."
+  annotations {
+    mode                                 = "read"
+    allow_environment_protocol_switching = true
+  }
+  operation {
+    protocol = "http"
+    method   = "GET"
+    url      = "{{ vars.base_url }}/ping"
+  }
+  environment "local" {
+    operation {
+      protocol = "bash"
+      bash {
+        script = "echo pong"
+      }
+    }
+    result {
+      decode = "text"
+      output = "local: {{ result }}"
+    }
+  }
+  result {
+    decode = "text"
+    output = "{{ result }}"
+  }
+}
+```
+
+When the `local` environment is active, the bash operation runs instead of
+the HTTP one. If the override omits `result`, the command's top-level
+`result` block is used as a fallback.
+
+| Field       | Type  | Required | Description                                                                     |
+| ----------- | ----- | -------- | ------------------------------------------------------------------------------- |
+| `operation` | block | Yes      | Replacement operation. Must follow the same protocol rules as a root operation. |
+| `result`    | block | No       | Replacement result block. Falls back to the command's `result` if omitted.      |
+
+## Protocol switching
+
+When a per-command environment override changes the `protocol` field, you
+must set `allow_environment_protocol_switching = true` in the command's
+`annotations` block. Without it, validation fails:
+
+```hcl
+annotations {
+  mode                                 = "read"
+  allow_environment_protocol_switching = true
+}
+```
+
+This flag is intentionally explicit. Switching protocols changes the
+security surface of a command, and Earl requires templates to acknowledge
+that.
+
+## Resolution priority
+
+Earl resolves the active environment in this order (highest wins):
+
+| Priority | Source                                                  |
+| -------- | ------------------------------------------------------- |
+| 1 (high) | `--env <name>` flag on `earl call`                      |
+| 2        | `environments.default` in `~/.config/earl/config.toml` |
+| 3        | `environments.default` in the template file             |
+| 4 (low)  | No active environment                                   |
+
+```bash
+# Activate staging just for this call
+earl call myservice.ping --env staging
+
+# Set a persistent default in config.toml
+# [environments]
+# default = "staging"
+```
+
+See [Configuration](/docs/configuration#environments) to set a config-level
+default, and [CLI Reference](/docs/commands#environments) for the full `--env`
+flag description.
+
+## Reference
+
+Full field-by-field reference for the `environments` block and
+`environment "<name>"` overrides: [Template Schema — environments](/docs/template-schema#environments).
