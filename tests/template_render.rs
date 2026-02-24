@@ -33,3 +33,13 @@ fn renders_object_keys_and_values() {
     let rendered = render_json_value(&value, &context).unwrap();
     assert_eq!(rendered, json!({"x-id": 123}));
 }
+
+#[test]
+fn skips_null_values_in_rendered_objects() {
+    // Absent optional params render to null and are omitted from the object,
+    // preventing { "title": null } in PATCH bodies when only some fields are set.
+    let context = json!({"args": {"state": "closed"}});
+    let value = json!({"state": "{{ args.state }}", "title": "{{ args.title }}"});
+    let rendered = render_json_value(&value, &context).unwrap();
+    assert_eq!(rendered, json!({"state": "closed"}));
+}

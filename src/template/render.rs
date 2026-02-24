@@ -30,7 +30,12 @@ pub fn render_json_value(value: &Value, context: &Value) -> Result<Value> {
             let mut out = Map::new();
             for (k, v) in obj {
                 let rendered_key = render_string_raw(k, context)?;
-                out.insert(rendered_key, render_json_value(v, context)?);
+                let rendered_val = render_json_value(v, context)?;
+                // Skip null values — absent optional params are omitted from the
+                // object, matching the policy in render_key_value_map.
+                if !rendered_val.is_null() {
+                    out.insert(rendered_key, rendered_val);
+                }
             }
             Ok(Value::Object(out))
         }
