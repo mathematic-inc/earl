@@ -4,7 +4,7 @@ description: AI-safe CLI for AI agents
 icon: BookOpen
 ---
 
-Earl is a CLI gate between AI agents and external services. Instead of giving agents raw shell or network access with plaintext credentials, you define allowed operations as HCL templates. Agents invoke those templates by name and nothing else.
+An AI agent with shell access can read your `.env` file, call any URL, and exfiltrate credentials without leaving a trace. Earl removes those attack surfaces: agents invoke named templates, secrets stay in the OS keychain, and outbound traffic follows an explicit allowlist you define. Earl is a CLI gate between AI agents and external services.
 
 ```
 ┌─────────────┐      ┌──────────────┐      ┌───────────────────┐
@@ -15,63 +15,45 @@ Earl is a CLI gate between AI agents and external services. Instead of giving ag
        └──────── Result ────┘
 ```
 
-## The Problem
+## How it works
 
-AI agents with broad shell or network access can read secrets in plaintext and make arbitrary API calls. That is an unacceptable default.
-
-## What Earl Does
-
-- **Template-driven requests** — Agents call `earl call provider.command --param value`, not arbitrary `curl` or raw HTTP.
-- **Secrets in the OS keychain** — Credentials are stored via `earl secrets set` and resolved at runtime. They never appear in CLI output.
-- **Network egress control** — Outbound traffic can be locked to specific hosts using `[[network.allow]]` rules in `config.toml`.
-- **SSRF protection** — Private IP ranges are blocked by default.
-- **Protocol support** — HTTP, GraphQL, gRPC, Bash, and SQL, each with protocol-specific safety controls.
-- **Sandboxing** — Bash and SQL commands run in sandboxed environments.
-- **Write confirmation** — Templates marked `mode = "write"` require explicit approval before execution.
+You define allowed operations as HCL templates that declare the URL, method, parameters, and which secrets the operation can access. You store credentials in the OS keychain with `earl secrets set`. Your agent calls `earl call provider.command --param value`. Earl resolves secrets, checks network rules, and executes — blocking anything that doesn't match a template. That's the whole model: AI agents should be able to do exactly what you've approved, nothing more.
 
 <Callout type="warn">
-  Restrict write access to `~/.config/earl/config.toml` and template files — the
-  security model depends on it. See [Security](/docs/security).
+  Earl's guarantees hold as long as agents cannot modify config or template files.
+  If an agent can edit `config.toml`, it can whitelist arbitrary network destinations.
+  Lock down the config directory after setup: `chmod 700 ~/.config/earl`
 </Callout>
-
-## How It Works
-
-1. **Define** — Write HCL templates that describe operations (API calls, scripts, queries) with typed parameters and declared secrets.
-2. **Store** — Save secrets in the OS keychain with `earl secrets set <key>`.
-3. **Call** — Agents invoke `earl call provider.command --param value`. Earl resolves secrets, applies network rules, and executes the request.
-4. **Enforce** — Unsafe destinations are blocked, secrets are redacted from output, and write operations require confirmation.
-
-## Documentation
 
 <Cards>
   <Card
     title="Quick Start"
     href="/docs/quick-start"
-    description="Install earl and make your first API call in minutes."
+    description="Install Earl and make your first API call in a few minutes."
   />
   <Card
-    title="Security Model"
-    href="/docs/security"
-    description="How earl protects secrets, enforces policies, and blocks attacks."
-  />
-  <Card
-    title="AI Agent Integration"
-    href="/docs/mcp"
-    description="Expose templates as MCP tools for Claude and other agents."
-  />
-  <Card
-    title="Configuration"
-    href="/docs/configuration"
-    description="Network policies, OAuth profiles, and search settings."
+    title="How Earl Works"
+    href="/docs/how-earl-works"
+    description="How Earl protects secrets, enforces network rules, and blocks SSRF attacks."
   />
   <Card
     title="Templates"
     href="/docs/templates"
-    description="Author and manage HCL template files."
+    description="Write HCL templates that define what your agent is allowed to call."
+  />
+  <Card
+    title="Secrets & Auth"
+    href="/docs/secrets-and-auth"
+    description="Store credentials in the OS keychain and configure OAuth2 profiles."
+  />
+  <Card
+    title="MCP Server"
+    href="/docs/mcp"
+    description="Expose your templates as MCP tools for Claude and other agents."
   />
   <Card
     title="CLI Reference"
     href="/docs/commands"
-    description="Complete command reference."
+    description="Complete CLI reference."
   />
 </Cards>
