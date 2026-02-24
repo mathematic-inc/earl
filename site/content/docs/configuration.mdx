@@ -15,6 +15,7 @@ Config file: `~/.config/earl/config.toml`. All sections are optional.
 | `./templates/*.hcl`                      | Workspace templates (override global) |
 | `~/.local/state/earl/secrets-index.json` | Secret metadata index                 |
 | `~/.cache/earl/search-index-v1.json`     | Search cache                          |
+| `~/.cache/earl/catalog-1.bin`            | Compiled template catalog cache. Invalidated automatically when template files change. Delete this file to force a full rebuild on next run. |
 
 ## Full Example
 
@@ -132,6 +133,8 @@ The `[sandbox]` section controls execution limits for Bash and SQL protocol oper
 | `bash_max_time_ms`      | `u64` (optional) | —       | Maximum wall-clock time for a Bash command (ms) |
 | `bash_max_output_bytes` | `u64` (optional) | —       | Maximum stdout/stderr capture size (bytes)      |
 | `bash_allow_network`    | `bool`           | `false` | Allow network access from Bash commands         |
+| `bash_max_memory_bytes` | `integer`        | —       | Maximum virtual memory per Bash command, in bytes. Enforced via RLIMIT_AS on Linux; not applicable on macOS. |
+| `bash_max_cpu_time_ms`  | `integer`        | —       | Maximum CPU time per Bash command, in milliseconds. Enforced on both Linux and macOS. |
 
 ### SQL
 

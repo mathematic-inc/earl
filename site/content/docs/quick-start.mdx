@@ -87,7 +87,17 @@ Verify the installation:
 earl --version
 ```
 
+```bash
+earl doctor
+```
+
+Doctor validates your config and template files. If it reports errors, check [Troubleshooting](/docs/troubleshooting) before going further.
+
 ## Your First Call
+
+<Callout type="info">
+  On Linux, the Bash protocol requires bubblewrap. Install it first: `sudo apt install bubblewrap` (Fedora: `dnf install bubblewrap`, Arch: `pacman -S bubblewrap`). See [Troubleshooting](/docs/troubleshooting) if your distro isn't listed.
+</Callout>
 
 <Steps>
 <Step>
@@ -185,7 +195,7 @@ Earl resolves the `github.token` secret from your keychain, builds the HTTP requ
 - **Pre-built templates** — Import ready-made templates for Stripe, Slack, Notion, OpenAI, and 21 more providers. See [Templates → Pre-built Templates](/docs/templates#pre-built-templates).
 - **Browse commands** — Run `earl templates search "what you want to do"` for semantic search across all loaded templates.
 - **Web playground** — Run `earl web` to launch a local web UI for browsing and testing commands.
-- **MCP integration** — Run `earl mcp` to expose your templates as MCP tools for AI agents. See [MCP Integration](/docs/mcp).
+- **MCP integration** — Run `earl mcp` to expose your templates as MCP tools for AI agents. See [MCP Integration](/docs/mcp). After adding Earl to your MCP config, restart the agent app — tools aren't available until the next session. In the current session, `earl call` via the Bash tool works right away.
 - **Lock it down** — Restrict write access to `~/.config/earl/config.toml` and your template files. See [Security](/docs/security).
 - **Write your own templates** — See [Templates](/docs/templates) for the HCL template format.
 
@@ -203,6 +213,8 @@ Generate completion scripts for your shell:
     ```bash
     earl completion zsh > ~/.zfunc/_earl
     ```
+
+    Then add `fpath=(~/.zfunc $fpath)` to your `.zshrc` before the `compinit` call, if it isn't already there.
   </Tab>
   <Tab value="Fish">
     ```bash
