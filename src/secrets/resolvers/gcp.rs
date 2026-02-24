@@ -1,4 +1,5 @@
-use std::time::Duration;
+use std::sync::Mutex;
+use std::time::{Duration, Instant};
 
 use anyhow::{anyhow, bail, Context, Result};
 use base64::Engine;
@@ -6,9 +7,14 @@ use secrecy::SecretString;
 use serde::Deserialize;
 
 use crate::secrets::resolver::SecretResolver;
-use crate::secrets::resolvers::validate_path_segment;
+use crate::secrets::resolvers::{validate_path_segment, CachedToken};
 
 /// A parsed `gcp://project/secret-name` or `gcp://project/secret-name/version` reference.
+///
+/// **Note:** The `latest` version alias (the default when no version is specified)
+/// refers to the newest version by number, even if that version is disabled or
+/// scheduled for destruction. For production use, consider specifying an explicit
+/// version number.
 #[derive(Debug)]
 struct GcpReference {
     project: String,
@@ -26,7 +32,16 @@ impl GcpReference {
             bail!("invalid GCP reference: project and secret name are required in {reference}");
         }
 
-        let segments: Vec<&str> = after_scheme.split('/').filter(|s| !s.is_empty()).collect();
+        let segments: Vec<&str> = after_scheme.split('/').collect();
+
+        // Reject empty segments from double slashes or trailing slashes —
+        // e.g., `gcp://project//secret` could silently misresolve.
+        if segments.iter().any(|s| s.is_empty()) {
+            bail!(
+                "invalid GCP reference: contains empty path segments \
+                 (double slash or trailing slash) in {reference}"
+            );
+        }
 
         match segments.len() {
             0 | 1 => {
@@ -81,12 +96,20 @@ impl GcpReference {
 /// * `gcp://project/secret-name` — accesses the `latest` version
 /// * `gcp://project/secret-name/version` — accesses a specific version
 ///
+/// **Note:** The `latest` version alias refers to the newest version by number,
+/// even if that version is disabled or scheduled for destruction. For production
+/// use, consider specifying an explicit version number.
+///
 /// Example: `gcp://my-project/api-key` or `gcp://my-project/api-key/3`
-pub struct GcpResolver;
+pub struct GcpResolver {
+    token_cache: Mutex<Option<CachedToken>>,
+}
 
 impl GcpResolver {
     pub fn new() -> Self {
-        Self
+        Self {
+            token_cache: Mutex::new(None),
+        }
     }
 }
 
@@ -104,16 +127,51 @@ impl SecretResolver for GcpResolver {
     fn resolve(&self, reference: &str) -> Result<SecretString> {
         let gcp_ref = GcpReference::parse(reference)?;
 
-        let access_token = obtain_access_token()
-            .context("failed to obtain GCP access token")?;
+        if gcp_ref.version == "latest" {
+            tracing::warn!(
+                "gcp://{}/{}: using 'latest' version alias — this resolves to the \
+                 highest-numbered version regardless of state (may be disabled or destroyed). \
+                 Consider using an explicit version number in production.",
+                gcp_ref.project,
+                gcp_ref.secret
+            );
+        }
+
+        // Obtain access token with cache — hold lock across check+fetch to
+        // avoid TOCTOU race where multiple threads each fetch a fresh token.
+        let access_token = {
+            let mut cache = self.token_cache.lock().unwrap_or_else(|e| e.into_inner());
+            if let Some(token) = cache.as_ref().and_then(|c| c.get_if_valid()) {
+                token.to_string()
+            } else {
+                let token = obtain_access_token()
+                    .context("failed to obtain GCP access token")?;
+                // Cache with 50-minute expiry (GCP tokens last 60 minutes).
+                *cache = Some(CachedToken {
+                    token: token.clone(),
+                    expires_at: Instant::now() + Duration::from_secs(50 * 60),
+                });
+                token
+            }
+        };
+
+        // URL-encode path segments to handle project IDs or secret names with
+        // special characters. Uses percent-encoding (not form-urlencoded) since
+        // these values appear in URL path segments, not query strings.
+        use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
+        let encoded_project = utf8_percent_encode(&gcp_ref.project, NON_ALPHANUMERIC);
+        let encoded_secret = utf8_percent_encode(&gcp_ref.secret, NON_ALPHANUMERIC);
+        let encoded_version = utf8_percent_encode(&gcp_ref.version, NON_ALPHANUMERIC);
 
         let url = format!(
             "https://secretmanager.googleapis.com/v1/projects/{}/secrets/{}/versions/{}:access",
-            gcp_ref.project, gcp_ref.secret, gcp_ref.version
+            encoded_project, encoded_secret, encoded_version
         );
 
         let client = reqwest::Client::builder()
             .timeout(Duration::from_secs(10))
+            // Never follow redirects — could leak the Authorization header.
+            .redirect(reqwest::redirect::Policy::none())
             .build()
             .context("failed to build HTTP client for GCP Secret Manager")?;
 
@@ -138,7 +196,7 @@ impl SecretResolver for GcpResolver {
             bail!(
                 "GCP Secret Manager API returned HTTP {}: {}",
                 status.as_u16(),
-                body
+                truncate_body(&body, ERROR_BODY_MAX_LEN)
             );
         }
 
@@ -198,6 +256,22 @@ struct CredentialsFile {
     r#type: String,
 }
 
+/// Truncate a response body for error messages to avoid leaking internal details.
+fn truncate_body(body: &str, max_len: usize) -> &str {
+    if body.len() <= max_len {
+        body
+    } else {
+        let mut end = max_len;
+        while end > 0 && !body.is_char_boundary(end) {
+            end -= 1;
+        }
+        &body[..end]
+    }
+}
+
+/// Truncation limit for HTTP error response bodies in error messages.
+const ERROR_BODY_MAX_LEN: usize = 256;
+
 // ---------------------------------------------------------------------------
 // Application Default Credentials (ADC)
 //
@@ -235,7 +309,8 @@ fn obtain_access_token() -> Result<String> {
 
     bail!(
         "GCP credentials not found. Set GOOGLE_APPLICATION_CREDENTIALS to a service account \
-         key file, or run `gcloud auth application-default login` to create user credentials."
+         key file, or run `gcloud auth application-default login`. \
+         The service account/user needs roles/secretmanager.secretAccessor permission."
     );
 }
 
@@ -283,8 +358,15 @@ fn token_from_credentials_file(path: &std::path::Path) -> Result<String> {
                 .context("failed to parse user credentials")?;
             token_from_user_credentials(&user)
         }
+        "external_account" => bail!(
+            "GCP credentials type 'external_account' (Workload Identity Federation) in {} \
+             is not yet supported by Earl. Use a service_account key file or \
+             `gcloud auth application-default login` instead.",
+            path.display()
+        ),
         other => bail!(
-            "unsupported GCP credentials type '{}' in {}",
+            "unsupported GCP credentials type '{}' in {}. \
+             Supported types: service_account, authorized_user.",
             other,
             path.display()
         ),
@@ -315,6 +397,8 @@ fn token_from_service_account(sa: &ServiceAccountCredentials) -> Result<String> 
 
     let client = reqwest::Client::builder()
         .timeout(Duration::from_secs(10))
+        // Never follow redirects — could leak JWT assertion in the POST body.
+        .redirect(reqwest::redirect::Policy::none())
         .build()
         .context("failed to build HTTP client for token exchange")?;
 
@@ -341,7 +425,7 @@ fn token_from_service_account(sa: &ServiceAccountCredentials) -> Result<String> 
         bail!(
             "GCP token exchange returned HTTP {}: {}",
             status.as_u16(),
-            body
+            truncate_body(&body, ERROR_BODY_MAX_LEN)
         );
     }
 
@@ -357,6 +441,8 @@ fn token_from_service_account(sa: &ServiceAccountCredentials) -> Result<String> 
 fn token_from_user_credentials(user: &UserCredentials) -> Result<String> {
     let client = reqwest::Client::builder()
         .timeout(Duration::from_secs(10))
+        // Never follow redirects — could leak the refresh_token in the POST body.
+        .redirect(reqwest::redirect::Policy::none())
         .build()
         .context("failed to build HTTP client for token refresh")?;
 
@@ -385,7 +471,7 @@ fn token_from_user_credentials(user: &UserCredentials) -> Result<String> {
         bail!(
             "GCP token refresh returned HTTP {}: {}",
             status.as_u16(),
-            body
+            truncate_body(&body, ERROR_BODY_MAX_LEN)
         );
     }
 
@@ -402,6 +488,8 @@ fn token_from_user_credentials(user: &UserCredentials) -> Result<String> {
 fn token_from_metadata_server() -> Result<String> {
     let client = reqwest::Client::builder()
         .timeout(Duration::from_secs(2))
+        // Never follow redirects on the link-local metadata endpoint.
+        .redirect(reqwest::redirect::Policy::none())
         .build()
         .context("failed to build HTTP client for metadata server")?;
 
