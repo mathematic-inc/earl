@@ -110,4 +110,4 @@ The last rule applies to everyone. Even if a future policy grants an admin broad
 
 ## Setting up JWT authentication
 
-The policy engine requires JWT authentication on the HTTP transport. Add an `[auth.jwt]` section to `~/.config/earl/config.toml` with your audience, issuer, and either a JWKS URI or an OIDC discovery URL. Once that is in place, incoming requests must carry a valid `Bearer` token. The `sub` claim from that token is what Earl matches against your `subjects` patterns. See [AI Agent Integration (MCP)](/docs/mcp#authentication) for the full `[auth.jwt]` field reference and example configuration.
+The policy engine requires JWT authentication on the HTTP transport. Add an `[auth.jwt]` section to `~/.config/earl/config.toml` with your audience, issuer, and either a JWKS URI or an OIDC discovery URL. Once that is in place, incoming requests must carry a valid `Bearer` token. The `sub` claim from that token is what Earl matches against your `subjects` patterns. See [Configuration](/docs/configuration) for the full `[auth.jwt]` field reference and example configuration.

@@ -167,6 +167,7 @@ SQL queries run through parameterized queries, which prevents injection by const
 
 ```hcl
 operation {
+  protocol = "sql"
   sql {
     connection_secret = "mydb.connection_url"
     query = "SELECT id, name FROM users WHERE active = ?"

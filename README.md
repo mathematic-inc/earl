@@ -104,7 +104,7 @@ Full docs at [brwse.github.io/earl/docs](https://brwse.github.io/earl/docs/):
 [How Earl Works](https://brwse.github.io/earl/docs/how-earl-works) ·
 [MCP Server](https://brwse.github.io/earl/docs/mcp)
 
-For team deployments: [External Secret Managers](https://brwse.github.io/earl/docs/external-secret-managers) · [Policy Engine](https://brwse.github.io/earl/docs/policy-engine) · [Hardening Guide](https://brwse.github.io/earl/docs/how-earl-works)
+For team deployments: [External Secret Managers](https://brwse.github.io/earl/docs/external-secrets) · [Policy Engine](https://brwse.github.io/earl/docs/policy-engine) · [Hardening Guide](https://brwse.github.io/earl/docs/hardening)
 
 ## License
 
