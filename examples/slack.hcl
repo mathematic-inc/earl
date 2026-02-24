@@ -372,7 +372,7 @@ command "get_conversation_history" {
 
   result {
     decode = "json"
-    output = "{{ result.messages | length }} messages{% for m in result.messages %}\n  [{{ m.ts }}] {{ m.text | truncate(120) }}{% endfor %}{% if result.has_more %}\n  (more messages available){% endif %}"
+    output = "{{ result.messages | length }} messages{% for m in result.messages %}\n  [{{ m.ts }}] {{ m.text[:120] }}{% endfor %}{% if result.has_more %}\n  (more messages available){% endif %}"
   }
 }
 
@@ -439,7 +439,7 @@ command "get_thread_replies" {
 
   result {
     decode = "json"
-    output = "{{ result.messages | length }} replies in thread{% for m in result.messages %}\n  [{{ m.ts }}] {{ m.text | truncate(120) }}{% endfor %}{% if result.has_more %}\n  (more replies available){% endif %}"
+    output = "{{ result.messages | length }} replies in thread{% for m in result.messages %}\n  [{{ m.ts }}] {{ m.text[:120] }}{% endfor %}{% if result.has_more %}\n  (more replies available){% endif %}"
   }
 }
 
@@ -853,6 +853,6 @@ command "search_messages" {
 
   result {
     decode = "json"
-    output = "{{ result.messages.total }} results for \"{{ args.query }}\"{% for m in result.messages.matches %}\n  [#{{ m.channel.name }}] {{ m.text | truncate(120) }}{% endfor %}"
+    output = "{{ result.messages.total }} results for \"{{ args.query }}\"{% for m in result.messages.matches %}\n  [#{{ m.channel.name }}] {{ m.text[:120] }}{% endfor %}"
   }
 }

@@ -42,6 +42,7 @@ command "create_chat_completion" {
   param "max_completion_tokens" {
     type        = "integer"
     required    = false
+    default     = 4096
     description = "Maximum number of tokens to generate"
   }
 
@@ -351,6 +352,7 @@ command "list_files" {
   param "purpose" {
     type        = "string"
     required    = false
+    default     = ""
     description = "Filter by purpose (assistants, batch, fine-tune, vision, user_data)"
   }
 

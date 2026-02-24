@@ -51,7 +51,8 @@ command "list_repos" {
     }
 
     headers = {
-      Accept              = "application/vnd.github+json"
+      Accept               = "application/vnd.github+json"
+      User-Agent           = "earl"
       X-GitHub-Api-Version = "2022-11-28"
     }
   }
@@ -96,7 +97,8 @@ command "get_repo" {
     }
 
     headers = {
-      Accept              = "application/vnd.github+json"
+      Accept               = "application/vnd.github+json"
+      User-Agent           = "earl"
       X-GitHub-Api-Version = "2022-11-28"
     }
   }
@@ -156,7 +158,8 @@ command "create_repo" {
     }
 
     headers = {
-      Accept              = "application/vnd.github+json"
+      Accept               = "application/vnd.github+json"
+      User-Agent           = "earl"
       X-GitHub-Api-Version = "2022-11-28"
     }
 
@@ -226,14 +229,15 @@ command "search_repos" {
     }
 
     headers = {
-      Accept              = "application/vnd.github+json"
+      Accept               = "application/vnd.github+json"
+      User-Agent           = "earl"
       X-GitHub-Api-Version = "2022-11-28"
     }
   }
 
   result {
     decode = "json"
-    output = "Found {{ result.total_count }} repositories:\n{% for repo in result.items[:10] %}  - {{ repo.full_name }} (stars: {{ repo.stargazers_count }}) — {{ repo.description | default('No description') | truncate(80) }}\n{% endfor %}"
+    output = "Found {{ result.total_count }} repositories:\n{% for repo in result.items[:10] %}  - {{ repo.full_name }} (stars: {{ repo.stargazers_count }}) — {{ repo.description | default('No description') }}\n{% endfor %}"
   }
 }
 
@@ -306,7 +310,8 @@ command "list_issues" {
     }
 
     headers = {
-      Accept              = "application/vnd.github+json"
+      Accept               = "application/vnd.github+json"
+      User-Agent           = "earl"
       X-GitHub-Api-Version = "2022-11-28"
     }
   }
@@ -357,7 +362,8 @@ command "get_issue" {
     }
 
     headers = {
-      Accept              = "application/vnd.github+json"
+      Accept               = "application/vnd.github+json"
+      User-Agent           = "earl"
       X-GitHub-Api-Version = "2022-11-28"
     }
   }
@@ -415,7 +421,8 @@ command "create_issue" {
     }
 
     headers = {
-      Accept              = "application/vnd.github+json"
+      Accept               = "application/vnd.github+json"
+      User-Agent           = "earl"
       X-GitHub-Api-Version = "2022-11-28"
     }
 
@@ -495,7 +502,8 @@ command "update_issue" {
     }
 
     headers = {
-      Accept              = "application/vnd.github+json"
+      Accept               = "application/vnd.github+json"
+      User-Agent           = "earl"
       X-GitHub-Api-Version = "2022-11-28"
     }
 
@@ -561,7 +569,8 @@ command "create_comment" {
     }
 
     headers = {
-      Accept              = "application/vnd.github+json"
+      Accept               = "application/vnd.github+json"
+      User-Agent           = "earl"
       X-GitHub-Api-Version = "2022-11-28"
     }
 
@@ -628,7 +637,8 @@ command "search_issues" {
     }
 
     headers = {
-      Accept              = "application/vnd.github+json"
+      Accept               = "application/vnd.github+json"
+      User-Agent           = "earl"
       X-GitHub-Api-Version = "2022-11-28"
     }
   }
@@ -700,7 +710,8 @@ command "list_pulls" {
     }
 
     headers = {
-      Accept              = "application/vnd.github+json"
+      Accept               = "application/vnd.github+json"
+      User-Agent           = "earl"
       X-GitHub-Api-Version = "2022-11-28"
     }
   }
@@ -777,7 +788,8 @@ command "create_pull" {
     }
 
     headers = {
-      Accept              = "application/vnd.github+json"
+      Accept               = "application/vnd.github+json"
+      User-Agent           = "earl"
       X-GitHub-Api-Version = "2022-11-28"
     }
 
@@ -853,7 +865,8 @@ command "merge_pull" {
     }
 
     headers = {
-      Accept              = "application/vnd.github+json"
+      Accept               = "application/vnd.github+json"
+      User-Agent           = "earl"
       X-GitHub-Api-Version = "2022-11-28"
     }
 
@@ -933,7 +946,8 @@ command "list_workflow_runs" {
     }
 
     headers = {
-      Accept              = "application/vnd.github+json"
+      Accept               = "application/vnd.github+json"
+      User-Agent           = "earl"
       X-GitHub-Api-Version = "2022-11-28"
     }
   }
@@ -990,7 +1004,8 @@ command "trigger_workflow" {
     }
 
     headers = {
-      Accept              = "application/vnd.github+json"
+      Accept               = "application/vnd.github+json"
+      User-Agent           = "earl"
       X-GitHub-Api-Version = "2022-11-28"
     }
 
