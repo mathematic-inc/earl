@@ -1,5 +1,5 @@
 use earl::expression::ast::CallExpression;
-use earl::expression::binder::{bind_arguments, BindError};
+use earl::expression::binder::{BindError, bind_arguments};
 use earl::template::schema::{ParamSpec, ParamType};
 
 fn params() -> Vec<ParamSpec> {

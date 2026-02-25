@@ -26,7 +26,9 @@ fn streaming_json_chunk_is_independently_decodable() {
         &chunk.data,
     )
     .unwrap();
-    let DecodedBody::Json(v) = decoded else { panic!("expected DecodedBody::Json") };
+    let DecodedBody::Json(v) = decoded else {
+        panic!("expected DecodedBody::Json")
+    };
     assert_eq!(v, json!({"msg": "hello"}));
 }
 
@@ -41,7 +43,12 @@ fn streaming_json_pointer_extract_returns_value_at_specified_path() {
         json_pointer: "/data/id".to_string(),
     };
 
-    let decoded = decode_response(ResultDecode::Json, chunk.content_type.as_deref(), &chunk.data).unwrap();
+    let decoded = decode_response(
+        ResultDecode::Json,
+        chunk.content_type.as_deref(),
+        &chunk.data,
+    )
+    .unwrap();
     assert_eq!(extract_result(Some(&extract), &decoded).unwrap(), json!(1));
 }
 
@@ -58,8 +65,16 @@ fn streaming_regex_extract_returns_first_capture_group_from_chunk() {
         regex: r"event_id=([a-z0-9-]+)".to_string(),
     };
 
-    let decoded = decode_response(ResultDecode::Text, chunk.content_type.as_deref(), &chunk.data).unwrap();
-    assert_eq!(extract_result(Some(&extract), &decoded).unwrap(), json!("abc-001"));
+    let decoded = decode_response(
+        ResultDecode::Text,
+        chunk.content_type.as_deref(),
+        &chunk.data,
+    )
+    .unwrap();
+    assert_eq!(
+        extract_result(Some(&extract), &decoded).unwrap(),
+        json!("abc-001")
+    );
 }
 
 // ── Auto decode ──────────────────────────────────────────
@@ -77,7 +92,9 @@ fn streaming_auto_decode_infers_json_from_content_type() {
         &chunk.data,
     )
     .unwrap();
-    let DecodedBody::Json(v) = decoded else { panic!("expected DecodedBody::Json") };
+    let DecodedBody::Json(v) = decoded else {
+        panic!("expected DecodedBody::Json")
+    };
     assert_eq!(v, json!({"ok": true}));
 }
 
@@ -94,7 +111,9 @@ fn streaming_auto_decode_infers_text_from_content_type() {
         &chunk.data,
     )
     .unwrap();
-    let DecodedBody::Text(v) = decoded else { panic!("expected DecodedBody::Text") };
+    let DecodedBody::Text(v) = decoded else {
+        panic!("expected DecodedBody::Text")
+    };
     assert_eq!(v, "plain text line");
 }
 
@@ -111,7 +130,9 @@ fn streaming_auto_decode_falls_back_to_json_for_valid_json_without_content_type(
         &chunk.data,
     )
     .unwrap();
-    let DecodedBody::Json(v) = decoded else { panic!("expected DecodedBody::Json") };
+    let DecodedBody::Json(v) = decoded else {
+        panic!("expected DecodedBody::Json")
+    };
     assert_eq!(v, json!({"key": "value"}));
 }
 
@@ -148,8 +169,16 @@ fn streaming_css_selector_extract_returns_matching_element_text() {
         css_selector: "span.val".to_string(),
     };
 
-    let decoded = decode_response(ResultDecode::Html, chunk.content_type.as_deref(), &chunk.data).unwrap();
-    assert_eq!(extract_result(Some(&extract), &decoded).unwrap(), json!(["100"]));
+    let decoded = decode_response(
+        ResultDecode::Html,
+        chunk.content_type.as_deref(),
+        &chunk.data,
+    )
+    .unwrap();
+    assert_eq!(
+        extract_result(Some(&extract), &decoded).unwrap(),
+        json!(["100"])
+    );
 }
 
 // ── XML / XPath chunks ──────────────────────────────────
@@ -165,8 +194,16 @@ fn streaming_xpath_extract_returns_text_node_values() {
         xpath: "//item/text()".to_string(),
     };
 
-    let decoded = decode_response(ResultDecode::Xml, chunk.content_type.as_deref(), &chunk.data).unwrap();
-    assert_eq!(extract_result(Some(&extract), &decoded).unwrap(), json!(["alpha"]));
+    let decoded = decode_response(
+        ResultDecode::Xml,
+        chunk.content_type.as_deref(),
+        &chunk.data,
+    )
+    .unwrap();
+    assert_eq!(
+        extract_result(Some(&extract), &decoded).unwrap(),
+        json!(["alpha"])
+    );
 }
 
 // ── Binary chunks ────────────────────────────────────────

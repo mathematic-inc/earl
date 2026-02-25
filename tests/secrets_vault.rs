@@ -47,7 +47,9 @@ fn missing_vault_credentials_returns_error() {
     let _token = EnvRestore::remove("VAULT_TOKEN");
 
     let resolver = VaultResolver::new();
-    resolver.resolve("vault://secret/myapp#api_key").unwrap_err();
+    resolver
+        .resolve("vault://secret/myapp#api_key")
+        .unwrap_err();
 }
 
 #[test]
