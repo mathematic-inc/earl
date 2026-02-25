@@ -1,0 +1,156 @@
+---
+title: SQL
+icon: Database
+description: Run SQL queries from an Earl template.
+---
+
+The SQL protocol runs a query against a database connection and returns the results. Params go through the driver's parameterization, so user-supplied values are never interpolated into the query string — injection is not possible.
+
+## A complete example
+
+```hcl
+version    = 1
+provider   = "myapp"
+categories = ["database", "users"]
+
+command "list_users" {
+  title       = "List users"
+  summary     = "List users filtered by status"
+  description = "Returns user IDs and names for the given status. Defaults to active users."
+
+  annotations {
+    mode    = "read"
+    secrets = ["myapp.db_url"]
+  }
+
+  param "status" {
+    type        = "string"
+    required    = false
+    default     = "active"
+    description = "User status filter (active, inactive, suspended)"
+  }
+
+  param "limit" {
+    type        = "integer"
+    required    = false
+    default     = 50
+    description = "Maximum rows to return"
+  }
+
+  operation {
+    protocol = "sql"
+
+    sql {
+      connection_secret = "myapp.db_url"
+      query             = "SELECT id, name, email FROM users WHERE status = $1 ORDER BY created_at DESC LIMIT $2"
+      params            = ["{{ args.status }}", "{{ args.limit }}"]
+      sandbox {
+        read_only   = true
+        max_rows    = 100
+        max_time_ms = 5000
+      }
+    }
+  }
+
+  result {
+    decode = "json"
+    output = "{{ result | length }} users:\n{% for u in result %}  - {{ u.id }}: {{ u.name }} ({{ u.email }})\n{% endfor %}"
+  }
+}
+```
+
+Run it:
+
+```bash
+earl call myapp.list_users --status active --limit 10
+```
+
+## Walk-through
+
+### sql block
+
+#### connection_secret
+
+`connection_secret` is a keychain key whose value is the database connection URL — for example, `postgresql://user:pass@host/db`. The URL never appears in the template file itself. Earl fetches it from the keychain at runtime.
+
+#### query and params
+
+`query` uses positional placeholders. PostgreSQL uses `$1`, `$2`, and so on. MySQL and SQLite use `?` for each position.
+
+`params` is a list of values bound to those placeholders in order. Each entry must be a quoted HCL string, even for numbers. Earl coerces the value to the right SQL type before sending it to the driver.
+
+There is a common trap here:
+
+```hcl
+# WRONG — HCL fails to parse this
+params = [{{ args.limit }}]
+
+# CORRECT — Jinja expression inside an HCL string
+params = ["{{ args.limit }}"]
+```
+
+HCL parses the template before Jinja renders it. A bare `{{ args.limit }}` is not a valid HCL token, so parsing fails. Wrapping it in quotes makes it a valid HCL string, and Earl's `render_string_value` coerces the rendered result to the right type afterwards.
+
+#### sandbox block
+
+```hcl
+sandbox {
+  read_only   = true
+  max_rows    = 100
+  max_time_ms = 5000
+}
+```
+
+`read_only = true` opens the connection in a read-only transaction. Any statement that tries to write will be rejected by the database. `max_rows` caps how many rows Earl will read back from the result set. `max_time_ms` sets a query timeout in milliseconds — the query is cancelled if it runs longer.
+
+### result
+
+SQL results come back as a JSON array of objects. Each object is one row, with column names as keys. `decode = "json"` parses that array into `result`, which you can then iterate with Jinja.
+
+## INSERT example
+
+```hcl
+command "create_user" {
+  title       = "Create user"
+  summary     = "Insert a new user record"
+  description = "Creates a user with the given name and email. Returns the new user's ID."
+
+  annotations {
+    mode    = "write"
+    secrets = ["myapp.db_url"]
+  }
+
+  param "name" {
+    type        = "string"
+    required    = true
+    description = "Full name"
+  }
+
+  param "email" {
+    type        = "string"
+    required    = true
+    description = "Email address"
+  }
+
+  operation {
+    protocol = "sql"
+
+    sql {
+      connection_secret = "myapp.db_url"
+      query             = "INSERT INTO users (name, email, status) VALUES ($1, $2, 'active') RETURNING id"
+      params            = ["{{ args.name }}", "{{ args.email }}"]
+    }
+  }
+
+  result {
+    decode = "json"
+    output = "Created user {{ result[0].id }}"
+  }
+}
+```
+
+There is no `sandbox` block here. Write commands can't use `read_only = true`, and adding a sandbox without that flag would still block writes at the transaction level. The `RETURNING` clause is PostgreSQL-specific — adjust for your database if you're on MySQL or SQLite.
+
+---
+
+For the full field reference, see [Template Schema — SQL](/docs/template-schema#sql).
