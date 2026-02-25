@@ -164,10 +164,10 @@ async fn run_with_session(
     updated_sf.last_used_at = Utc::now();
     updated_sf.interrupted = step_result.is_err();
     // best-effort — don't mask the step error, but warn so "session didn't persist" is debuggable
+    // Omit session_id and session file path from the log: the path encodes the session identifier
+    // which CodeQL treats as sensitive (CWE-532). The IO error itself provides enough context.
     if let Err(e) = updated_sf.save_to(&sf_path) {
-        // Omit session_id from the log to avoid cleartext-logging of the session identifier;
-        // the session file path already conveys the relevant context.
-        tracing::warn!(path = %sf_path.display(), error = %e, "failed to persist session file");
+        tracing::warn!(error = %e, "failed to persist browser session file");
     }
 
     step_result
