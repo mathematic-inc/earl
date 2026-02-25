@@ -129,6 +129,37 @@ mod tests {
     }
 
     #[test]
+    fn absent_session_id_defaults_to_default() {
+        let op: crate::schema::BrowserOperationTemplate = serde_json::from_str(
+            r#"{
+                "browser": {
+                    "steps": [{"action":"snapshot"}]
+                }
+            }"#,
+        )
+        .unwrap();
+        let ctx = serde_json::json!({});
+        let cmd = build_browser_request(&op, &ctx, &PassthroughRenderer).unwrap();
+        assert_eq!(cmd.session_id.as_deref(), Some("default"));
+    }
+
+    #[test]
+    fn explicit_empty_session_id_is_ephemeral() {
+        let op: crate::schema::BrowserOperationTemplate = serde_json::from_str(
+            r#"{
+                "browser": {
+                    "session_id": "",
+                    "steps": [{"action":"snapshot"}]
+                }
+            }"#,
+        )
+        .unwrap();
+        let ctx = serde_json::json!({});
+        let cmd = build_browser_request(&op, &ctx, &PassthroughRenderer).unwrap();
+        assert!(cmd.session_id.is_none());
+    }
+
+    #[test]
     fn build_preserves_headless_and_timeout() {
         let op: crate::schema::BrowserOperationTemplate = serde_json::from_str(
             r#"{
