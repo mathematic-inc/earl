@@ -102,7 +102,7 @@ setTimeout(function() {
                 time: None,
                 text: Some("Data loaded".to_string()),
                 text_gone: None,
-                timeout_ms: 5_000,
+                timeout_ms: Some(5_000),
                 optional: false,
             },
             BrowserStep::Evaluate {
@@ -158,7 +158,7 @@ async fn wait_for_times_out_when_content_absent() {
                 time: None,
                 text: Some("content that will never appear".to_string()),
                 text_gone: None,
-                timeout_ms: 500,
+                timeout_ms: Some(500),
                 optional: false,
             },
         ],
@@ -283,7 +283,7 @@ setTimeout(function() {
                 time: None,
                 text: Some("Done".to_string()),
                 text_gone: Some("Loading...".to_string()),
-                timeout_ms: 5_000,
+                timeout_ms: Some(5_000),
                 optional: false,
             },
             BrowserStep::Evaluate {

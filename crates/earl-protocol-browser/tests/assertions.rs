@@ -208,7 +208,7 @@ async fn verify_list_visible_passes_when_all_items_present() {
                 optional: false,
             },
             BrowserStep::VerifyListVisible {
-                r#ref: "body".to_string(),
+                r#ref: None,
                 items: vec![
                     "Apple".to_string(),
                     "Banana".to_string(),
@@ -255,7 +255,7 @@ async fn verify_list_visible_fails_when_item_missing() {
                 optional: false,
             },
             BrowserStep::VerifyListVisible {
-                r#ref: "body".to_string(),
+                r#ref: None,
                 items: vec![
                     "Apple".to_string(),
                     "Banana".to_string(),
@@ -308,7 +308,7 @@ async fn verify_value_matches_input_field_value() {
                 optional: false,
             },
             BrowserStep::VerifyValue {
-                r#ref: "#price".to_string(),
+                r#ref: None,
                 value: "42.00".to_string(),
                 optional: false,
             },

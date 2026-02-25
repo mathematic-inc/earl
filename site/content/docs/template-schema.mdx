@@ -453,11 +453,11 @@ Every step object has two cross-cutting optional fields in addition to its actio
 
 | Action                  | Key fields                                            | Result shape   |
 | ----------------------- | ----------------------------------------------------- | -------------- |
-| `wait_for`              | `text`, `text_gone`, `time` (seconds), `timeout_ms`  | `{"ok": true}` |
+| `wait_for`              | `text`, `text_gone`, `time` (seconds), `timeout_ms` (optional — defaults to command `timeout_ms`) | `{"ok": true}` |
 | `verify_text_visible`   | `text`                                                | `{"ok": true}` |
 | `verify_element_visible`| `role`, `accessible_name`                             | `{"ok": true}` |
-| `verify_list_visible`   | `ref`, `items` (array)                                | `{"ok": true}` |
-| `verify_value`          | `ref`, `value`                                        | `{"ok": true}` |
+| `verify_list_visible`   | `items` (array)                                       | `{"ok": true}` |
+| `verify_value`          | `value`                                               | `{"ok": true}` |
 
 **JavaScript**
 

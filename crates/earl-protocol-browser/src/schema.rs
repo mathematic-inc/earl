@@ -263,7 +263,8 @@ pub enum BrowserStep {
         text: Option<String>,
         #[serde(default)]
         text_gone: Option<String>,
-        timeout_ms: u64,
+        #[serde(default)]
+        timeout_ms: Option<u64>,
         #[serde(default)]
         optional: bool,
     },
@@ -281,15 +282,15 @@ pub enum BrowserStep {
         optional: bool,
     },
     VerifyListVisible {
-        #[serde(rename = "ref")]
-        r#ref: String,
+        #[serde(default, rename = "ref")]
+        r#ref: Option<String>,
         items: Vec<String>,
         #[serde(default)]
         optional: bool,
     },
     VerifyValue {
-        #[serde(rename = "ref")]
-        r#ref: String,
+        #[serde(default, rename = "ref")]
+        r#ref: Option<String>,
         value: String,
         #[serde(default)]
         optional: bool,
@@ -669,7 +670,7 @@ impl BrowserStep {
             Self::MouseDown { .. } => global,
             Self::MouseUp { .. } => global,
             Self::MouseWheel { .. } => global,
-            Self::WaitFor { timeout_ms, .. } => *timeout_ms,
+            Self::WaitFor { timeout_ms, .. } => timeout_ms.unwrap_or(global),
             Self::VerifyElementVisible { .. } => global,
             Self::VerifyTextVisible { .. } => global,
             Self::VerifyListVisible { .. } => global,

@@ -6,6 +6,25 @@ use serde::{Deserialize, Serialize};
 
 use crate::error::BrowserError;
 
+/// Reject session IDs that could be used for path traversal or other abuse.
+///
+/// Allowed characters: ASCII letters, digits, hyphens, and underscores.
+pub fn validate_session_id(session_id: &str) -> Result<()> {
+    if session_id.is_empty() {
+        return Err(anyhow::anyhow!("session_id must not be empty"));
+    }
+    if !session_id
+        .chars()
+        .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
+    {
+        return Err(anyhow::anyhow!(
+            "session_id contains invalid characters; only ASCII letters, digits, hyphens, \
+             and underscores are allowed"
+        ));
+    }
+    Ok(())
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SessionFile {
     pub pid: u32,
@@ -64,10 +83,12 @@ pub fn sessions_dir() -> Result<PathBuf> {
 }
 
 pub fn session_file_path(session_id: &str) -> Result<PathBuf> {
+    validate_session_id(session_id)?;
     Ok(sessions_dir()?.join(format!("{session_id}.json")))
 }
 
 pub fn lock_file_path(session_id: &str) -> Result<PathBuf> {
+    validate_session_id(session_id)?;
     Ok(sessions_dir()?.join(format!("{session_id}.lock")))
 }
 
@@ -100,6 +121,7 @@ pub fn is_pid_alive(pid: u32, _started_at: Option<DateTime<Utc>>) -> bool {
 pub async fn acquire_session_lock(session_id: &str) -> Result<tokio::fs::File> {
     use fs4::tokio::AsyncFileExt;
 
+    validate_session_id(session_id)?;
     let dir = sessions_dir()?;
     ensure_sessions_dir(&dir)?;
     let lock_path = dir.join(format!("{session_id}.lock"));
@@ -211,5 +233,25 @@ mod tests {
         // PID u32::MAX is virtually guaranteed not to exist
         let alive = is_pid_alive(u32::MAX, None);
         assert!(!alive);
+    }
+
+    #[test]
+    fn validate_session_id_accepts_safe_ids() {
+        assert!(validate_session_id("my-session").is_ok());
+        assert!(validate_session_id("session_123").is_ok());
+        assert!(validate_session_id("ABC-def-0").is_ok());
+    }
+
+    #[test]
+    fn validate_session_id_rejects_path_traversal() {
+        assert!(validate_session_id("../../etc/passwd").is_err());
+        assert!(validate_session_id("../sibling").is_err());
+        assert!(validate_session_id("foo/bar").is_err());
+        assert!(validate_session_id("foo\\bar").is_err());
+    }
+
+    #[test]
+    fn validate_session_id_rejects_empty() {
+        assert!(validate_session_id("").is_err());
     }
 }

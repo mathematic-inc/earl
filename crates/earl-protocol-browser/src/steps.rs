@@ -21,6 +21,19 @@ pub fn validate_url_scheme(url: &str) -> Result<()> {
     }
 }
 
+// ── File path validation ───────────────────────────────────────────────────────
+
+/// Reject paths that contain `..` components to prevent path traversal.
+fn validate_file_path(path: &str) -> Result<()> {
+    let p = std::path::Path::new(path);
+    if p.components().any(|c| c == std::path::Component::ParentDir) {
+        return Err(anyhow::anyhow!(
+            "file path \"{path}\" is not allowed: path traversal (`..`) is not permitted"
+        ));
+    }
+    Ok(())
+}
+
 // ── Step execution context ─────────────────────────────────────────────────────
 
 pub struct StepContext<'a> {
@@ -214,7 +227,7 @@ pub async fn execute_step(ctx: &StepContext<'_>, step: &BrowserStep) -> Result<V
                 *time,
                 text.as_deref(),
                 text_gone.as_deref(),
-                *timeout_ms,
+                timeout_ms.unwrap_or(ctx.global_timeout_ms),
             )
             .await
         }
@@ -224,12 +237,26 @@ pub async fn execute_step(ctx: &StepContext<'_>, step: &BrowserStep) -> Result<V
             ..
         } => step_verify_element_visible(ctx, role.as_deref(), accessible_name.as_deref()).await,
         BrowserStep::VerifyTextVisible { text, .. } => step_verify_text_visible(ctx, text).await,
-        BrowserStep::VerifyListVisible {
-            r#ref: _, items, ..
-        } => step_verify_list_visible(ctx, items).await,
-        BrowserStep::VerifyValue {
-            r#ref: _, value, ..
-        } => step_verify_value(ctx, value).await,
+        BrowserStep::VerifyListVisible { r#ref, items, .. } => {
+            if r#ref.is_some() {
+                return Err(anyhow::anyhow!(
+                    "browser step {} (verify_list_visible): ref-based targeting is not yet \
+                     implemented; omit the ref field to match against the full page text",
+                    ctx.step_index
+                ));
+            }
+            step_verify_list_visible(ctx, items).await
+        }
+        BrowserStep::VerifyValue { r#ref, value, .. } => {
+            if r#ref.is_some() {
+                return Err(anyhow::anyhow!(
+                    "browser step {} (verify_value): ref-based targeting is not yet \
+                     implemented; omit the ref field to match against the active element",
+                    ctx.step_index
+                ));
+            }
+            step_verify_value(ctx, value).await
+        }
 
         // ── JavaScript ────────────────────────────────────────────────────
         BrowserStep::Evaluate { function, .. } => step_evaluate(ctx, function).await,
@@ -343,7 +370,7 @@ pub async fn execute_step(ctx: &StepContext<'_>, step: &BrowserStep) -> Result<V
 async fn step_navigate(
     ctx: &StepContext<'_>,
     url: &str,
-    _expected_status: Option<u16>,
+    expected_status: Option<u16>,
 ) -> Result<Value> {
     validate_url_scheme(url)?;
 
@@ -351,6 +378,29 @@ async fn step_navigate(
         .goto(url)
         .await
         .map_err(|e| anyhow::anyhow!("navigate to {url} failed: {e}"))?;
+
+    if let Some(expected) = expected_status {
+        // Use the Performance Navigation Timing API to read the HTTP response
+        // status code after the navigation has settled.
+        let actual = ctx
+            .page
+            .evaluate("window.performance.getEntriesByType('navigation')[0]?.responseStatus ?? 0")
+            .await
+            .map_err(|e| anyhow::anyhow!("navigate status check failed: {e}"))?
+            .into_value::<serde_json::Value>()
+            .ok()
+            .and_then(|v| v.as_u64())
+            .unwrap_or(0) as u16;
+
+        if actual != expected {
+            return Err(BrowserError::AssertionFailed {
+                step: ctx.step_index,
+                action: "navigate".to_string(),
+                message: format!("expected HTTP status {expected}, got {actual} for {url}"),
+            }
+            .into());
+        }
+    }
 
     Ok(json!({ "ok": true, "url": url }))
 }
@@ -534,6 +584,9 @@ async fn step_screenshot(
     path: Option<&str>,
     full_page: Option<bool>,
 ) -> Result<Value> {
+    if let Some(p) = path {
+        validate_file_path(p)?;
+    }
     let out_path = path.map(std::path::PathBuf::from).unwrap_or_else(|| {
         std::env::temp_dir().join(format!(
             "earl-screenshot-{}.png",
@@ -618,6 +671,14 @@ async fn step_click(
         el.click()
             .await
             .map_err(|e| anyhow::anyhow!("double-click second click failed: {e}"))?;
+        // The two sequential .click() calls don't fire the dblclick DOM event
+        // that many frameworks listen to. Dispatch it explicitly.
+        el.call_js_fn(
+            "function() { this.dispatchEvent(new MouseEvent('dblclick', {bubbles: true, cancelable: true})); }",
+            false,
+        )
+        .await
+        .map_err(|e| anyhow::anyhow!("double-click dblclick event dispatch failed: {e}"))?;
     }
     Ok(json!({"ok": true}))
 }
@@ -1432,6 +1493,7 @@ async fn step_storage_state(ctx: &StepContext<'_>, path: Option<&str>) -> Result
     let state = json!({"cookies": cookies, "local_storage": ls});
 
     if let Some(p) = path {
+        validate_file_path(p)?;
         let bytes = serde_json::to_vec_pretty(&state)?;
         tokio::fs::write(p, &bytes)
             .await
@@ -1443,6 +1505,7 @@ async fn step_storage_state(ctx: &StepContext<'_>, path: Option<&str>) -> Result
 }
 
 async fn step_set_storage_state(ctx: &StepContext<'_>, path: &str) -> Result<Value> {
+    validate_file_path(path)?;
     let bytes = tokio::fs::read(path)
         .await
         .map_err(|e| anyhow::anyhow!("set_storage_state read {path}: {e}"))?;
@@ -1560,6 +1623,9 @@ async fn step_pdf_save(ctx: &StepContext<'_>, path: Option<&str>) -> Result<Valu
     let pdf_bytes = base64::Engine::decode(&base64::engine::general_purpose::STANDARD, b64.trim())
         .map_err(|e| anyhow::anyhow!("pdf_save base64 decode: {e}"))?;
 
+    if let Some(p) = path {
+        validate_file_path(p)?;
+    }
     let out_path = path.map(std::path::PathBuf::from).unwrap_or_else(|| {
         std::env::temp_dir().join(format!(
             "earl-pdf-{}.pdf",
@@ -1628,6 +1694,20 @@ mod tests {
     #[test]
     fn data_uri_rejected() {
         assert!(validate_url_scheme("data:text/html,<h1>test</h1>").is_err());
+    }
+
+    #[test]
+    fn validate_file_path_rejects_traversal() {
+        assert!(validate_file_path("../secret.txt").is_err());
+        assert!(validate_file_path("/tmp/../../etc/passwd").is_err());
+        assert!(validate_file_path("foo/../bar").is_err());
+    }
+
+    #[test]
+    fn validate_file_path_accepts_normal_paths() {
+        assert!(validate_file_path("/tmp/output.png").is_ok());
+        assert!(validate_file_path("relative/path.pdf").is_ok());
+        assert!(validate_file_path("file.json").is_ok());
     }
 
     #[test]
@@ -1740,9 +1820,17 @@ mod tests {
         // after sleeping — we test that the function signature compiles correctly
         // by verifying BrowserStep::WaitFor deserialises with the timeout_ms field.
         use crate::schema::BrowserStep;
-        let json = r#"{"action":"wait_for","time":0.001,"timeout_ms":5000}"#;
-        let step: BrowserStep = serde_json::from_str(json).unwrap();
-        assert!(matches!(step, BrowserStep::WaitFor { time: Some(t), .. } if t < 1.0));
+        // timeout_ms is now optional; verify it deserialises both with and without the field.
+        let json_with = r#"{"action":"wait_for","time":0.001,"timeout_ms":5000}"#;
+        let step: BrowserStep = serde_json::from_str(json_with).unwrap();
+        assert!(
+            matches!(step, BrowserStep::WaitFor { time: Some(t), timeout_ms: Some(5000), .. } if t < 1.0)
+        );
+        let json_without = r#"{"action":"wait_for","time":0.001}"#;
+        let step2: BrowserStep = serde_json::from_str(json_without).unwrap();
+        assert!(
+            matches!(step2, BrowserStep::WaitFor { time: Some(t), timeout_ms: None, .. } if t < 1.0)
+        );
     }
 
     #[test]

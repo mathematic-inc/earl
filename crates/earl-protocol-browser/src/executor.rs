@@ -118,8 +118,14 @@ async fn run_with_session(
     };
 
     // Reuse the first existing page or open a new one.
+    // configure_page must be called in both branches so that security settings
+    // (e.g. download blocking) are always applied, even to reused pages.
     let page = match browser.pages().await {
-        Ok(pages) if !pages.is_empty() => pages.into_iter().next().unwrap(),
+        Ok(pages) if !pages.is_empty() => {
+            let p = pages.into_iter().next().unwrap();
+            configure_page(&p).await?;
+            p
+        }
         _ => {
             let p = browser.new_page("about:blank").await?;
             configure_page(&p).await?;
@@ -157,7 +163,10 @@ async fn run_with_session(
     let mut updated_sf = sf_to_save;
     updated_sf.last_used_at = Utc::now();
     updated_sf.interrupted = step_result.is_err();
-    let _ = updated_sf.save_to(&sf_path); // best-effort; don't mask step error
+    // best-effort — don't mask the step error, but warn so "session didn't persist" is debuggable
+    if let Err(e) = updated_sf.save_to(&sf_path) {
+        tracing::warn!(session_id, path = %sf_path.display(), error = %e, "failed to persist session file");
+    }
 
     step_result
 }

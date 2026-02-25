@@ -87,7 +87,7 @@ async fn fill_and_submit_form() {
                 time: None,
                 text: Some("Submitted".to_string()),
                 text_gone: None,
-                timeout_ms: 10_000,
+                timeout_ms: Some(10_000),
                 optional: false,
             },
             BrowserStep::Evaluate {
@@ -420,7 +420,7 @@ async fn fill_with_submit_true_submits_form() {
                 text: Some("Done".to_string()),
                 text_gone: None,
                 time: None,
-                timeout_ms: 5_000,
+                timeout_ms: Some(5_000),
                 optional: false,
             },
             BrowserStep::Evaluate {

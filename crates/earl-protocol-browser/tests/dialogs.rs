@@ -106,7 +106,7 @@ async fn handle_dialog_fills_prompt_text() {
                 time: Some(0.2),
                 text: None,
                 text_gone: None,
-                timeout_ms: 2000,
+                timeout_ms: Some(2000),
                 optional: false,
             },
             BrowserStep::Evaluate {
@@ -171,7 +171,7 @@ async fn handle_dialog_rejects_confirm() {
                 time: None,
                 text: Some("no".to_string()),
                 text_gone: None,
-                timeout_ms: 2000,
+                timeout_ms: Some(2000),
                 optional: false,
             },
             BrowserStep::Evaluate {
