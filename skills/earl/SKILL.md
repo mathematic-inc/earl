@@ -128,8 +128,9 @@ page of results), ask the user whether to fetch the next page. Do not paginate a
 For anything not covered above, surface the full error with context and suggest invoking
 `troubleshoot-earl` if available.
 
+---
+
 ## Next Steps
 
-- If no template exists for the task: invoke `create-template`
 - If Earl is not installed or not responding: invoke `troubleshoot-earl`
 - If you need to restrict the agent from bypassing Earl: invoke `secure-agent`
