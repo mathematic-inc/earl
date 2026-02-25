@@ -92,7 +92,7 @@ Use `result.text` in the `result` block to get the plain-text description. The `
 
 ### ref handles
 
-The snapshot text includes `ref` handles next to interactive elements — for example, `button "Submit" ref=42`. When writing multi-step commands, pass a `ref` value to `click` or `fill` steps instead of a CSS selector. Refs are more stable than selectors on pages that generate dynamic class names or restructure the DOM between renders.
+The snapshot text includes `ref` handles next to interactive elements — for example, `button "Submit" ref=42`. When writing multi-step commands, pass a `ref` value to `click` or `fill` steps instead of a CSS selector. Refs are more stable than selectors on pages that generate dynamic class names or restructure the DOM between renders. CSS selectors work fine for one-shot commands targeting stable elements. For dynamic pages or session-based commands where the DOM changes between steps, prefer refs — they come from the current snapshot and won't break when attributes shift.
 
 ### result
 
@@ -159,10 +159,14 @@ command "login_and_snapshot" {
 }
 ```
 
+The login form uses CSS selectors — `#username` and `#password` are stable IDs unlikely to change. For dynamic content after login, use `snapshot` first and target elements by ref.
+
 `session_id` keeps the browser instance alive between commands. A second command with the same `session_id` reconnects to the same instance, preserving cookies, localStorage, and page state. Omit it for one-shot commands that don't need to carry state forward.
 
 Secrets are available in step fields via `{{ secrets['key.name'] }}`. The actual secret value is resolved at runtime from the OS keychain and never appears in the template or in command output.
 
 ---
+
+For naming conventions and other patterns that apply across all protocols, see [Best Practices](/docs/best-practices).
 
 For the full step reference, see [Template Schema — Browser](/docs/template-schema#browser).
