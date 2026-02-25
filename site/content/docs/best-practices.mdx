@@ -1,0 +1,139 @@
+---
+title: Best practices
+icon: CheckCircle
+description: Patterns that apply across all Earl protocols.
+---
+
+These are patterns that come up repeatedly when writing Earl templates. None of them are enforced by the schema — you can ignore all of them and things will still work. But each one exists because the alternative causes a real problem in practice.
+
+## Name commands with verb_noun snake case
+
+Use `search_repos`, not `SearchRepos`, `search-repos`, or `searchRepos`.
+
+Earl passes command names to agents as MCP tool names. Agents handle snake case reliably across all major platforms. It also reads naturally at the call site:
+
+```bash
+earl call github.search_repos --query "language:rust"
+```
+
+Hyphenated names cause problems in some agent systems that treat hyphens as operators. PascalCase looks wrong in a CLI context. Snake case is the obvious choice — use it consistently.
+
+## Set `mode = "read"` explicitly
+
+The default mode is `"write"`. Any command without an explicit `annotations` block — or with an `annotations` block that omits `mode` — is treated as a write command and prompts for confirmation before running.
+
+This matters more than it looks. A GET request that only reads data will still block in an automated pipeline or an MCP server if `mode` isn't set. The agent submits the tool call and hangs waiting for user input that never comes.
+
+Set `mode = "read"` on every command that doesn't modify state:
+
+```hcl
+annotations {
+  mode    = "read"
+  secrets = ["github.token"]
+}
+```
+
+The confirmation is there for a reason on write commands. But read commands should never require it.
+
+## Declare every secret in `annotations.secrets`
+
+Every keychain key that a command uses — whether in an `auth` block or directly in a `{{ secrets['key.name'] }}` expression — must be listed in `annotations.secrets`.
+
+Earl checks that every declared secret exists in the keychain before running the command. A missing secret fails early with a clear error rather than getting halfway through a request and failing on auth.
+
+It also matters for `earl doctor`, which validates that required secrets are present in the keychain. If a secret isn't declared, doctor won't catch when it's missing.
+
+For commands that use multiple secrets:
+
+```hcl
+annotations {
+  mode    = "write"
+  secrets = ["stripe.api_key", "slack.webhook_url"]
+}
+```
+
+The list is a hard requirement, not documentation. Leave one out and Earl will let the command run without pre-flight checks — the error just shows up later and less clearly.
+
+## Write descriptions for the agent, not a human reader
+
+The `description` field is not documentation. It is the only text an agent reads when deciding whether to call a command. A description that explains the mechanism — "calls the GitHub search API" — tells the agent nothing useful it can't already infer from the command name.
+
+A useful description tells the agent when to use the command, what kinds of inputs it accepts, and what it returns:
+
+```hcl
+# Less useful — describes the mechanism
+description = "Calls the GitHub search API with a query string."
+
+# More useful — tells the agent when to use it and what qualifiers work
+description = <<-EOT
+  Search GitHub repositories by topic, language, stars, or other qualifiers.
+  Use qualifiers like 'language:rust', 'stars:>100', 'topic:cli'.
+  Returns repo names, descriptions, and star counts.
+EOT
+```
+
+Think about what information would help the agent pick the right command when several seem relevant. The description is the tiebreaker.
+
+## One provider per file
+
+Keep each `.hcl` file to one `provider` block.
+
+If you create `./templates/github.hcl` with `provider = "github"`, it shadows the entire global `~/.config/earl/templates/github.hcl` — not just the commands it defines. Commands defined only in the global file become unreachable.
+
+This is how template loading works: local templates take precedence over global ones at the provider level. A local file with `provider = "github"` replaces the global `github` provider entirely for the current project.
+
+One file per provider makes this predictable. If you want to add commands to an existing provider, add them to the file that already owns that provider name.
+
+## Prefer env vars in Bash over inline interpolation
+
+When a parameter value might contain spaces, quotes, or special characters, inline Jinja in a shell script is fragile:
+
+```hcl
+# Fragile — breaks if args.path contains spaces
+script = "cat {{ args.path }}"
+
+# Safe — shell handles quoting correctly
+script = "cat \"$FILE_PATH\""
+env = { FILE_PATH = "{{ args.path }}" }
+```
+
+With env vars, the Jinja expression renders into the environment, and the shell receives the value as a properly delimited variable. No quoting surprises, no injection from unexpected characters in the input.
+
+This applies to any parameter value that comes from user input or external data. If you know the value is always a simple identifier or a number, inline interpolation is fine. When in doubt, use an env var.
+
+## Put read-only limits on SQL read commands
+
+Any SQL command that only reads data should have `read_only = true` and a `max_rows` limit in the sandbox:
+
+```hcl
+sql {
+  connection_secret = "myapp.db_url"
+  query             = "SELECT id, name FROM orders WHERE status = $1"
+  params            = ["{{ args.status }}"]
+  sandbox {
+    read_only = true
+    max_rows  = 100
+  }
+}
+```
+
+`read_only = true` opens the connection in a read-only transaction. Write operations — including those inside stored procedures — fail at the database level. This is a hard constraint, not a soft check, so a typo in the query can't accidentally mutate data.
+
+`max_rows` caps how many rows come back. Without it, a broad predicate on a large table can return enough data to cause problems for whatever is consuming the result. Set it to the largest result set that makes sense for the command's actual purpose.
+
+## Use `path` for environment-parameterized URLs
+
+When a command's base URL changes per environment, put the base in the `environments` block and the specific path in `path`:
+
+```hcl
+operation {
+  protocol = "http"
+  method   = "GET"
+  url      = "{{ vars.base_url }}"
+  path     = "/v2/users/{{ args.id }}"
+}
+```
+
+`path` is appended to `url`. The path stays visible in the command, the base URL lives in one place in the `environments` block, and switching environments changes the host without touching any command logic.
+
+Without `path`, environment-switching often requires either duplicating the full URL in every operation or using a `{{ vars.base_url }}/v2/users/{{ args.id }}` construction that works but buries the path structure. The `path` field makes the separation explicit.
