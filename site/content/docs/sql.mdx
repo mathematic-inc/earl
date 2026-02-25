@@ -73,6 +73,8 @@ earl call myapp.list_users --status active --limit 10
 
 `connection_secret` is a keychain key whose value is the database connection URL — for example, `postgresql://user:pass@host/db`. The URL never appears in the template file itself. Earl fetches it from the keychain at runtime.
 
+For storing and managing secrets, see [Secrets & Auth](/docs/secrets-and-auth).
+
 #### query and params
 
 `query` uses positional placeholders. PostgreSQL uses `$1`, `$2`, and so on. MySQL and SQLite use `?` for each position.
@@ -152,5 +154,9 @@ command "create_user" {
 There is no `sandbox` block here. Write commands don't use `read_only = true` — that flag is the only sandbox option that affects whether writes are permitted. The `RETURNING` clause is PostgreSQL-specific — adjust for your database if you're on MySQL or SQLite.
 
 ---
+
+To run different queries against different databases per environment, see [Environments](/docs/environments).
+
+For naming conventions and other patterns that apply across all protocols, see [Best Practices](/docs/best-practices).
 
 For the full field reference, see [Template Schema — SQL](/docs/template-schema#sql).

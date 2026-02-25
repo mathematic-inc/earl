@@ -291,3 +291,7 @@ Each line written to stdout becomes a separate chunk. The template runs once per
 - SQL does not support streaming. The `stream` flag has no effect on SQL operations.
 - GraphQL does not support streaming.
 - The output template runs per chunk. Carrying state between chunks (counting, accumulation) is not possible in the template — post-process the output if needed.
+
+## Supported protocols
+
+Streaming is available on [HTTP](/docs/http) (Server-Sent Events and NDJSON), [gRPC](/docs/grpc) (server-streaming RPCs), and [Bash](/docs/bash) (stdout line-by-line). SQL and GraphQL do not support streaming.
