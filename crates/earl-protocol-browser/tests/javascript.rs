@@ -4,7 +4,7 @@
 //! Chrome-dependent tests skip gracefully when Chrome is not found.
 
 mod common;
-use common::{CHROME_SERIAL, execute, skip_if_no_chrome};
+use common::{execute, skip_if_no_chrome};
 
 use earl_protocol_browser::PreparedBrowserCommand;
 use earl_protocol_browser::schema::BrowserStep;
@@ -19,7 +19,7 @@ async fn evaluate_returns_expression_result() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().await;
+    let _guard = common::chrome_lock().await;
 
     let mut routes = HashMap::new();
     routes.insert(
@@ -68,7 +68,7 @@ async fn evaluate_reads_dom_title() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().await;
+    let _guard = common::chrome_lock().await;
 
     let mut routes = HashMap::new();
     routes.insert(
@@ -119,7 +119,7 @@ async fn run_code_executes_multi_statement() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().await;
+    let _guard = common::chrome_lock().await;
 
     let mut routes = HashMap::new();
     routes.insert(
@@ -167,7 +167,7 @@ async fn run_code_mutation_visible_to_evaluate() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().await;
+    let _guard = common::chrome_lock().await;
 
     let mut routes = HashMap::new();
     routes.insert(
@@ -210,5 +210,104 @@ async fn run_code_mutation_visible_to_evaluate() {
         result["value"],
         serde_json::Value::String("injected".to_string()),
         "evaluate should see the title mutated by run_code; got: {result}"
+    );
+}
+
+/// Test 10.5 — evaluate propagates a JavaScript exception (Issue I4).
+///
+/// A function that throws must cause `execute` to return an error whose
+/// message contains the thrown text.
+#[tokio::test]
+async fn evaluate_propagates_javascript_exception() {
+    if skip_if_no_chrome() {
+        return;
+    }
+
+    let _guard = common::chrome_lock().await;
+
+    let mut routes = HashMap::new();
+    routes.insert(
+        "GET /".to_string(),
+        common::server::Response::html("<html><body></body></html>"),
+    );
+    let server = common::server::spawn(routes).await;
+
+    let data = PreparedBrowserCommand {
+        session_id: None,
+        headless: true,
+        timeout_ms: 30_000,
+        on_failure_screenshot: false,
+        steps: vec![
+            BrowserStep::Navigate {
+                url: server.url("/"),
+                expected_status: None,
+                timeout_ms: None,
+                optional: false,
+            },
+            BrowserStep::Evaluate {
+                function: "() => { throw new Error('boom'); }".to_string(),
+                r#ref: None,
+                timeout_ms: None,
+                optional: false,
+            },
+        ],
+    };
+
+    let err = execute(data)
+        .await
+        .expect_err("evaluate should fail when JS throws");
+    let msg = err.to_string().to_lowercase();
+    assert!(
+        msg.contains("boom") || msg.contains("error"),
+        "error message should mention 'boom' or 'error'; got: {err}"
+    );
+}
+
+/// Test 10.6 — run_code propagates a JavaScript exception (Issue I4).
+///
+/// A code block that throws must cause `execute` to return an error whose
+/// message contains the thrown text.
+#[tokio::test]
+async fn run_code_propagates_javascript_exception() {
+    if skip_if_no_chrome() {
+        return;
+    }
+
+    let _guard = common::chrome_lock().await;
+
+    let mut routes = HashMap::new();
+    routes.insert(
+        "GET /".to_string(),
+        common::server::Response::html("<html><body></body></html>"),
+    );
+    let server = common::server::spawn(routes).await;
+
+    let data = PreparedBrowserCommand {
+        session_id: None,
+        headless: true,
+        timeout_ms: 30_000,
+        on_failure_screenshot: false,
+        steps: vec![
+            BrowserStep::Navigate {
+                url: server.url("/"),
+                expected_status: None,
+                timeout_ms: None,
+                optional: false,
+            },
+            BrowserStep::RunCode {
+                code: "throw new Error('kaboom');".to_string(),
+                timeout_ms: None,
+                optional: false,
+            },
+        ],
+    };
+
+    let err = execute(data)
+        .await
+        .expect_err("run_code should fail when JS throws");
+    let msg = err.to_string().to_lowercase();
+    assert!(
+        msg.contains("kaboom") || msg.contains("error"),
+        "error message should mention 'kaboom' or 'error'; got: {err}"
     );
 }

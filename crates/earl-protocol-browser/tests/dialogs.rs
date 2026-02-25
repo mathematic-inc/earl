@@ -5,7 +5,7 @@
 //! subscribes to `Page.javascriptDialogOpening` events and waits up to the
 //! global timeout for a dialog to appear.
 mod common;
-use common::{CHROME_SERIAL, Response, execute, skip_if_no_chrome, spawn};
+use common::{Response, execute, skip_if_no_chrome, spawn};
 use earl_protocol_browser::PreparedBrowserCommand;
 use earl_protocol_browser::schema::BrowserStep;
 use std::collections::HashMap;
@@ -20,7 +20,7 @@ async fn handle_dialog_accepts_alert() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().await;
+    let _guard = common::chrome_lock().await;
 
     let mut routes = HashMap::new();
     routes.insert(
@@ -72,7 +72,7 @@ async fn handle_dialog_fills_prompt_text() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().await;
+    let _guard = common::chrome_lock().await;
 
     let mut routes = HashMap::new();
     routes.insert(
@@ -137,7 +137,7 @@ async fn handle_dialog_rejects_confirm() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().await;
+    let _guard = common::chrome_lock().await;
 
     let mut routes = HashMap::new();
     routes.insert(
@@ -188,5 +188,54 @@ async fn handle_dialog_rejects_confirm() {
         result["value"].as_str(),
         Some("no"),
         "body text should be 'no' after confirm is rejected; got: {result}"
+    );
+}
+
+/// Test 7.4 — HandleDialog times out when no dialog fires (Issue I4).
+///
+/// Navigate to a plain HTML page with no dialog, then call HandleDialog
+/// immediately.  Because no dialog ever fires, the command should time out
+/// and return an error mentioning "timeout".
+#[tokio::test]
+async fn handle_dialog_times_out_when_no_dialog_fires() {
+    if skip_if_no_chrome() {
+        return;
+    }
+    let _guard = common::chrome_lock().await;
+
+    let mut routes = HashMap::new();
+    routes.insert(
+        "GET /".to_string(),
+        Response::html("<html><body>no dialog here</body></html>"),
+    );
+    let server = spawn(routes).await;
+
+    let data = PreparedBrowserCommand {
+        session_id: None,
+        headless: true,
+        timeout_ms: 2_000, // short timeout so the test completes quickly
+        on_failure_screenshot: false,
+        steps: vec![
+            BrowserStep::Navigate {
+                url: server.url("/"),
+                expected_status: None,
+                timeout_ms: None,
+                optional: false,
+            },
+            BrowserStep::HandleDialog {
+                accept: true,
+                prompt_text: None,
+                optional: false,
+            },
+        ],
+    };
+
+    let err = execute(data)
+        .await
+        .expect_err("HandleDialog should time out when no dialog fires");
+    let msg = err.to_string().to_lowercase();
+    assert!(
+        msg.contains("timeout") || msg.contains("timed out") || msg.contains("time"),
+        "error should mention timeout; got: {msg}"
     );
 }

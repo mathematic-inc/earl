@@ -4,7 +4,7 @@
 //! Chrome-dependent tests skip gracefully when Chrome is not found.
 
 mod common;
-use common::{CHROME_SERIAL, execute, skip_if_no_chrome};
+use common::{execute, skip_if_no_chrome};
 
 use earl_protocol_browser::PreparedBrowserCommand;
 use earl_protocol_browser::schema::BrowserStep;
@@ -20,7 +20,7 @@ async fn press_key_fires_keyboard_events() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().await;
+    let _guard = common::chrome_lock().await;
 
     let body = r#"<html><body>
 <div id="out">none</div>
@@ -80,7 +80,7 @@ async fn mouse_wheel_scrolls_tall_page() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().await;
+    let _guard = common::chrome_lock().await;
 
     let body = r#"<html><body><div style="height:5000px">Tall content</div></body></html>"#;
 
@@ -105,14 +105,7 @@ async fn mouse_wheel_scrolls_tall_page() {
                 delta_y: 500.0,
                 optional: false,
             },
-            // Allow the browser to process the wheel event before checking scrollY.
-            BrowserStep::WaitFor {
-                time: Some(0.5),
-                text: None,
-                text_gone: None,
-                timeout_ms: 2_000,
-                optional: false,
-            },
+            // MouseWheel dispatches synchronously; evaluate scroll position directly.
             BrowserStep::Evaluate {
                 function: "() => window.scrollY > 0".to_string(),
                 r#ref: None,

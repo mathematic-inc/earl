@@ -1,9 +1,17 @@
 //! Use-case tests: cookie management (Group 5).
 mod common;
-use common::{CHROME_SERIAL, Response, execute, skip_if_no_chrome, spawn};
+use common::{Response, execute, skip_if_no_chrome, spawn};
 use earl_protocol_browser::PreparedBrowserCommand;
 use earl_protocol_browser::schema::BrowserStep;
 use std::collections::HashMap;
+
+fn unique_id() -> String {
+    use std::sync::atomic::{AtomicU64, Ordering};
+    static COUNTER: AtomicU64 = AtomicU64::new(0);
+    let count = COUNTER.fetch_add(1, Ordering::Relaxed);
+    let pid = std::process::id();
+    format!("{pid}-{count}")
+}
 
 /// Test 5.1 — Server-set cookies are visible via cookie_list.
 ///
@@ -15,7 +23,7 @@ async fn server_set_cookie_visible_in_cookie_list() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().await;
+    let _guard = common::chrome_lock().await;
 
     let mut routes = HashMap::new();
     routes.insert(
@@ -67,7 +75,7 @@ async fn cookie_set_visible_to_page() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().await;
+    let _guard = common::chrome_lock().await;
 
     let mut routes = HashMap::new();
     routes.insert(
@@ -128,7 +136,7 @@ async fn cookie_delete_removes_cookie() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().await;
+    let _guard = common::chrome_lock().await;
 
     let mut routes = HashMap::new();
     routes.insert(
@@ -191,7 +199,7 @@ async fn cookie_clear_removes_all_cookies() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().await;
+    let _guard = common::chrome_lock().await;
 
     let mut routes = HashMap::new();
     routes.insert(
@@ -262,7 +270,7 @@ async fn storage_state_round_trips_cookies_across_sessions() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().await;
+    let _guard = common::chrome_lock().await;
 
     let mut routes = HashMap::new();
     routes.insert(
@@ -271,12 +279,9 @@ async fn storage_state_round_trips_cookies_across_sessions() {
     );
     let server = spawn(routes).await;
 
-    let ts = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap()
-        .as_millis();
+    let id = unique_id();
     let tmp_path = std::env::temp_dir()
-        .join(format!("earl-test-state-{ts}.json"))
+        .join(format!("earl-test-state-{id}.json"))
         .to_string_lossy()
         .to_string();
 
@@ -349,5 +354,62 @@ async fn storage_state_round_trips_cookies_across_sessions() {
             .iter()
             .any(|c| c["name"] == "auth" && c["value"] == "token123"),
         "expected restored cookie 'auth=token123' in session B; got: {result}"
+    );
+}
+
+/// Test 5.6 — cookie_get returns a named cookie.
+///
+/// Sets a cookie via CookieSet, then retrieves it by name using CookieGet and
+/// verifies the returned value matches.
+#[tokio::test]
+async fn cookie_get_returns_named_cookie() {
+    if skip_if_no_chrome() {
+        return;
+    }
+
+    let _guard = common::chrome_lock().await;
+
+    let mut routes = HashMap::new();
+    routes.insert(
+        "GET /".to_string(),
+        Response::html("<html><body>hello</body></html>"),
+    );
+    let server = spawn(routes).await;
+
+    let data = PreparedBrowserCommand {
+        session_id: None,
+        headless: true,
+        timeout_ms: 30_000,
+        on_failure_screenshot: false,
+        steps: vec![
+            BrowserStep::Navigate {
+                url: server.url("/"),
+                expected_status: None,
+                timeout_ms: None,
+                optional: false,
+            },
+            BrowserStep::CookieSet {
+                name: "token".to_string(),
+                value: "abc123".to_string(),
+                domain: Some("127.0.0.1".to_string()),
+                path: None,
+                expires: None,
+                http_only: false,
+                secure: false,
+                optional: false,
+            },
+            BrowserStep::CookieGet {
+                name: "token".to_string(),
+                optional: false,
+            },
+        ],
+    };
+
+    let result = execute(data).await.expect("execute should succeed");
+
+    assert_eq!(
+        result["value"].as_str(),
+        Some("abc123"),
+        "expected cookie 'token' to have value 'abc123'; got: {result}"
     );
 }

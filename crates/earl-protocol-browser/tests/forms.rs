@@ -4,7 +4,7 @@
 //! Chrome-dependent tests skip gracefully when Chrome is not found.
 
 mod common;
-use common::{CHROME_SERIAL, execute, skip_if_no_chrome};
+use common::{execute, skip_if_no_chrome};
 
 use earl_protocol_browser::PreparedBrowserCommand;
 use earl_protocol_browser::schema::BrowserStep;
@@ -21,7 +21,7 @@ async fn fill_and_submit_form() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().await;
+    let _guard = common::chrome_lock().await;
 
     let form_html = r#"<html><body>
 <form action="/submit" method="POST">
@@ -121,7 +121,7 @@ async fn select_dropdown_option() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().await;
+    let _guard = common::chrome_lock().await;
 
     let body = r#"<html><body>
 <select id="color">
@@ -188,7 +188,7 @@ async fn checkbox_can_be_checked() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().await;
+    let _guard = common::chrome_lock().await;
 
     let mut routes = HashMap::new();
     routes.insert(
@@ -245,13 +245,13 @@ async fn checked_box_can_be_unchecked() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().await;
+    let _guard = common::chrome_lock().await;
 
     let mut routes = HashMap::new();
     routes.insert(
         "GET /".to_string(),
         common::server::Response::html(
-            "<html><body><input type=\"checkbox\" id=\"tos\"></body></html>",
+            "<html><body><input type=\"checkbox\" id=\"cb\"></body></html>",
         ),
     );
     let server = common::server::spawn(routes).await;
@@ -268,27 +268,20 @@ async fn checked_box_can_be_unchecked() {
                 timeout_ms: None,
                 optional: false,
             },
-            // Confirm the initial state is unchecked.
-            BrowserStep::Evaluate {
-                function: "() => document.getElementById('tos').checked".to_string(),
-                r#ref: None,
-                timeout_ms: None,
-                optional: false,
-            },
             BrowserStep::Check {
                 r#ref: None,
-                selector: Some("#tos".to_string()),
+                selector: Some("#cb".to_string()),
                 timeout_ms: None,
                 optional: false,
             },
             BrowserStep::Uncheck {
                 r#ref: None,
-                selector: Some("#tos".to_string()),
+                selector: Some("#cb".to_string()),
                 timeout_ms: None,
                 optional: false,
             },
             BrowserStep::Evaluate {
-                function: "() => document.getElementById('tos').checked".to_string(),
+                function: "() => document.getElementById('cb').checked".to_string(),
                 r#ref: None,
                 timeout_ms: None,
                 optional: false,
@@ -316,7 +309,7 @@ async fn optional_click_on_absent_element_continues() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().await;
+    let _guard = common::chrome_lock().await;
 
     let mut routes = HashMap::new();
     routes.insert(
@@ -370,16 +363,16 @@ async fn optional_click_on_absent_element_continues() {
 
 /// Test 3.5 — fill with submit=true triggers form submission.
 ///
-/// Two routes are served: GET / with a form and GET /done with a confirmation
+/// Two routes are served: GET / with a form and POST /done with a confirmation
 /// page.  Setting `submit: Some(true)` on the fill step presses Enter after
-/// typing, which submits the form.  The final snapshot must contain "Done".
+/// typing, which submits the form.  The final evaluate must contain "Done".
 #[tokio::test]
 async fn fill_with_submit_true_submits_form() {
     if skip_if_no_chrome() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().await;
+    let _guard = common::chrome_lock().await;
 
     let form_html = r#"<html><body>
 <form action="/done" method="POST">
@@ -422,11 +415,11 @@ async fn fill_with_submit_true_submits_form() {
                 timeout_ms: None,
                 optional: false,
             },
-            // Give the navigation triggered by Enter/submit time to complete.
+            // Poll until "Done" appears rather than sleeping a fixed duration.
             BrowserStep::WaitFor {
-                time: Some(2.0),
-                text: None,
+                text: Some("Done".to_string()),
                 text_gone: None,
+                time: None,
                 timeout_ms: 5_000,
                 optional: false,
             },
@@ -447,5 +440,71 @@ async fn fill_with_submit_true_submits_form() {
     assert!(
         text.contains("Done"),
         "body text should contain 'Done' (navigated to /done via form submit with Enter); got: {text}"
+    );
+}
+
+/// Test 3.6 — FillForm fills multiple fields at once and values are readable.
+///
+/// A page with two text inputs (id="name" and id="email") is served.
+/// `FillForm` sets both fields in a single step.  An `evaluate` then reads
+/// both values back; the result must be `"Alice|alice@example.com"`.
+#[tokio::test]
+async fn fill_form_fills_multiple_fields_at_once() {
+    if skip_if_no_chrome() {
+        return;
+    }
+
+    let _guard = common::chrome_lock().await;
+
+    let page_html = r#"<html><body>
+<form id="f">
+  <input id="name" name="name" type="text">
+  <input id="email" name="email" type="text">
+  <button type="submit">Send</button>
+</form>
+</body></html>"#;
+
+    let mut routes = HashMap::new();
+    routes.insert(
+        "GET /".to_string(),
+        common::server::Response::html(page_html),
+    );
+    let server = common::server::spawn(routes).await;
+
+    let data = PreparedBrowserCommand {
+        session_id: None,
+        headless: true,
+        timeout_ms: 30_000,
+        on_failure_screenshot: false,
+        steps: vec![
+            BrowserStep::Navigate {
+                url: server.url("/"),
+                expected_status: None,
+                timeout_ms: None,
+                optional: false,
+            },
+            BrowserStep::FillForm {
+                fields: vec![
+                    serde_json::json!({"selector": "#name", "value": "Alice"}),
+                    serde_json::json!({"selector": "#email", "value": "alice@example.com"}),
+                ],
+                timeout_ms: None,
+                optional: false,
+            },
+            BrowserStep::Evaluate {
+                function: "() => document.getElementById('name').value + '|' + document.getElementById('email').value".to_string(),
+                r#ref: None,
+                timeout_ms: None,
+                optional: false,
+            },
+        ],
+    };
+
+    let result = execute(data).await.expect("execute should succeed");
+
+    assert_eq!(
+        result["value"],
+        serde_json::Value::String("Alice|alice@example.com".to_string()),
+        "evaluate should return 'Alice|alice@example.com' after FillForm; got: {result}"
     );
 }

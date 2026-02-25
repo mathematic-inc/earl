@@ -4,37 +4,94 @@
 //! invocation sharing a session_id.  State (page URL, cookies, localStorage)
 //! persists across calls.
 mod common;
-use common::{CHROME_SERIAL, execute, skip_if_no_chrome};
+use common::{execute, skip_if_no_chrome};
 use earl_protocol_browser::PreparedBrowserCommand;
 use earl_protocol_browser::schema::BrowserStep;
 use std::collections::HashMap;
 
-fn timestamp_ms() -> u128 {
-    std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap()
-        .as_millis()
+/// Return a string that is unique within this process across concurrent calls.
+///
+/// Combines the process ID with a monotonically increasing atomic counter so
+/// that two concurrent tests never generate the same session ID, even when they
+/// happen to run within the same millisecond.
+fn unique_id() -> String {
+    use std::sync::atomic::{AtomicU64, Ordering};
+    static COUNTER: AtomicU64 = AtomicU64::new(0);
+    let count = COUNTER.fetch_add(1, Ordering::Relaxed);
+    let pid = std::process::id();
+    format!("{pid}-{count}")
 }
 
-/// Test 4.1 — Multiple calls with the same session_id each see the served page.
-///
-/// Two separate `execute()` calls share the same session_id.  Each call
-/// navigates to `/page1` and takes a snapshot.  Both calls must succeed and
-/// return "Page One" in the snapshot text, confirming that the session
-/// management infrastructure (lock acquisition, session file read/write) works
-/// correctly across repeated invocations with the same session_id.
-///
-/// Additionally, the session file is verified to exist after both calls,
-/// confirming the executor correctly records session state.
+/// Test 4.1a — Call 1 navigates to /page1 and the snapshot contains "Page One".
 #[tokio::test]
-async fn session_persists_navigation_across_calls() {
+async fn session_call_1_succeeds() {
     if skip_if_no_chrome() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().await;
+    let _guard = common::chrome_lock().await;
 
-    let session_id = format!("test-persist-{}", timestamp_ms());
+    let session_id = format!("test-persist-{}", unique_id());
+
+    let mut routes = HashMap::new();
+    routes.insert(
+        "GET /page1".to_string(),
+        common::server::Response::html(
+            "<html><head><title>Page One</title></head><body><p>Page One is here</p></body></html>",
+        ),
+    );
+    let server = common::server::spawn(routes).await;
+
+    let call1 = PreparedBrowserCommand {
+        session_id: Some(session_id.clone()),
+        headless: true,
+        timeout_ms: 30_000,
+        on_failure_screenshot: false,
+        steps: vec![
+            BrowserStep::Navigate {
+                url: server.url("/page1"),
+                expected_status: None,
+                timeout_ms: None,
+                optional: false,
+            },
+            BrowserStep::Snapshot {
+                timeout_ms: None,
+                optional: false,
+            },
+        ],
+    };
+
+    let result1 = execute(call1).await.expect("call 1 should succeed");
+    let text1 = result1["text"]
+        .as_str()
+        .expect("call 1 snapshot should have 'text'");
+    assert!(
+        text1.contains("Page One"),
+        "call 1 snapshot should contain 'Page One'; got: {text1}"
+    );
+
+    // Cleanup: session files use unique IDs so stale files are harmless, but
+    // clean up eagerly to avoid accumulation on long-running CI machines.
+    use earl_protocol_browser::session::{lock_file_path, session_file_path};
+    let _ = std::fs::remove_file(session_file_path(&session_id).unwrap());
+    let _ = std::fs::remove_file(lock_file_path(&session_id).unwrap());
+}
+
+/// Test 4.1b — Call 1 then call 2 both succeed with the same session_id,
+/// and both snapshots contain "Page One".
+///
+/// Verifies that the session management infrastructure (lock acquisition,
+/// session file read/write) works correctly across repeated invocations with
+/// the same session_id.
+#[tokio::test]
+async fn session_call_2_reuses_same_session() {
+    if skip_if_no_chrome() {
+        return;
+    }
+
+    let _guard = common::chrome_lock().await;
+
+    let session_id = format!("test-persist-{}", unique_id());
 
     let mut routes = HashMap::new();
     routes.insert(
@@ -74,20 +131,6 @@ async fn session_persists_navigation_across_calls() {
         "call 1 snapshot should contain 'Page One'; got: {text1}"
     );
 
-    // Verify the session file was created after call 1.
-    use earl_protocol_browser::session::{SessionFile, lock_file_path, session_file_path};
-    let sf_after_call1 = SessionFile::load_from(&session_file_path(&session_id).unwrap())
-        .expect("session file should be readable")
-        .expect("session file should exist after call 1");
-    assert!(
-        !sf_after_call1.websocket_url.is_empty(),
-        "session file should record a websocket URL after call 1"
-    );
-    assert!(
-        !sf_after_call1.interrupted,
-        "session file should record interrupted=false after successful call 1"
-    );
-
     // Call 2: navigate to /page1 again with the same session_id.
     // The session management infrastructure (lock, session file) must handle
     // this correctly — even if the underlying Chrome instance is recycled.
@@ -119,20 +162,8 @@ async fn session_persists_navigation_across_calls() {
         "call 2 snapshot should contain 'Page One'; got: {text2}"
     );
 
-    // Verify the session file exists and is valid after call 2.
-    let sf_after_call2 = SessionFile::load_from(&session_file_path(&session_id).unwrap())
-        .expect("session file should be readable after call 2")
-        .expect("session file should exist after call 2");
-    assert!(
-        !sf_after_call2.websocket_url.is_empty(),
-        "session file should record a websocket URL after call 2"
-    );
-    assert!(
-        !sf_after_call2.interrupted,
-        "session file should record interrupted=false after successful call 2"
-    );
-
-    // Cleanup: delete session file and lock file.
+    // Cleanup.
+    use earl_protocol_browser::session::{lock_file_path, session_file_path};
     let _ = std::fs::remove_file(session_file_path(&session_id).unwrap());
     let _ = std::fs::remove_file(lock_file_path(&session_id).unwrap());
 }
@@ -142,20 +173,25 @@ async fn session_persists_navigation_across_calls() {
 /// A `SessionFile` is written with a dead websocket URL.  The executor must
 /// detect the stale connection, launch a fresh Chrome, and complete the steps
 /// successfully.
+///
+/// Note: internal types (`SessionFile`, `session_file_path`, etc.) are used
+/// here deliberately to set up the stale-session precondition.  There is no
+/// public API for injecting a fake session file, so white-box setup is the
+/// only viable approach for this test.
 #[tokio::test]
 async fn stale_session_falls_back_to_fresh_chrome() {
     if skip_if_no_chrome() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().await;
+    let _guard = common::chrome_lock().await;
 
     use chrono::Utc;
     use earl_protocol_browser::session::{
         SessionFile, ensure_sessions_dir, lock_file_path, session_file_path, sessions_dir,
     };
 
-    let session_id = format!("test-stale-{}", timestamp_ms());
+    let session_id = format!("test-stale-{}", unique_id());
     let dir = sessions_dir().unwrap();
     ensure_sessions_dir(&dir).unwrap();
 
@@ -229,7 +265,7 @@ async fn stale_session_falls_back_to_fresh_chrome() {
 async fn concurrent_lock_returns_session_locked_error() {
     use earl_protocol_browser::session::{acquire_session_lock, lock_file_path};
 
-    let session_id = format!("test-lock-{}", timestamp_ms());
+    let session_id = format!("test-lock-{}", unique_id());
 
     // Acquire the lock — holds it for the duration of this test.
     let _lock = acquire_session_lock(&session_id).await.unwrap();

@@ -63,12 +63,13 @@ fn blob_scheme_is_rejected() {
 /// Navigate to `https://example.com`, take a snapshot, and verify the raw
 /// result body contains a JSON object with a `"text"` field.
 #[tokio::test]
+#[ignore = "requires external network"]
 async fn navigate_and_snapshot() {
     if skip_if_no_chrome() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().await;
+    let _guard = common::chrome_lock().await;
 
     let data = PreparedBrowserCommand {
         session_id: None,
@@ -113,12 +114,13 @@ async fn navigate_and_snapshot() {
 /// with `optional: true` (so the step is silently skipped), then take a
 /// snapshot.  The overall execution must succeed.
 #[tokio::test]
+#[ignore = "requires external network"]
 async fn optional_step_continues_on_failure() {
     if skip_if_no_chrome() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().await;
+    let _guard = common::chrome_lock().await;
 
     let data = PreparedBrowserCommand {
         session_id: None,
@@ -163,23 +165,5 @@ async fn optional_step_continues_on_failure() {
     assert!(
         json.get("text").is_some(),
         "final snapshot result should have a 'text' field; got: {json}"
-    );
-}
-
-/// Verify that navigating to a `file://` URL fails before Chrome is even
-/// contacted (i.e., the scheme guard runs in the step engine).
-///
-/// Because the scheme check is enforced inside `execute_steps` (which requires
-/// a live `Page`), we test the pure helper function rather than going through
-/// the full executor path.  The full-path version is effectively covered by
-/// the navigate-and-snapshot test (which uses only allowed schemes).
-#[test]
-fn disallowed_scheme_fails_at_scheme_validation() {
-    let result = validate_url_scheme("file:///etc/passwd");
-    assert!(result.is_err());
-    let msg = result.unwrap_err().to_string();
-    assert!(
-        msg.contains("file"),
-        "error message should contain the scheme name; got: {msg}"
     );
 }

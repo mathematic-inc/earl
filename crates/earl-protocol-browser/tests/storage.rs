@@ -1,6 +1,6 @@
 //! Use-case tests: localStorage / sessionStorage (Group 6).
 mod common;
-use common::{CHROME_SERIAL, Response, execute, skip_if_no_chrome, spawn};
+use common::{Response, execute, skip_if_no_chrome, spawn};
 use earl_protocol_browser::PreparedBrowserCommand;
 use earl_protocol_browser::schema::BrowserStep;
 use std::collections::HashMap;
@@ -15,7 +15,7 @@ async fn local_storage_set_and_get_round_trip() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().await;
+    let _guard = common::chrome_lock().await;
 
     let mut routes = HashMap::new();
     routes.insert(
@@ -67,7 +67,7 @@ async fn local_storage_delete_removes_key() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().await;
+    let _guard = common::chrome_lock().await;
 
     let mut routes = HashMap::new();
     routes.insert(
@@ -129,7 +129,7 @@ async fn local_storage_clear_wipes_all_keys() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().await;
+    let _guard = common::chrome_lock().await;
 
     let mut routes = HashMap::new();
     routes.insert(
@@ -192,7 +192,7 @@ async fn storage_state_includes_local_storage_entries() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().await;
+    let _guard = common::chrome_lock().await;
 
     let mut routes = HashMap::new();
     routes.insert(
@@ -236,5 +236,175 @@ async fn storage_state_includes_local_storage_entries() {
         ls["pref"].as_str(),
         Some("compact"),
         "expected local_storage['pref'] == 'compact'; got: {result}"
+    );
+}
+
+/// Test 6.5 — session_storage_set and session_storage_get round-trip.
+///
+/// Sets a key in sessionStorage and then reads it back, verifying the value
+/// matches exactly what was written.
+#[tokio::test]
+async fn session_storage_set_and_get_round_trip() {
+    if skip_if_no_chrome() {
+        return;
+    }
+
+    let _guard = common::chrome_lock().await;
+
+    let mut routes = HashMap::new();
+    routes.insert(
+        "GET /".to_string(),
+        Response::html("<html><body>hello</body></html>"),
+    );
+    let server = spawn(routes).await;
+
+    let data = PreparedBrowserCommand {
+        session_id: None,
+        headless: true,
+        timeout_ms: 30_000,
+        on_failure_screenshot: false,
+        steps: vec![
+            BrowserStep::Navigate {
+                url: server.url("/"),
+                expected_status: None,
+                timeout_ms: None,
+                optional: false,
+            },
+            BrowserStep::SessionStorageSet {
+                key: "token".to_string(),
+                value: "xyz".to_string(),
+                optional: false,
+            },
+            BrowserStep::SessionStorageGet {
+                key: "token".to_string(),
+                optional: false,
+            },
+        ],
+    };
+
+    let result = execute(data).await.expect("execute should succeed");
+
+    assert_eq!(
+        result["value"].as_str(),
+        Some("xyz"),
+        "expected sessionStorage['token'] == 'xyz'; got: {result}"
+    );
+}
+
+/// Test 6.6 — session_storage_delete removes the key.
+///
+/// Sets a key, deletes it, then evaluates sessionStorage.length to confirm the
+/// key no longer exists.
+#[tokio::test]
+async fn session_storage_delete_removes_key() {
+    if skip_if_no_chrome() {
+        return;
+    }
+
+    let _guard = common::chrome_lock().await;
+
+    let mut routes = HashMap::new();
+    routes.insert(
+        "GET /".to_string(),
+        Response::html("<html><body>hello</body></html>"),
+    );
+    let server = spawn(routes).await;
+
+    let data = PreparedBrowserCommand {
+        session_id: None,
+        headless: true,
+        timeout_ms: 30_000,
+        on_failure_screenshot: false,
+        steps: vec![
+            BrowserStep::Navigate {
+                url: server.url("/"),
+                expected_status: None,
+                timeout_ms: None,
+                optional: false,
+            },
+            BrowserStep::SessionStorageSet {
+                key: "x".to_string(),
+                value: "1".to_string(),
+                optional: false,
+            },
+            BrowserStep::SessionStorageDelete {
+                key: "x".to_string(),
+                optional: false,
+            },
+            BrowserStep::Evaluate {
+                function: "() => sessionStorage.length".to_string(),
+                r#ref: None,
+                timeout_ms: None,
+                optional: false,
+            },
+        ],
+    };
+
+    let result = execute(data).await.expect("execute should succeed");
+
+    assert_eq!(
+        result["value"],
+        serde_json::json!(0),
+        "expected sessionStorage.length == 0 after delete; got: {result}"
+    );
+}
+
+/// Test 6.7 — session_storage_clear wipes all keys.
+///
+/// Sets two keys, clears sessionStorage, then evaluates sessionStorage.length
+/// to confirm no entries remain.
+#[tokio::test]
+async fn session_storage_clear_wipes_all_keys() {
+    if skip_if_no_chrome() {
+        return;
+    }
+
+    let _guard = common::chrome_lock().await;
+
+    let mut routes = HashMap::new();
+    routes.insert(
+        "GET /".to_string(),
+        Response::html("<html><body>hello</body></html>"),
+    );
+    let server = spawn(routes).await;
+
+    let data = PreparedBrowserCommand {
+        session_id: None,
+        headless: true,
+        timeout_ms: 30_000,
+        on_failure_screenshot: false,
+        steps: vec![
+            BrowserStep::Navigate {
+                url: server.url("/"),
+                expected_status: None,
+                timeout_ms: None,
+                optional: false,
+            },
+            BrowserStep::SessionStorageSet {
+                key: "a".to_string(),
+                value: "1".to_string(),
+                optional: false,
+            },
+            BrowserStep::SessionStorageSet {
+                key: "b".to_string(),
+                value: "2".to_string(),
+                optional: false,
+            },
+            BrowserStep::SessionStorageClear { optional: false },
+            BrowserStep::Evaluate {
+                function: "() => sessionStorage.length".to_string(),
+                r#ref: None,
+                timeout_ms: None,
+                optional: false,
+            },
+        ],
+    };
+
+    let result = execute(data).await.expect("execute should succeed");
+
+    assert_eq!(
+        result["value"],
+        serde_json::json!(0),
+        "expected sessionStorage.length == 0 after clear; got: {result}"
     );
 }

@@ -1,9 +1,16 @@
 //! Use-case tests: screenshot capture.
 mod common;
-use common::{CHROME_SERIAL, Response, execute, skip_if_no_chrome, spawn};
+use common::{Response, execute, skip_if_no_chrome, spawn};
 use earl_protocol_browser::PreparedBrowserCommand;
 use earl_protocol_browser::schema::BrowserStep;
 use std::collections::HashMap;
+
+fn unique_id() -> String {
+    use std::sync::atomic::{AtomicU64, Ordering};
+    static COUNTER: AtomicU64 = AtomicU64::new(0);
+    let count = COUNTER.fetch_add(1, Ordering::Relaxed);
+    format!("{}-{}", std::process::id(), count)
+}
 
 /// Test 2.1 — Screenshot produces a valid PNG.
 ///
@@ -15,7 +22,7 @@ async fn screenshot_produces_valid_png() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().await;
+    let _guard = common::chrome_lock().await;
 
     let mut routes = HashMap::new();
     routes.insert(
@@ -81,7 +88,7 @@ async fn full_page_screenshot_larger_than_viewport() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().await;
+    let _guard = common::chrome_lock().await;
 
     let mut routes = HashMap::new();
     routes.insert(
@@ -175,7 +182,7 @@ async fn screenshot_to_specified_path_writes_file() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().await;
+    let _guard = common::chrome_lock().await;
 
     let mut routes = HashMap::new();
     routes.insert(
@@ -184,11 +191,8 @@ async fn screenshot_to_specified_path_writes_file() {
     );
     let server = spawn(routes).await;
 
-    let ts = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap()
-        .as_millis();
-    let path = std::env::temp_dir().join(format!("earl-test-screenshot-{ts}.png"));
+    let id = unique_id();
+    let path = std::env::temp_dir().join(format!("earl-test-screenshot-{id}.png"));
     let path_str = path.to_string_lossy().to_string();
 
     let data = PreparedBrowserCommand {

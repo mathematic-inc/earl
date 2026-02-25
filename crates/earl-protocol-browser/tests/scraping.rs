@@ -4,7 +4,7 @@
 //! Chrome-dependent tests skip gracefully when Chrome is not found.
 
 mod common;
-use common::{CHROME_SERIAL, execute, skip_if_no_chrome};
+use common::{execute, skip_if_no_chrome};
 
 use earl_protocol_browser::PreparedBrowserCommand;
 use earl_protocol_browser::schema::BrowserStep;
@@ -20,7 +20,7 @@ async fn extract_static_text_via_evaluate() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().await;
+    let _guard = common::chrome_lock().await;
 
     let mut routes = HashMap::new();
     routes.insert(
@@ -69,7 +69,7 @@ async fn extract_dynamic_text_with_wait_for() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().await;
+    let _guard = common::chrome_lock().await;
 
     let body = r#"<html><body>
 <script>
@@ -133,7 +133,7 @@ async fn wait_for_times_out_when_content_absent() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().await;
+    let _guard = common::chrome_lock().await;
 
     let mut routes = HashMap::new();
     routes.insert(
@@ -186,7 +186,7 @@ async fn multi_navigate_snapshot_reflects_last_page() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().await;
+    let _guard = common::chrome_lock().await;
 
     let mut routes = HashMap::new();
     routes.insert(
@@ -236,5 +236,164 @@ async fn multi_navigate_snapshot_reflects_last_page() {
     assert!(
         text.contains("Page Two"),
         "snapshot text should contain 'Page Two' (the second page); got: {text}"
+    );
+}
+
+/// Test S4 — wait_for with text_gone waits until the text disappears and new
+/// text appears.
+///
+/// Serves a page that initially shows "Loading..." and after 200 ms replaces
+/// its content with "Done".  The `WaitFor` step uses both `text_gone` and
+/// `text` together so it resolves only after the transition completes.
+#[tokio::test]
+async fn wait_for_text_gone_waits_until_text_disappears() {
+    if skip_if_no_chrome() {
+        return;
+    }
+
+    let _guard = common::chrome_lock().await;
+
+    let body = r#"<html><body>
+<div id="status">Loading...</div>
+<script>
+setTimeout(function() {
+  document.getElementById('status').textContent = 'Done';
+}, 200);
+</script>
+</body></html>"#;
+
+    let mut routes = HashMap::new();
+    routes.insert("GET /".to_string(), common::server::Response::html(body));
+    let server = common::server::spawn(routes).await;
+
+    let data = PreparedBrowserCommand {
+        session_id: None,
+        headless: true,
+        timeout_ms: 30_000,
+        on_failure_screenshot: false,
+        steps: vec![
+            BrowserStep::Navigate {
+                url: server.url("/"),
+                expected_status: None,
+                timeout_ms: None,
+                optional: false,
+            },
+            // Wait for "Loading..." to disappear AND "Done" to appear.
+            BrowserStep::WaitFor {
+                time: None,
+                text: Some("Done".to_string()),
+                text_gone: Some("Loading...".to_string()),
+                timeout_ms: 5_000,
+                optional: false,
+            },
+            BrowserStep::Evaluate {
+                function: "() => document.body.innerText".to_string(),
+                r#ref: None,
+                timeout_ms: None,
+                optional: false,
+            },
+        ],
+    };
+
+    let result = execute(data).await.expect("execute should succeed");
+
+    let text = result["value"]
+        .as_str()
+        .expect("evaluate should return a string value");
+    assert!(
+        text.contains("Done"),
+        "page text should contain 'Done' after transition; got: {text}"
+    );
+    assert!(
+        !text.contains("Loading"),
+        "page text should no longer contain 'Loading' after transition; got: {text}"
+    );
+}
+
+/// Test S3a — Navigate with `expected_status` succeeds when the server returns
+/// that exact status code.
+///
+/// Registers a `/missing` route that returns HTTP 404 and navigates with
+/// `expected_status: Some(404)`.  The command must succeed because the status
+/// matches.
+#[tokio::test]
+async fn navigate_expected_status_succeeds_on_match() {
+    if skip_if_no_chrome() {
+        return;
+    }
+
+    let _guard = common::chrome_lock().await;
+
+    let mut routes = HashMap::new();
+    routes.insert(
+        "GET /missing".to_string(),
+        common::server::Response {
+            status: 404,
+            content_type: "text/plain",
+            body: "gone".to_string(),
+            extra_headers: vec![],
+        },
+    );
+    let server = common::server::spawn(routes).await;
+
+    let data = PreparedBrowserCommand {
+        session_id: None,
+        headless: true,
+        timeout_ms: 30_000,
+        on_failure_screenshot: false,
+        steps: vec![BrowserStep::Navigate {
+            url: server.url("/missing"),
+            expected_status: Some(404),
+            timeout_ms: None,
+            optional: false,
+        }],
+    };
+
+    execute(data)
+        .await
+        .expect("execute should succeed when expected_status matches the actual status");
+}
+
+/// Test S3b — Navigate with `expected_status` fails when the server returns a
+/// different status code.
+///
+/// Navigates to a page that returns HTTP 200 but specifies
+/// `expected_status: Some(404)`.  The command must return an error and the
+/// error message must mention the status code.
+#[tokio::test]
+async fn navigate_expected_status_mismatch_fails() {
+    if skip_if_no_chrome() {
+        return;
+    }
+
+    let _guard = common::chrome_lock().await;
+
+    let mut routes = HashMap::new();
+    routes.insert(
+        "GET /".to_string(),
+        common::server::Response::html("<html><body>OK</body></html>"),
+    );
+    let server = common::server::spawn(routes).await;
+
+    let data = PreparedBrowserCommand {
+        session_id: None,
+        headless: true,
+        timeout_ms: 30_000,
+        on_failure_screenshot: false,
+        steps: vec![BrowserStep::Navigate {
+            url: server.url("/"),
+            expected_status: Some(404),
+            timeout_ms: None,
+            optional: false,
+        }],
+    };
+
+    let err = execute(data)
+        .await
+        .expect_err("should fail when status doesn't match expected");
+    let msg = err.to_string();
+    assert!(
+        msg.contains("404") || msg.contains("200") || msg.to_lowercase().contains("status"),
+        "error message should mention status code; got: {msg}"
     );
 }
