@@ -24,7 +24,11 @@ pub fn build_browser_request(
         None => Some(DEFAULT_SESSION_ID.to_string()),
         Some(s) => {
             let rendered = renderer.render_str(s, context)?;
-            if rendered.is_empty() { None } else { Some(rendered) }
+            if rendered.is_empty() {
+                None
+            } else {
+                Some(rendered)
+            }
         }
     };
 
