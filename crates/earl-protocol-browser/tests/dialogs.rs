@@ -1,4 +1,9 @@
 //! Use-case tests: dialog handling (Group 7).
+//!
+//! Dialogs are triggered via `window.onload` + `setTimeout(..., 100)` so
+//! that the Navigate step completes before the dialog fires.  HandleDialog
+//! subscribes to `Page.javascriptDialogOpening` events and waits up to the
+//! global timeout for a dialog to appear.
 mod common;
 use common::{execute, skip_if_no_chrome, spawn, Response, CHROME_SERIAL};
 use std::collections::HashMap;
@@ -7,15 +12,9 @@ use earl_protocol_browser::schema::BrowserStep;
 
 /// Test 7.1 — handle_dialog accepts an alert.
 ///
-/// Serves a page that fires an alert on load via the `onload` body attribute.
-/// Navigate to the page, then dismiss the pending alert.
-///
-/// NOTE: Dialog timing in headless Chrome is inherently racy — the alert may
-/// fire during or after navigation.  The HandleDialog step is expected to
-/// accept any currently-open dialog.  If this proves flaky in CI, mark it
-/// `#[ignore = "dialog timing in headless Chrome"]`.
+/// The page fires `alert('Hello')` 100 ms after load.  HandleDialog accepts
+/// the pending dialog and the step succeeds with `{"ok": true}`.
 #[tokio::test]
-#[ignore = "dialog timing in headless Chrome"]
 async fn handle_dialog_accepts_alert() {
     if skip_if_no_chrome() {
         return;
@@ -26,7 +25,9 @@ async fn handle_dialog_accepts_alert() {
     let mut routes = HashMap::new();
     routes.insert(
         "GET /".to_string(),
-        Response::html(r#"<html><body onload="alert('Hello')"><p>Page loaded</p></body></html>"#),
+        Response::html(
+            r#"<html><body><p>loaded</p><script>window.onload = function() { setTimeout(function() { alert('Hello'); }, 100); };</script></body></html>"#,
+        ),
     );
     let server = spawn(routes).await;
 
@@ -60,14 +61,10 @@ async fn handle_dialog_accepts_alert() {
 
 /// Test 7.2 — handle_dialog with prompt_text fills the prompt.
 ///
-/// Serves a page that opens a prompt on load and sets `document.title` to the
-/// returned value.  After accepting the prompt with a known answer, evaluates
-/// `document.title` and asserts it matches the supplied text.
-///
-/// NOTE: Dialog timing in headless Chrome is inherently racy.  If this test
-/// proves flaky, mark it `#[ignore = "dialog timing in headless Chrome"]`.
+/// The page opens `window.prompt()` 100 ms after load and writes the
+/// returned value to `document.title`.  HandleDialog accepts with `"my-answer"`
+/// and the subsequent Evaluate step reads back the title.
 #[tokio::test]
-#[ignore = "dialog timing in headless Chrome"]
 async fn handle_dialog_fills_prompt_text() {
     if skip_if_no_chrome() {
         return;
@@ -79,7 +76,7 @@ async fn handle_dialog_fills_prompt_text() {
     routes.insert(
         "GET /".to_string(),
         Response::html(
-            r#"<html><body><script>window.onload = function() { var r = window.prompt("Enter value"); document.title = r || ""; };</script></body></html>"#,
+            r#"<html><body><script>window.onload = function() { setTimeout(function() { document.title = window.prompt('Enter value') || ''; }, 100); };</script></body></html>"#,
         ),
     );
     let server = spawn(routes).await;
@@ -101,6 +98,15 @@ async fn handle_dialog_fills_prompt_text() {
                 prompt_text: Some("my-answer".to_string()),
                 optional: false,
             },
+            // Short wait to let the JS callback finish setting document.title
+            // after the dialog is dismissed.
+            BrowserStep::WaitFor {
+                time: Some(0.2),
+                text: None,
+                text_gone: None,
+                timeout_ms: 2000,
+                optional: false,
+            },
             BrowserStep::Evaluate {
                 function: "() => document.title".to_string(),
                 r#ref: None,
@@ -120,14 +126,10 @@ async fn handle_dialog_fills_prompt_text() {
 
 /// Test 7.3 — handle_dialog rejects a confirm dialog.
 ///
-/// Serves a page that opens a confirm dialog on load and sets
-/// `document.body.textContent` to `"yes"` or `"no"` depending on the result.
-/// Dismissing the dialog with `accept: false` must produce `"no"`.
-///
-/// NOTE: Dialog timing in headless Chrome is inherently racy.  If this test
-/// proves flaky, mark it `#[ignore = "dialog timing in headless Chrome"]`.
+/// The page opens `window.confirm()` 100 ms after load and sets
+/// `document.body.textContent` to `"yes"` or `"no"`.  Dismissing with
+/// `accept: false` must produce `"no"`.
 #[tokio::test]
-#[ignore = "dialog timing in headless Chrome"]
 async fn handle_dialog_rejects_confirm() {
     if skip_if_no_chrome() {
         return;
@@ -139,7 +141,7 @@ async fn handle_dialog_rejects_confirm() {
     routes.insert(
         "GET /".to_string(),
         Response::html(
-            r#"<html><body><script>window.onload = function() { var ok = window.confirm("Continue?"); document.body.textContent = ok ? "yes" : "no"; };</script></body></html>"#,
+            r#"<html><body><script>window.onload = function() { setTimeout(function() { document.body.textContent = window.confirm('Continue?') ? 'yes' : 'no'; }, 100); };</script></body></html>"#,
         ),
     );
     let server = spawn(routes).await;
@@ -159,6 +161,15 @@ async fn handle_dialog_rejects_confirm() {
             BrowserStep::HandleDialog {
                 accept: false,
                 prompt_text: None,
+                optional: false,
+            },
+            // Wait for the JS callback to update body.textContent after the
+            // dialog is dismissed.
+            BrowserStep::WaitFor {
+                time: None,
+                text: Some("no".to_string()),
+                text_gone: None,
+                timeout_ms: 2000,
                 optional: false,
             },
             BrowserStep::Evaluate {

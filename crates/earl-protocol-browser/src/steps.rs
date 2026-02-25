@@ -1447,15 +1447,44 @@ async fn step_handle_dialog(
     accept: bool,
     prompt_text: Option<&str>,
 ) -> Result<Value> {
-    use chromiumoxide::cdp::browser_protocol::page::HandleJavaScriptDialogParams;
+    use chromiumoxide::cdp::browser_protocol::page::{
+        EventJavascriptDialogOpening, HandleJavaScriptDialogParams,
+    };
+    use futures::StreamExt;
+
+    // Subscribe to dialog-opening events BEFORE attempting to handle, so we
+    // don't miss a dialog that fires between the check and the dismiss call.
+    let mut dialog_events = ctx
+        .page
+        .event_listener::<EventJavascriptDialogOpening>()
+        .await
+        .map_err(|e| anyhow::anyhow!("handle_dialog: subscribe: {e}"))?;
+
     let mut params = HandleJavaScriptDialogParams::new(accept);
     if let Some(t) = prompt_text {
         params.prompt_text = Some(t.to_string());
     }
+
+    // Try to dismiss a dialog that is already open.
+    match ctx.page.execute(params.clone()).await {
+        Ok(_) => return Ok(json!({"ok": true, "accept": accept})),
+        Err(_) => {} // No dialog open yet — wait for one below.
+    }
+
+    // Wait up to the global timeout for a dialog to appear.
+    tokio::time::timeout(
+        std::time::Duration::from_millis(ctx.global_timeout_ms),
+        dialog_events.next(),
+    )
+    .await
+    .map_err(|_| anyhow::anyhow!("handle_dialog: timed out waiting for dialog to appear"))?;
+
+    // Dismiss the now-pending dialog.
     ctx.page
         .execute(params)
         .await
         .map_err(|e| anyhow::anyhow!("handle_dialog: {e}"))?;
+
     Ok(json!({"ok": true, "accept": accept}))
 }
 
