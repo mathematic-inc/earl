@@ -65,7 +65,9 @@ pub enum BrowserError {
     )]
     DisallowedScheme { scheme: String },
 
-    #[error("browser session \"{session_id}\" is locked by another earl process (PID {pid})")]
+    // session_id intentionally omitted from the Display string to avoid CWE-532 (cleartext
+    // logging of sensitive identifiers). The caller already knows which session they requested.
+    #[error("browser session is locked by another earl process (PID {pid})")]
     SessionLocked { session_id: String, pid: u32 },
 
     #[error(
