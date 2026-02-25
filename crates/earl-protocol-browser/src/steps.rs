@@ -129,6 +129,12 @@ async fn attempt_failure_screenshot(page: &Page) {
             chrono::Utc::now().timestamp_millis()
         ));
         if let Ok(()) = std::fs::write(&path, &bytes) {
+            // Restrict permissions so the diagnostic file is not world-readable.
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::PermissionsExt;
+                let _ = std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o600));
+            }
             eprintln!("diagnostic screenshot saved: {}", path.display());
         }
     }
