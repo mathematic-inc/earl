@@ -153,10 +153,8 @@ command "create_user" {
 
 There is no `sandbox` block here. Write commands don't use `read_only = true` — that flag is the only sandbox option that affects whether writes are permitted. The `RETURNING` clause is PostgreSQL-specific — adjust for your database if you're on MySQL or SQLite.
 
----
+To switch between production and staging environments, see [Environments](/docs/environments).
 
-To run different queries against different databases per environment, see [Environments](/docs/environments).
-
-For naming conventions and other patterns that apply across all protocols, see [Best Practices](/docs/best-practices).
+For naming conventions, secret declarations, and other patterns that apply across all protocols, see [Best Practices](/docs/best-practices).
 
 For the full field reference, see [Template Schema — SQL](/docs/template-schema#sql).

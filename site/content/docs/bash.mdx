@@ -168,10 +168,8 @@ command "extract_json_field" {
 
 `writable_paths` grants write access to specific filesystem paths. The script can write there but nowhere else. Paths support Jinja expressions, so you can derive them from params at render time.
 
----
+To switch between production and staging environments, see [Environments](/docs/environments).
 
-To switch between environments in scripts, see [Environments](/docs/environments).
-
-For naming conventions and other patterns that apply across all protocols, see [Best Practices](/docs/best-practices).
+For naming conventions, secret declarations, and other patterns that apply across all protocols, see [Best Practices](/docs/best-practices).
 
 For streaming stdout line-by-line, see [Streaming — Bash streaming](/docs/streaming#bash-streaming). For the full field reference, see [Template Schema — Bash](/docs/template-schema#bash).
