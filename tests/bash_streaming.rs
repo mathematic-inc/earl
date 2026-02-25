@@ -58,7 +58,12 @@ async fn collect_output(mut rx: mpsc::Receiver<StreamChunk>) -> String {
 async fn collect_chunks(mut rx: mpsc::Receiver<StreamChunk>) -> Vec<String> {
     let mut chunks = vec![];
     while let Some(chunk) = rx.recv().await {
-        chunks.push(String::from_utf8(chunk.data).unwrap().trim_end().to_string());
+        chunks.push(
+            String::from_utf8(chunk.data)
+                .unwrap()
+                .trim_end()
+                .to_string(),
+        );
     }
     chunks
 }

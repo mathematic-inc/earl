@@ -13,7 +13,9 @@ fn auto_decode_json_content_type_returns_json_body() {
     let json_bytes = br#"{"ok":true}"#;
     let decoded =
         decode_response(ResultDecode::Auto, Some("application/json"), json_bytes).unwrap();
-    let DecodedBody::Json(value) = decoded else { panic!("expected JSON") };
+    let DecodedBody::Json(value) = decoded else {
+        panic!("expected JSON")
+    };
     assert_eq!(value["ok"], json!(true));
 }
 
@@ -21,7 +23,9 @@ fn auto_decode_json_content_type_returns_json_body() {
 fn auto_decode_text_content_type_returns_text_body() {
     let text_bytes = b"hello";
     let decoded = decode_response(ResultDecode::Auto, Some("text/plain"), text_bytes).unwrap();
-    let DecodedBody::Text(value) = decoded else { panic!("expected text") };
+    let DecodedBody::Text(value) = decoded else {
+        panic!("expected text")
+    };
     assert_eq!(value, "hello");
 }
 
@@ -179,7 +183,10 @@ fn transport_retry_max_attempts_clamped_to_minimum() {
 
 #[test]
 fn transport_retry_on_status_resolved_from_template() {
-    assert_eq!(resolved_override_transport().retry_on_status, vec![429, 500]);
+    assert_eq!(
+        resolved_override_transport().retry_on_status,
+        vec![429, 500]
+    );
 }
 
 #[test]

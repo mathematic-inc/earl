@@ -67,7 +67,12 @@ async fn oidc_resolved_profile() -> earl::auth::profiles::ResolvedOAuthProfile {
 #[tokio::test]
 async fn oidc_discovery_populates_authorization_url() {
     let resolved = oidc_resolved_profile().await;
-    assert!(resolved.authorization_url.unwrap().contains("/oauth/authorize"));
+    assert!(
+        resolved
+            .authorization_url
+            .unwrap()
+            .contains("/oauth/authorize")
+    );
 }
 
 #[tokio::test]
