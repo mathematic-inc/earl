@@ -1,0 +1,173 @@
+---
+title: Bash
+icon: Terminal
+description: Run shell scripts from an Earl template.
+---
+
+The Bash protocol runs a shell script and returns its output. Earl blocks all private and loopback IP ranges at the SSRF layer regardless of sandbox settings — `network = true` only enables outbound connections to public addresses.
+
+## A complete example
+
+```hcl
+version    = 1
+provider   = "local"
+categories = ["files"]
+
+command "count_lines" {
+  title       = "Count lines"
+  summary     = "Count lines in a file matching a pattern"
+  description = "Runs grep to count lines matching the given pattern in a file. Returns the count."
+
+  annotations {
+    mode = "read"
+  }
+
+  param "path" {
+    type        = "string"
+    required    = true
+    description = "Path to the file"
+  }
+
+  param "pattern" {
+    type        = "string"
+    required    = true
+    description = "Pattern to grep for"
+  }
+
+  operation {
+    protocol = "bash"
+
+    bash {
+      script = <<-SH
+        grep -c "{{ args.pattern }}" "{{ args.path }}" || echo 0
+      SH
+      sandbox {
+        network          = false
+        max_time_ms      = 5000
+        max_output_bytes = 65536
+      }
+    }
+  }
+
+  result {
+    decode = "text"
+    output = "{{ result | trim }} matching lines"
+  }
+}
+```
+
+Run it:
+
+```bash
+earl call local.count_lines --path /var/log/syslog --pattern ERROR
+```
+
+## Walk-through
+
+### bash block
+
+```hcl
+bash {
+  script = <<-SH
+    grep -c "{{ args.pattern }}" "{{ args.path }}" || echo 0
+  SH
+  ...
+}
+```
+
+`script` is the shell script. The heredoc syntax (`<<-SH ... SH`) keeps multi-line scripts readable without escaping. Jinja expressions inside the script are rendered before it runs — `{{ args.pattern }}` is replaced with the actual value before the shell sees the string.
+
+### sandbox block
+
+```hcl
+sandbox {
+  network          = false
+  max_time_ms      = 5000
+  max_output_bytes = 65536
+}
+```
+
+`network = false` blocks outbound network calls from the script. `max_time_ms` kills the script if it runs past the limit. `max_output_bytes` caps the combined size of stdout and stderr.
+
+Two more fields are available: `max_memory_bytes` limits RSS, and `max_cpu_time_ms` limits total CPU time rather than wall time.
+
+Omitting the `sandbox` block entirely means no limits apply. Always set at least `max_time_ms`.
+
+Note that even with `network = true`, Earl blocks all private and loopback IP ranges (127.0.0.0/8, 10.0.0.0/8, and similar) at the SSRF layer. There is no config option to bypass this.
+
+### result
+
+```hcl
+result {
+  decode = "text"
+  output = "{{ result | trim }} matching lines"
+}
+```
+
+Bash output is plain text. `decode = "text"` gives the full stdout string as `result`. Use the `trim` filter to strip trailing newlines before formatting.
+
+## Env vars and writable_paths
+
+Using env vars instead of inline interpolation avoids quoting issues with values that contain spaces or special characters.
+
+```hcl
+command "extract_json_field" {
+  title       = "Extract JSON field"
+  summary     = "Extract a field from a JSON file using jq"
+  description = "Runs jq on a JSON file and writes the result to an output file."
+
+  annotations {
+    mode = "write"
+  }
+
+  param "input_path" {
+    type        = "string"
+    required    = true
+    description = "Path to the input JSON file"
+  }
+
+  param "filter" {
+    type        = "string"
+    required    = true
+    description = "jq filter expression (e.g. '.users[].name')"
+  }
+
+  param "output_path" {
+    type        = "string"
+    required    = true
+    description = "Path to write the output"
+  }
+
+  operation {
+    protocol = "bash"
+
+    bash {
+      script = <<-SH
+        jq -r "$JQ_FILTER" "$INPUT" > "$OUTPUT"
+        echo "Written to $OUTPUT"
+      SH
+      env = {
+        INPUT     = "{{ args.input_path }}"
+        OUTPUT    = "{{ args.output_path }}"
+        JQ_FILTER = "{{ args.filter }}"
+      }
+      sandbox {
+        network        = false
+        max_time_ms    = 10000
+        writable_paths = ["{{ args.output_path }}"]
+      }
+    }
+  }
+
+  result {
+    decode = "text"
+    output = "{{ result | trim }}"
+  }
+}
+```
+
+`writable_paths` grants write access to specific filesystem paths. The script can write there but nowhere else. Paths support Jinja expressions, so you can derive them from params at render time.
+
+---
+
+For streaming stdout line-by-line, see [Streaming — Bash streaming](/docs/streaming#bash-streaming). For the full field reference, see [Template Schema — Bash](/docs/template-schema#bash).
