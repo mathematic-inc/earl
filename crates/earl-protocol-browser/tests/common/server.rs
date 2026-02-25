@@ -17,7 +17,12 @@ pub struct Response {
 
 impl Response {
     pub fn ok(content_type: &'static str, body: impl Into<String>) -> Self {
-        Self { status: 200, content_type, body: body.into(), extra_headers: vec![] }
+        Self {
+            status: 200,
+            content_type,
+            body: body.into(),
+            extra_headers: vec![],
+        }
     }
 
     pub fn html(body: impl Into<String>) -> Self {
@@ -70,7 +75,9 @@ pub async fn spawn(routes: HashMap<String, Response>) -> TestServer {
 
     let task = tokio::spawn(async move {
         loop {
-            let Ok((stream, _)) = listener.accept().await else { break };
+            let Ok((stream, _)) = listener.accept().await else {
+                break;
+            };
             let routes = Arc::clone(&routes);
             tokio::spawn(async move {
                 handle_connection(stream, routes).await;
@@ -78,7 +85,10 @@ pub async fn spawn(routes: HashMap<String, Response>) -> TestServer {
         }
     });
 
-    TestServer { port, abort: task.abort_handle() }
+    TestServer {
+        port,
+        abort: task.abort_handle(),
+    }
 }
 
 async fn handle_connection(
@@ -90,9 +100,13 @@ async fn handle_connection(
 
     // Read request line.
     let mut request_line = String::new();
-    if reader.read_line(&mut request_line).await.is_err() { return; }
+    if reader.read_line(&mut request_line).await.is_err() {
+        return;
+    }
     let parts: Vec<&str> = request_line.trim().splitn(3, ' ').collect();
-    if parts.len() < 2 { return; }
+    if parts.len() < 2 {
+        return;
+    }
     let method = parts[0].to_uppercase();
     let path = parts[1].to_string();
 
@@ -100,9 +114,13 @@ async fn handle_connection(
     let mut content_length = 0usize;
     loop {
         let mut line = String::new();
-        if reader.read_line(&mut line).await.is_err() { return; }
+        if reader.read_line(&mut line).await.is_err() {
+            return;
+        }
         let line = line.trim();
-        if line.is_empty() { break; }
+        if line.is_empty() {
+            break;
+        }
         if let Some(rest) = line.to_ascii_lowercase().strip_prefix("content-length:") {
             content_length = rest.trim().parse().unwrap_or(0);
         }
@@ -119,11 +137,25 @@ async fn handle_connection(
     };
 
     let key = format!("{} {}", method, path);
-    let response = routes.get(&key).or_else(|| routes.get(&format!("ANY {}", path)));
+    let response = routes
+        .get(&key)
+        .or_else(|| routes.get(&format!("ANY {}", path)));
 
     let (status, status_text, content_type, body, extra_headers) = match response {
-        Some(r) => (r.status, status_text(r.status), r.content_type, r.body.clone(), &r.extra_headers[..]),
-        None => (404, "Not Found", "text/plain", "Not Found".to_string(), [].as_slice()),
+        Some(r) => (
+            r.status,
+            status_text(r.status),
+            r.content_type,
+            r.body.clone(),
+            &r.extra_headers[..],
+        ),
+        None => (
+            404,
+            "Not Found",
+            "text/plain",
+            "Not Found".to_string(),
+            [].as_slice(),
+        ),
     };
 
     let mut resp = format!(

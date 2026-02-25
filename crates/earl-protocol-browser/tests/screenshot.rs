@@ -1,9 +1,9 @@
 //! Use-case tests: screenshot capture.
 mod common;
-use common::{execute, skip_if_no_chrome, spawn, Response, CHROME_SERIAL};
-use std::collections::HashMap;
+use common::{CHROME_SERIAL, Response, execute, skip_if_no_chrome, spawn};
 use earl_protocol_browser::PreparedBrowserCommand;
 use earl_protocol_browser::schema::BrowserStep;
+use std::collections::HashMap;
 
 /// Test 2.1 — Screenshot produces a valid PNG.
 ///
@@ -15,7 +15,7 @@ async fn screenshot_produces_valid_png() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().unwrap();
+    let _guard = CHROME_SERIAL.lock().await;
 
     let mut routes = HashMap::new();
     routes.insert(
@@ -59,11 +59,8 @@ async fn screenshot_produces_valid_png() {
     );
 
     let data_b64 = result["data"].as_str().unwrap();
-    let bytes = base64::Engine::decode(
-        &base64::engine::general_purpose::STANDARD,
-        data_b64,
-    )
-    .expect("data should be valid base64");
+    let bytes = base64::Engine::decode(&base64::engine::general_purpose::STANDARD, data_b64)
+        .expect("data should be valid base64");
 
     assert_eq!(
         &bytes[..4],
@@ -84,7 +81,7 @@ async fn full_page_screenshot_larger_than_viewport() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().unwrap();
+    let _guard = CHROME_SERIAL.lock().await;
 
     let mut routes = HashMap::new();
     routes.insert(
@@ -119,7 +116,9 @@ async fn full_page_screenshot_larger_than_viewport() {
         ],
     };
 
-    let result_viewport = execute(data_viewport).await.expect("viewport screenshot should succeed");
+    let result_viewport = execute(data_viewport)
+        .await
+        .expect("viewport screenshot should succeed");
     let data_b64_viewport = result_viewport["data"]
         .as_str()
         .expect("viewport result should have 'data' field")
@@ -149,7 +148,9 @@ async fn full_page_screenshot_larger_than_viewport() {
         ],
     };
 
-    let result_full = execute(data_full).await.expect("full-page screenshot should succeed");
+    let result_full = execute(data_full)
+        .await
+        .expect("full-page screenshot should succeed");
     let data_b64_full_page = result_full["data"]
         .as_str()
         .expect("full-page result should have 'data' field")
@@ -174,7 +175,7 @@ async fn screenshot_to_specified_path_writes_file() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().unwrap();
+    let _guard = CHROME_SERIAL.lock().await;
 
     let mut routes = HashMap::new();
     routes.insert(

@@ -1,9 +1,9 @@
 //! Use-case tests: cookie management (Group 5).
 mod common;
-use common::{execute, skip_if_no_chrome, spawn, Response, CHROME_SERIAL};
-use std::collections::HashMap;
+use common::{CHROME_SERIAL, Response, execute, skip_if_no_chrome, spawn};
 use earl_protocol_browser::PreparedBrowserCommand;
 use earl_protocol_browser::schema::BrowserStep;
+use std::collections::HashMap;
 
 /// Test 5.1 — Server-set cookies are visible via cookie_list.
 ///
@@ -15,13 +15,12 @@ async fn server_set_cookie_visible_in_cookie_list() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().unwrap_or_else(|e| e.into_inner());
+    let _guard = CHROME_SERIAL.lock().await;
 
     let mut routes = HashMap::new();
     routes.insert(
         "GET /set-cookie".to_string(),
-        Response::html("<html><body>cookie set</body></html>")
-            .with_cookie("token=abc123; Path=/"),
+        Response::html("<html><body>cookie set</body></html>").with_cookie("token=abc123; Path=/"),
     );
     let server = spawn(routes).await;
 
@@ -68,7 +67,7 @@ async fn cookie_set_visible_to_page() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().unwrap_or_else(|e| e.into_inner());
+    let _guard = CHROME_SERIAL.lock().await;
 
     let mut routes = HashMap::new();
     routes.insert(
@@ -129,7 +128,7 @@ async fn cookie_delete_removes_cookie() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().unwrap_or_else(|e| e.into_inner());
+    let _guard = CHROME_SERIAL.lock().await;
 
     let mut routes = HashMap::new();
     routes.insert(
@@ -192,7 +191,7 @@ async fn cookie_clear_removes_all_cookies() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().unwrap_or_else(|e| e.into_inner());
+    let _guard = CHROME_SERIAL.lock().await;
 
     let mut routes = HashMap::new();
     routes.insert(
@@ -233,9 +232,7 @@ async fn cookie_clear_removes_all_cookies() {
                 secure: false,
                 optional: false,
             },
-            BrowserStep::CookieClear {
-                optional: false,
-            },
+            BrowserStep::CookieClear { optional: false },
             BrowserStep::CookieList {
                 domain: None,
                 optional: false,
@@ -265,7 +262,7 @@ async fn storage_state_round_trips_cookies_across_sessions() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().unwrap_or_else(|e| e.into_inner());
+    let _guard = CHROME_SERIAL.lock().await;
 
     let mut routes = HashMap::new();
     routes.insert(

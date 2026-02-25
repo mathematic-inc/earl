@@ -5,10 +5,10 @@
 //! subscribes to `Page.javascriptDialogOpening` events and waits up to the
 //! global timeout for a dialog to appear.
 mod common;
-use common::{execute, skip_if_no_chrome, spawn, Response, CHROME_SERIAL};
-use std::collections::HashMap;
+use common::{CHROME_SERIAL, Response, execute, skip_if_no_chrome, spawn};
 use earl_protocol_browser::PreparedBrowserCommand;
 use earl_protocol_browser::schema::BrowserStep;
+use std::collections::HashMap;
 
 /// Test 7.1 — handle_dialog accepts an alert.
 ///
@@ -20,7 +20,7 @@ async fn handle_dialog_accepts_alert() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().unwrap();
+    let _guard = CHROME_SERIAL.lock().await;
 
     let mut routes = HashMap::new();
     routes.insert(
@@ -51,7 +51,9 @@ async fn handle_dialog_accepts_alert() {
         ],
     };
 
-    let result = execute(data).await.expect("execute should succeed — dialog should be accepted");
+    let result = execute(data)
+        .await
+        .expect("execute should succeed — dialog should be accepted");
     assert_eq!(
         result["ok"].as_bool(),
         Some(true),
@@ -70,7 +72,7 @@ async fn handle_dialog_fills_prompt_text() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().unwrap();
+    let _guard = CHROME_SERIAL.lock().await;
 
     let mut routes = HashMap::new();
     routes.insert(
@@ -135,7 +137,7 @@ async fn handle_dialog_rejects_confirm() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().unwrap();
+    let _guard = CHROME_SERIAL.lock().await;
 
     let mut routes = HashMap::new();
     routes.insert(

@@ -4,11 +4,11 @@
 //! Chrome-dependent tests skip gracefully when Chrome is not found.
 
 mod common;
-use common::{execute, skip_if_no_chrome, CHROME_SERIAL};
+use common::{CHROME_SERIAL, execute, skip_if_no_chrome};
 
-use std::collections::HashMap;
 use earl_protocol_browser::PreparedBrowserCommand;
 use earl_protocol_browser::schema::BrowserStep;
+use std::collections::HashMap;
 
 /// Test 10.1 — evaluate returns a JS expression result.
 ///
@@ -19,7 +19,7 @@ async fn evaluate_returns_expression_result() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().unwrap();
+    let _guard = CHROME_SERIAL.lock().await;
 
     let mut routes = HashMap::new();
     routes.insert(
@@ -68,7 +68,7 @@ async fn evaluate_reads_dom_title() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().unwrap();
+    let _guard = CHROME_SERIAL.lock().await;
 
     let mut routes = HashMap::new();
     routes.insert(
@@ -119,7 +119,7 @@ async fn run_code_executes_multi_statement() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().unwrap();
+    let _guard = CHROME_SERIAL.lock().await;
 
     let mut routes = HashMap::new();
     routes.insert(
@@ -167,7 +167,7 @@ async fn run_code_mutation_visible_to_evaluate() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().unwrap();
+    let _guard = CHROME_SERIAL.lock().await;
 
     let mut routes = HashMap::new();
     routes.insert(

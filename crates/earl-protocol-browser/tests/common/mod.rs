@@ -5,16 +5,16 @@
 pub mod server;
 pub use server::*;
 
-use std::sync::Mutex;
 use std::time::Duration;
+use tokio::sync::Mutex;
 
-use earl_core::{CommandMode, ExecutionContext, ProtocolExecutor, Redactor};
 use earl_core::schema::ResultTemplate;
 use earl_core::transport::ResolvedTransport;
+use earl_core::{CommandMode, ExecutionContext, ProtocolExecutor, Redactor};
 use earl_protocol_browser::{BrowserExecutor, PreparedBrowserCommand};
 use serde_json::{Map, Value};
 
-pub static CHROME_SERIAL: Mutex<()> = Mutex::new(());
+pub static CHROME_SERIAL: Mutex<()> = Mutex::const_new(());
 
 pub fn skip_if_no_chrome() -> bool {
     if earl_protocol_browser::launcher::find_chrome().is_err() {

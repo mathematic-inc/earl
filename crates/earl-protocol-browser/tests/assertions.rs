@@ -1,9 +1,9 @@
 //! Use-case tests: multi-step assertion steps (Group 9).
 mod common;
-use common::{execute, skip_if_no_chrome, spawn, Response, CHROME_SERIAL};
-use std::collections::HashMap;
+use common::{CHROME_SERIAL, Response, execute, skip_if_no_chrome, spawn};
 use earl_protocol_browser::PreparedBrowserCommand;
 use earl_protocol_browser::schema::BrowserStep;
+use std::collections::HashMap;
 
 /// Test 9.1 — verify_text_visible passes when text is present.
 #[tokio::test]
@@ -12,7 +12,7 @@ async fn verify_text_visible_passes_when_text_present() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().unwrap();
+    let _guard = CHROME_SERIAL.lock().await;
 
     let mut routes = HashMap::new();
     routes.insert(
@@ -52,7 +52,7 @@ async fn verify_text_visible_fails_when_text_absent() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().unwrap();
+    let _guard = CHROME_SERIAL.lock().await;
 
     let mut routes = HashMap::new();
     routes.insert(
@@ -95,7 +95,7 @@ async fn verify_element_visible_passes_when_element_exists() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().unwrap();
+    let _guard = CHROME_SERIAL.lock().await;
 
     let mut routes = HashMap::new();
     routes.insert(

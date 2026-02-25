@@ -1,9 +1,9 @@
 //! Use-case tests: localStorage / sessionStorage (Group 6).
 mod common;
-use common::{execute, skip_if_no_chrome, spawn, Response, CHROME_SERIAL};
-use std::collections::HashMap;
+use common::{CHROME_SERIAL, Response, execute, skip_if_no_chrome, spawn};
 use earl_protocol_browser::PreparedBrowserCommand;
 use earl_protocol_browser::schema::BrowserStep;
+use std::collections::HashMap;
 
 /// Test 6.1 — local_storage_set and local_storage_get round-trip.
 ///
@@ -15,7 +15,7 @@ async fn local_storage_set_and_get_round_trip() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().unwrap_or_else(|e| e.into_inner());
+    let _guard = CHROME_SERIAL.lock().await;
 
     let mut routes = HashMap::new();
     routes.insert(
@@ -67,7 +67,7 @@ async fn local_storage_delete_removes_key() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().unwrap_or_else(|e| e.into_inner());
+    let _guard = CHROME_SERIAL.lock().await;
 
     let mut routes = HashMap::new();
     routes.insert(
@@ -129,7 +129,7 @@ async fn local_storage_clear_wipes_all_keys() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().unwrap_or_else(|e| e.into_inner());
+    let _guard = CHROME_SERIAL.lock().await;
 
     let mut routes = HashMap::new();
     routes.insert(
@@ -160,9 +160,7 @@ async fn local_storage_clear_wipes_all_keys() {
                 value: "2".to_string(),
                 optional: false,
             },
-            BrowserStep::LocalStorageClear {
-                optional: false,
-            },
+            BrowserStep::LocalStorageClear { optional: false },
             BrowserStep::Evaluate {
                 function: "() => localStorage.length".to_string(),
                 r#ref: None,
@@ -194,7 +192,7 @@ async fn storage_state_includes_local_storage_entries() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().unwrap_or_else(|e| e.into_inner());
+    let _guard = CHROME_SERIAL.lock().await;
 
     let mut routes = HashMap::new();
     routes.insert(

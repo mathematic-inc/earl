@@ -52,10 +52,10 @@ pub fn chrome_binary_candidates() -> Vec<PathBuf> {
 
     // PATH fallbacks via `which` crate.
     for name in &["chrome", "google-chrome", "chromium", "chromium-browser"] {
-        if let Ok(p) = which::which(name) {
-            if !candidates.contains(&p) {
-                candidates.push(p);
-            }
+        if let Ok(p) = which::which(name)
+            && !candidates.contains(&p)
+        {
+            candidates.push(p);
         }
     }
 
@@ -86,9 +86,7 @@ pub fn find_chrome() -> Result<PathBuf> {
 /// will deadlock. This helper spawns it as a background task that runs until
 /// the handler's stream is exhausted (i.e., the browser connection closes).
 fn spawn_handler(mut handler: Handler) {
-    tokio::spawn(async move {
-        while handler.next().await.is_some() {}
-    });
+    tokio::spawn(async move { while handler.next().await.is_some() {} });
 }
 
 /// Launch a new Chrome/Chromium instance and return the connected `Browser`.
@@ -115,9 +113,7 @@ pub async fn launch_chrome(headless: bool) -> Result<(Browser, String)> {
         .build()
         .map_err(|e| anyhow::anyhow!("browser config error: {e}"))?;
 
-    let (browser, handler) = Browser::launch(config)
-        .await
-        .context("launching Chrome")?;
+    let (browser, handler) = Browser::launch(config).await.context("launching Chrome")?;
 
     spawn_handler(handler);
 

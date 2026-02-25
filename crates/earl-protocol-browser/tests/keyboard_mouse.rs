@@ -4,11 +4,11 @@
 //! Chrome-dependent tests skip gracefully when Chrome is not found.
 
 mod common;
-use common::{execute, skip_if_no_chrome, CHROME_SERIAL};
+use common::{CHROME_SERIAL, execute, skip_if_no_chrome};
 
-use std::collections::HashMap;
 use earl_protocol_browser::PreparedBrowserCommand;
 use earl_protocol_browser::schema::BrowserStep;
+use std::collections::HashMap;
 
 /// Test 11.1 — press_key fires keyboard events on the page.
 ///
@@ -20,7 +20,7 @@ async fn press_key_fires_keyboard_events() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().unwrap();
+    let _guard = CHROME_SERIAL.lock().await;
 
     let body = r#"<html><body>
 <div id="out">none</div>
@@ -80,7 +80,7 @@ async fn mouse_wheel_scrolls_tall_page() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().unwrap();
+    let _guard = CHROME_SERIAL.lock().await;
 
     let body = r#"<html><body><div style="height:5000px">Tall content</div></body></html>"#;
 

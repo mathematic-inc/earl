@@ -4,10 +4,10 @@
 //! invocation sharing a session_id.  State (page URL, cookies, localStorage)
 //! persists across calls.
 mod common;
-use common::{execute, skip_if_no_chrome, CHROME_SERIAL};
-use std::collections::HashMap;
+use common::{CHROME_SERIAL, execute, skip_if_no_chrome};
 use earl_protocol_browser::PreparedBrowserCommand;
 use earl_protocol_browser::schema::BrowserStep;
+use std::collections::HashMap;
 
 fn timestamp_ms() -> u128 {
     std::time::SystemTime::now()
@@ -32,7 +32,7 @@ async fn session_persists_navigation_across_calls() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().unwrap_or_else(|e| e.into_inner());
+    let _guard = CHROME_SERIAL.lock().await;
 
     let session_id = format!("test-persist-{}", timestamp_ms());
 
@@ -66,14 +66,16 @@ async fn session_persists_navigation_across_calls() {
     };
 
     let result1 = execute(call1).await.expect("call 1 should succeed");
-    let text1 = result1["text"].as_str().expect("call 1 snapshot should have 'text'");
+    let text1 = result1["text"]
+        .as_str()
+        .expect("call 1 snapshot should have 'text'");
     assert!(
         text1.contains("Page One"),
         "call 1 snapshot should contain 'Page One'; got: {text1}"
     );
 
     // Verify the session file was created after call 1.
-    use earl_protocol_browser::session::{SessionFile, session_file_path, lock_file_path};
+    use earl_protocol_browser::session::{SessionFile, lock_file_path, session_file_path};
     let sf_after_call1 = SessionFile::load_from(&session_file_path(&session_id).unwrap())
         .expect("session file should be readable")
         .expect("session file should exist after call 1");
@@ -109,7 +111,9 @@ async fn session_persists_navigation_across_calls() {
     };
 
     let result2 = execute(call2).await.expect("call 2 should succeed");
-    let text2 = result2["text"].as_str().expect("call 2 snapshot should have 'text'");
+    let text2 = result2["text"]
+        .as_str()
+        .expect("call 2 snapshot should have 'text'");
     assert!(
         text2.contains("Page One"),
         "call 2 snapshot should contain 'Page One'; got: {text2}"
@@ -144,12 +148,12 @@ async fn stale_session_falls_back_to_fresh_chrome() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().unwrap_or_else(|e| e.into_inner());
+    let _guard = CHROME_SERIAL.lock().await;
 
-    use earl_protocol_browser::session::{
-        SessionFile, sessions_dir, ensure_sessions_dir, session_file_path, lock_file_path,
-    };
     use chrono::Utc;
+    use earl_protocol_browser::session::{
+        SessionFile, ensure_sessions_dir, lock_file_path, session_file_path, sessions_dir,
+    };
 
     let session_id = format!("test-stale-{}", timestamp_ms());
     let dir = sessions_dir().unwrap();
@@ -164,7 +168,8 @@ async fn stale_session_falls_back_to_fresh_chrome() {
         last_used_at: Utc::now(),
         interrupted: false,
     };
-    sf.save_to(&session_file_path(&session_id).unwrap()).unwrap();
+    sf.save_to(&session_file_path(&session_id).unwrap())
+        .unwrap();
 
     let mut routes = HashMap::new();
     routes.insert(
@@ -198,7 +203,9 @@ async fn stale_session_falls_back_to_fresh_chrome() {
     };
 
     // Execution must succeed — fresh Chrome was launched after detecting stale session.
-    let result = execute(data).await.expect("stale session should fall back to fresh Chrome");
+    let result = execute(data)
+        .await
+        .expect("stale session should fall back to fresh Chrome");
     let title = result["value"]
         .as_str()
         .expect("evaluate should return the page title as 'value'");
@@ -232,15 +239,15 @@ async fn concurrent_lock_returns_session_locked_error() {
         headless: true,
         timeout_ms: 30_000,
         on_failure_screenshot: false,
-        steps: vec![
-            BrowserStep::Snapshot {
-                timeout_ms: None,
-                optional: false,
-            },
-        ],
+        steps: vec![BrowserStep::Snapshot {
+            timeout_ms: None,
+            optional: false,
+        }],
     };
 
-    let err = execute(data).await.expect_err("execute should fail with SessionLocked");
+    let err = execute(data)
+        .await
+        .expect_err("execute should fail with SessionLocked");
     let msg = err.to_string();
     assert!(
         msg.to_lowercase().contains("locked") || msg.contains("SessionLocked"),

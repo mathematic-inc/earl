@@ -11,12 +11,8 @@ mod common;
 use common::*;
 
 use earl_core::{ProtocolExecutor, RawExecutionResult};
-use earl_protocol_browser::{
-    BrowserExecutor,
-    PreparedBrowserCommand,
-    steps::validate_url_scheme,
-};
 use earl_protocol_browser::schema::BrowserStep;
+use earl_protocol_browser::{BrowserExecutor, PreparedBrowserCommand, steps::validate_url_scheme};
 
 // ── scheme-validation tests (no Chrome required) ──────────────────────────────
 
@@ -72,7 +68,7 @@ async fn navigate_and_snapshot() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().unwrap();
+    let _guard = CHROME_SERIAL.lock().await;
 
     let data = PreparedBrowserCommand {
         session_id: None,
@@ -122,7 +118,7 @@ async fn optional_step_continues_on_failure() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().unwrap();
+    let _guard = CHROME_SERIAL.lock().await;
 
     let data = PreparedBrowserCommand {
         session_id: None,

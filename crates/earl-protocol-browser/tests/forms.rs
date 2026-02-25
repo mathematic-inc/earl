@@ -4,11 +4,11 @@
 //! Chrome-dependent tests skip gracefully when Chrome is not found.
 
 mod common;
-use common::{execute, skip_if_no_chrome, CHROME_SERIAL};
+use common::{CHROME_SERIAL, execute, skip_if_no_chrome};
 
-use std::collections::HashMap;
 use earl_protocol_browser::PreparedBrowserCommand;
 use earl_protocol_browser::schema::BrowserStep;
+use std::collections::HashMap;
 
 /// Test 3.1 — Fill and submit a form, verify the browser navigated to /submit.
 ///
@@ -21,7 +21,7 @@ async fn fill_and_submit_form() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().unwrap();
+    let _guard = CHROME_SERIAL.lock().await;
 
     let form_html = r#"<html><body>
 <form action="/submit" method="POST">
@@ -34,8 +34,14 @@ async fn fill_and_submit_form() {
     let submit_html = "<html><body><p>Submitted</p></body></html>";
 
     let mut routes = HashMap::new();
-    routes.insert("GET /form".to_string(), common::server::Response::html(form_html));
-    routes.insert("POST /submit".to_string(), common::server::Response::html(submit_html));
+    routes.insert(
+        "GET /form".to_string(),
+        common::server::Response::html(form_html),
+    );
+    routes.insert(
+        "POST /submit".to_string(),
+        common::server::Response::html(submit_html),
+    );
     let server = common::server::spawn(routes).await;
 
     let data = PreparedBrowserCommand {
@@ -115,7 +121,7 @@ async fn select_dropdown_option() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().unwrap();
+    let _guard = CHROME_SERIAL.lock().await;
 
     let body = r#"<html><body>
 <select id="color">
@@ -182,7 +188,7 @@ async fn checkbox_can_be_checked() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().unwrap();
+    let _guard = CHROME_SERIAL.lock().await;
 
     let mut routes = HashMap::new();
     routes.insert(
@@ -239,7 +245,7 @@ async fn checked_box_can_be_unchecked() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().unwrap();
+    let _guard = CHROME_SERIAL.lock().await;
 
     let mut routes = HashMap::new();
     routes.insert(
@@ -310,7 +316,7 @@ async fn optional_click_on_absent_element_continues() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().unwrap();
+    let _guard = CHROME_SERIAL.lock().await;
 
     let mut routes = HashMap::new();
     routes.insert(
@@ -352,7 +358,9 @@ async fn optional_click_on_absent_element_continues() {
         ],
     };
 
-    let result = execute(data).await.expect("execute should succeed despite the absent element");
+    let result = execute(data)
+        .await
+        .expect("execute should succeed despite the absent element");
 
     assert!(
         result["value"].is_string(),
@@ -371,7 +379,7 @@ async fn fill_with_submit_true_submits_form() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().unwrap();
+    let _guard = CHROME_SERIAL.lock().await;
 
     let form_html = r#"<html><body>
 <form action="/done" method="POST">
@@ -383,8 +391,14 @@ async fn fill_with_submit_true_submits_form() {
     let done_html = "<html><body><p>Done</p></body></html>";
 
     let mut routes = HashMap::new();
-    routes.insert("GET /".to_string(), common::server::Response::html(form_html));
-    routes.insert("POST /done".to_string(), common::server::Response::html(done_html));
+    routes.insert(
+        "GET /".to_string(),
+        common::server::Response::html(form_html),
+    );
+    routes.insert(
+        "POST /done".to_string(),
+        common::server::Response::html(done_html),
+    );
     let server = common::server::spawn(routes).await;
 
     let data = PreparedBrowserCommand {

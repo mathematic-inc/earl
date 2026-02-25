@@ -3,7 +3,7 @@ use chrono::Utc;
 use earl_core::{ExecutionContext, ProtocolExecutor, RawExecutionResult};
 
 use crate::PreparedBrowserCommand;
-use crate::launcher::{connect_chrome, configure_page, launch_chrome};
+use crate::launcher::{configure_page, connect_chrome, launch_chrome};
 use crate::session::{
     SessionFile, acquire_session_lock, ensure_sessions_dir, is_pid_alive, session_file_path,
     sessions_dir,

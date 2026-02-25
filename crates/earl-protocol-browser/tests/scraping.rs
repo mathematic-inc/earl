@@ -4,11 +4,11 @@
 //! Chrome-dependent tests skip gracefully when Chrome is not found.
 
 mod common;
-use common::{execute, skip_if_no_chrome, CHROME_SERIAL};
+use common::{CHROME_SERIAL, execute, skip_if_no_chrome};
 
-use std::collections::HashMap;
 use earl_protocol_browser::PreparedBrowserCommand;
 use earl_protocol_browser::schema::BrowserStep;
+use std::collections::HashMap;
 
 /// Test 1.1 — Extract static text via evaluate.
 ///
@@ -20,7 +20,7 @@ async fn extract_static_text_via_evaluate() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().unwrap();
+    let _guard = CHROME_SERIAL.lock().await;
 
     let mut routes = HashMap::new();
     routes.insert(
@@ -69,7 +69,7 @@ async fn extract_dynamic_text_with_wait_for() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().unwrap();
+    let _guard = CHROME_SERIAL.lock().await;
 
     let body = r#"<html><body>
 <script>
@@ -83,10 +83,7 @@ setTimeout(function() {
 </body></html>"#;
 
     let mut routes = HashMap::new();
-    routes.insert(
-        "GET /".to_string(),
-        common::server::Response::html(body),
-    );
+    routes.insert("GET /".to_string(), common::server::Response::html(body));
     let server = common::server::spawn(routes).await;
 
     let data = PreparedBrowserCommand {
@@ -136,7 +133,7 @@ async fn wait_for_times_out_when_content_absent() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().unwrap();
+    let _guard = CHROME_SERIAL.lock().await;
 
     let mut routes = HashMap::new();
     routes.insert(
@@ -167,7 +164,9 @@ async fn wait_for_times_out_when_content_absent() {
         ],
     };
 
-    let err = execute(data).await.expect_err("execute should fail with a timeout error");
+    let err = execute(data)
+        .await
+        .expect_err("execute should fail with a timeout error");
     let msg = err.to_string();
     assert!(
         msg.to_lowercase().contains("wait_for")
@@ -187,7 +186,7 @@ async fn multi_navigate_snapshot_reflects_last_page() {
         return;
     }
 
-    let _guard = CHROME_SERIAL.lock().unwrap();
+    let _guard = CHROME_SERIAL.lock().await;
 
     let mut routes = HashMap::new();
     routes.insert(

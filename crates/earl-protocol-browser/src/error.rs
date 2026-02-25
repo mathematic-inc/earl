@@ -1,6 +1,8 @@
 #[derive(Debug, thiserror::Error)]
 pub enum BrowserError {
-    #[error("browser step {step} ({action}) failed: element not found — {selector} — completed {completed} of {total} steps")]
+    #[error(
+        "browser step {step} ({action}) failed: element not found — {selector} — completed {completed} of {total} steps"
+    )]
     ElementNotFound {
         step: usize,
         action: String,
@@ -9,7 +11,9 @@ pub enum BrowserError {
         total: usize,
     },
 
-    #[error("browser step {step} ({action}) failed: element not interactable — {selector} — completed {completed} of {total} steps")]
+    #[error(
+        "browser step {step} ({action}) failed: element not interactable — {selector} — completed {completed} of {total} steps"
+    )]
     ElementNotInteractable {
         step: usize,
         action: String,
@@ -31,13 +35,19 @@ pub enum BrowserError {
     #[error("browser renderer crashed at step {step}")]
     RendererCrashed { step: usize },
 
-    #[error("browser step {step}: a dialog is blocking the page — add a handle_dialog step before this one")]
+    #[error(
+        "browser step {step}: a dialog is blocking the page — add a handle_dialog step before this one"
+    )]
     DialogBlocking { step: usize },
 
-    #[error("browser step {step}: a download was triggered — use a download step with save_to to handle it explicitly")]
+    #[error(
+        "browser step {step}: a download was triggered — use a download step with save_to to handle it explicitly"
+    )]
     DownloadBlocked { step: usize },
 
-    #[error("browser step {step} (click): a new tab was opened — add a tabs step with operation=\"select\" to switch to it")]
+    #[error(
+        "browser step {step} (click): a new tab was opened — add a tabs step with operation=\"select\" to switch to it"
+    )]
     NewTabOpened { step: usize },
 
     #[error("browser step {step} ({action}) timed out after {timeout_ms}ms")]
@@ -50,7 +60,9 @@ pub enum BrowserError {
     #[error("ref \"{ref_id}\" no longer exists in the accessibility tree (used in {action})")]
     StaleRef { ref_id: String, action: String },
 
-    #[error("URL scheme \"{scheme}\" is not allowed in navigate — only http and https are permitted")]
+    #[error(
+        "URL scheme \"{scheme}\" is not allowed in navigate — only http and https are permitted"
+    )]
     DisallowedScheme { scheme: String },
 
     #[error("browser session \"{session_id}\" is locked by another earl process (PID {pid})")]
@@ -88,7 +100,9 @@ mod tests {
         assert!(msg.contains("#submit"));
         assert!(msg.contains("completed 1 of 5"));
 
-        let e2 = BrowserError::DisallowedScheme { scheme: "file".into() };
+        let e2 = BrowserError::DisallowedScheme {
+            scheme: "file".into(),
+        };
         assert!(e2.to_string().contains("file"));
         assert!(e2.to_string().contains("http"));
     }

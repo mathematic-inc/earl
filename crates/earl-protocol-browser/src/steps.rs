@@ -48,8 +48,7 @@ pub async fn execute_steps(
             total_steps: total,
             global_timeout_ms,
         };
-        let timeout_duration =
-            std::time::Duration::from_millis(step.timeout_ms(global_timeout_ms));
+        let timeout_duration = std::time::Duration::from_millis(step.timeout_ms(global_timeout_ms));
 
         let outcome = tokio::time::timeout(timeout_duration, execute_step(&ctx, step)).await;
 
@@ -103,7 +102,7 @@ async fn attempt_failure_screenshot(page: &Page) {
         "earl-browser-failure-{}.png",
         chrono::Utc::now().timestamp_millis()
     ));
-    match tokio::time::timeout(
+    if let Ok(Ok(_)) = tokio::time::timeout(
         std::time::Duration::from_secs(2),
         page.save_screenshot(
             chromiumoxide::page::ScreenshotParams::builder().build(),
@@ -112,8 +111,7 @@ async fn attempt_failure_screenshot(page: &Page) {
     )
     .await
     {
-        Ok(Ok(_)) => eprintln!("diagnostic screenshot saved: {}", path.display()),
-        _ => {} // Don't mask the original error.
+        eprintln!("diagnostic screenshot saved: {}", path.display());
     }
 }
 
@@ -121,36 +119,57 @@ async fn attempt_failure_screenshot(page: &Page) {
 
 pub async fn execute_step(ctx: &StepContext<'_>, step: &BrowserStep) -> Result<Value> {
     match step {
-        BrowserStep::Navigate { url, expected_status, .. } => {
-            step_navigate(ctx, url, *expected_status).await
-        }
+        BrowserStep::Navigate {
+            url,
+            expected_status,
+            ..
+        } => step_navigate(ctx, url, *expected_status).await,
         BrowserStep::NavigateBack { .. } => step_navigate_back(ctx).await,
         BrowserStep::NavigateForward { .. } => step_navigate_forward(ctx).await,
         BrowserStep::Reload { .. } => step_reload(ctx).await,
         BrowserStep::Snapshot { .. } => step_snapshot(ctx).await,
-        BrowserStep::Screenshot { path, full_page, .. } => {
-            step_screenshot(ctx, path.as_deref(), Some(*full_page)).await
-        }
-        BrowserStep::Click { r#ref, selector, button: _, double_click, modifiers: _, .. } => {
-            step_click(ctx, r#ref.as_deref(), selector.as_deref(), *double_click).await
-        }
-        BrowserStep::Hover { r#ref, selector, .. } => {
-            step_hover(ctx, r#ref.as_deref(), selector.as_deref()).await
-        }
-        BrowserStep::Fill { r#ref, selector, text, submit, slowly: _, .. } => {
-            step_fill(ctx, r#ref.as_deref(), selector.as_deref(), text, *submit).await
-        }
-        BrowserStep::SelectOption { r#ref, selector, values, .. } => {
-            step_select_option(ctx, r#ref.as_deref(), selector.as_deref(), values).await
-        }
+        BrowserStep::Screenshot {
+            path, full_page, ..
+        } => step_screenshot(ctx, path.as_deref(), Some(*full_page)).await,
+        BrowserStep::Click {
+            r#ref,
+            selector,
+            button: _,
+            double_click,
+            modifiers: _,
+            ..
+        } => step_click(ctx, r#ref.as_deref(), selector.as_deref(), *double_click).await,
+        BrowserStep::Hover {
+            r#ref, selector, ..
+        } => step_hover(ctx, r#ref.as_deref(), selector.as_deref()).await,
+        BrowserStep::Fill {
+            r#ref,
+            selector,
+            text,
+            submit,
+            slowly: _,
+            ..
+        } => step_fill(ctx, r#ref.as_deref(), selector.as_deref(), text, *submit).await,
+        BrowserStep::SelectOption {
+            r#ref,
+            selector,
+            values,
+            ..
+        } => step_select_option(ctx, r#ref.as_deref(), selector.as_deref(), values).await,
         BrowserStep::PressKey { key, .. } => step_press_key(ctx, key).await,
-        BrowserStep::Check { r#ref, selector, .. } => {
-            step_set_checked(ctx, r#ref.as_deref(), selector.as_deref(), true).await
-        }
-        BrowserStep::Uncheck { r#ref, selector, .. } => {
-            step_set_checked(ctx, r#ref.as_deref(), selector.as_deref(), false).await
-        }
-        BrowserStep::Drag { start_ref, start_selector, end_ref, end_selector, .. } => {
+        BrowserStep::Check {
+            r#ref, selector, ..
+        } => step_set_checked(ctx, r#ref.as_deref(), selector.as_deref(), true).await,
+        BrowserStep::Uncheck {
+            r#ref, selector, ..
+        } => step_set_checked(ctx, r#ref.as_deref(), selector.as_deref(), false).await,
+        BrowserStep::Drag {
+            start_ref,
+            start_selector,
+            end_ref,
+            end_selector,
+            ..
+        } => {
             step_drag(
                 ctx,
                 start_ref.as_deref(),
@@ -165,55 +184,72 @@ pub async fn execute_step(ctx: &StepContext<'_>, step: &BrowserStep) -> Result<V
         BrowserStep::MouseClick { x, y, button, .. } => {
             step_mouse_click(ctx, *x, *y, button.as_deref()).await
         }
-        BrowserStep::MouseDrag { start_x, start_y, end_x, end_y, .. } => {
-            step_mouse_drag(ctx, *start_x, *start_y, *end_x, *end_y).await
-        }
+        BrowserStep::MouseDrag {
+            start_x,
+            start_y,
+            end_x,
+            end_y,
+            ..
+        } => step_mouse_drag(ctx, *start_x, *start_y, *end_x, *end_y).await,
         BrowserStep::MouseDown { button, .. } => {
             step_mouse_button(ctx, button.as_deref(), true).await
         }
         BrowserStep::MouseUp { button, .. } => {
             step_mouse_button(ctx, button.as_deref(), false).await
         }
-        BrowserStep::MouseWheel { delta_x, delta_y, .. } => {
-            step_mouse_wheel(ctx, *delta_x, *delta_y).await
-        }
+        BrowserStep::MouseWheel {
+            delta_x, delta_y, ..
+        } => step_mouse_wheel(ctx, *delta_x, *delta_y).await,
 
         // ── Wait / Assert ──────────────────────────────────────────────────
-        BrowserStep::WaitFor { time, text, text_gone, timeout_ms, .. } => {
-            step_wait_for(ctx, *time, text.as_deref(), text_gone.as_deref(), *timeout_ms).await
+        BrowserStep::WaitFor {
+            time,
+            text,
+            text_gone,
+            timeout_ms,
+            ..
+        } => {
+            step_wait_for(
+                ctx,
+                *time,
+                text.as_deref(),
+                text_gone.as_deref(),
+                *timeout_ms,
+            )
+            .await
         }
-        BrowserStep::VerifyElementVisible { role, accessible_name, .. } => {
-            step_verify_element_visible(ctx, role.as_deref(), accessible_name.as_deref()).await
-        }
-        BrowserStep::VerifyTextVisible { text, .. } => {
-            step_verify_text_visible(ctx, text).await
-        }
-        BrowserStep::VerifyListVisible { r#ref: _, items, .. } => {
-            step_verify_list_visible(ctx, items).await
-        }
-        BrowserStep::VerifyValue { r#ref: _, value, .. } => {
-            step_verify_value(ctx, value).await
-        }
+        BrowserStep::VerifyElementVisible {
+            role,
+            accessible_name,
+            ..
+        } => step_verify_element_visible(ctx, role.as_deref(), accessible_name.as_deref()).await,
+        BrowserStep::VerifyTextVisible { text, .. } => step_verify_text_visible(ctx, text).await,
+        BrowserStep::VerifyListVisible {
+            r#ref: _, items, ..
+        } => step_verify_list_visible(ctx, items).await,
+        BrowserStep::VerifyValue {
+            r#ref: _, value, ..
+        } => step_verify_value(ctx, value).await,
 
         // ── JavaScript ────────────────────────────────────────────────────
         BrowserStep::Evaluate { function, .. } => step_evaluate(ctx, function).await,
         BrowserStep::RunCode { code, .. } => step_run_code(ctx, code).await,
 
         // ── Tabs & Viewport ───────────────────────────────────────────────
-        BrowserStep::Tabs { operation, index, .. } => {
-            step_tabs(ctx, operation, *index).await
-        }
+        BrowserStep::Tabs {
+            operation, index, ..
+        } => step_tabs(ctx, operation, *index).await,
         BrowserStep::Resize { width, height, .. } => step_resize(ctx, *width, *height).await,
         BrowserStep::Close { .. } => step_close(ctx).await,
 
         // ── Network (stubs — event subscription required) ─────────────────
-        BrowserStep::ConsoleMessages { .. } => {
-            Ok(json!({"messages": [], "note": "console message collection requires event subscription (session mode)"}))
-        }
+        BrowserStep::ConsoleMessages { .. } => Ok(
+            json!({"messages": [], "note": "console message collection requires event subscription (session mode)"}),
+        ),
         BrowserStep::ConsoleClear { .. } => Ok(json!({"ok": true})),
-        BrowserStep::NetworkRequests { .. } => {
-            Ok(json!({"requests": [], "note": "network request recording requires event subscription (session mode)"}))
-        }
+        BrowserStep::NetworkRequests { .. } => Ok(
+            json!({"requests": [], "note": "network request recording requires event subscription (session mode)"}),
+        ),
         BrowserStep::NetworkClear { .. } => Ok(json!({"ok": true})),
         BrowserStep::Route { .. } => {
             Ok(json!({"ok": true, "note": "network routing requires session mode"}))
@@ -226,12 +262,17 @@ pub async fn execute_step(ctx: &StepContext<'_>, step: &BrowserStep) -> Result<V
         }
 
         // ── Cookies ───────────────────────────────────────────────────────
-        BrowserStep::CookieList { domain, .. } => {
-            step_cookie_list(ctx, domain.as_deref()).await
-        }
+        BrowserStep::CookieList { domain, .. } => step_cookie_list(ctx, domain.as_deref()).await,
         BrowserStep::CookieGet { name, .. } => step_cookie_get(ctx, name).await,
         BrowserStep::CookieSet {
-            name, value, domain, path, expires, http_only, secure, ..
+            name,
+            value,
+            domain,
+            path,
+            expires,
+            http_only,
+            secure,
+            ..
         } => {
             step_cookie_set(
                 ctx,
@@ -253,9 +294,7 @@ pub async fn execute_step(ctx: &StepContext<'_>, step: &BrowserStep) -> Result<V
         BrowserStep::LocalStorageSet { key, value, .. } => {
             step_storage_set(ctx, "local", key, value).await
         }
-        BrowserStep::LocalStorageDelete { key, .. } => {
-            step_storage_delete(ctx, "local", key).await
-        }
+        BrowserStep::LocalStorageDelete { key, .. } => step_storage_delete(ctx, "local", key).await,
         BrowserStep::LocalStorageClear { .. } => step_storage_clear(ctx, "local").await,
         BrowserStep::SessionStorageGet { key, .. } => step_storage_get(ctx, "session", key).await,
         BrowserStep::SessionStorageSet { key, value, .. } => {
@@ -269,12 +308,14 @@ pub async fn execute_step(ctx: &StepContext<'_>, step: &BrowserStep) -> Result<V
         BrowserStep::SetStorageState { path, .. } => step_set_storage_state(ctx, path).await,
 
         // ── File / Dialog / Download ──────────────────────────────────────
-        BrowserStep::FileUpload { .. } => {
-            Ok(json!({"ok": true, "note": "file_upload dispatches to active file chooser; trigger the chooser first"}))
-        }
-        BrowserStep::HandleDialog { accept, prompt_text, .. } => {
-            step_handle_dialog(ctx, *accept, prompt_text.as_deref()).await
-        }
+        BrowserStep::FileUpload { .. } => Ok(
+            json!({"ok": true, "note": "file_upload dispatches to active file chooser; trigger the chooser first"}),
+        ),
+        BrowserStep::HandleDialog {
+            accept,
+            prompt_text,
+            ..
+        } => step_handle_dialog(ctx, *accept, prompt_text.as_deref()).await,
         BrowserStep::Download { .. } => {
             Ok(json!({"ok": true, "note": "download monitoring requires session mode"}))
         }
@@ -409,8 +450,10 @@ async fn step_snapshot(ctx: &StepContext<'_>) -> Result<Value> {
     use std::collections::HashMap;
 
     // Index nodes by their node_id.
-    let mut node_map: HashMap<String, &chromiumoxide::cdp::browser_protocol::accessibility::AxNode> =
-        HashMap::new();
+    let mut node_map: HashMap<
+        String,
+        &chromiumoxide::cdp::browser_protocol::accessibility::AxNode,
+    > = HashMap::new();
     for n in &cdp_nodes {
         node_map.insert(n.node_id.inner().to_string(), n);
     }
@@ -491,14 +534,12 @@ async fn step_screenshot(
     path: Option<&str>,
     full_page: Option<bool>,
 ) -> Result<Value> {
-    let out_path = path
-        .map(std::path::PathBuf::from)
-        .unwrap_or_else(|| {
-            std::env::temp_dir().join(format!(
-                "earl-screenshot-{}.png",
-                chrono::Utc::now().timestamp_millis()
-            ))
-        });
+    let out_path = path.map(std::path::PathBuf::from).unwrap_or_else(|| {
+        std::env::temp_dir().join(format!(
+            "earl-screenshot-{}.png",
+            chrono::Utc::now().timestamp_millis()
+        ))
+    });
 
     let params = chromiumoxide::page::ScreenshotParams::builder()
         .full_page(full_page.unwrap_or(false))
@@ -570,7 +611,9 @@ async fn step_click(
     double_click: bool,
 ) -> Result<Value> {
     let el = find_element_by_selector(ctx, selector, ref_, "click").await?;
-    el.click().await.map_err(|e| anyhow::anyhow!("click failed: {e}"))?;
+    el.click()
+        .await
+        .map_err(|e| anyhow::anyhow!("click failed: {e}"))?;
     if double_click {
         el.click()
             .await
@@ -585,7 +628,9 @@ async fn step_hover(
     selector: Option<&str>,
 ) -> Result<Value> {
     let el = find_element_by_selector(ctx, selector, ref_, "hover").await?;
-    el.hover().await.map_err(|e| anyhow::anyhow!("hover failed: {e}"))?;
+    el.hover()
+        .await
+        .map_err(|e| anyhow::anyhow!("hover failed: {e}"))?;
     Ok(json!({"ok": true}))
 }
 
@@ -597,7 +642,9 @@ async fn step_fill(
     submit: Option<bool>,
 ) -> Result<Value> {
     let el = find_element_by_selector(ctx, selector, ref_, "fill").await?;
-    el.click().await.map_err(|e| anyhow::anyhow!("fill click: {e}"))?;
+    el.click()
+        .await
+        .map_err(|e| anyhow::anyhow!("fill click: {e}"))?;
     // Clear the existing value before typing.
     el.call_js_fn(
         "function() { this.value = ''; this.dispatchEvent(new Event('input', {bubbles: true})); }",
@@ -605,9 +652,13 @@ async fn step_fill(
     )
     .await
     .map_err(|e| anyhow::anyhow!("fill clear value: {e}"))?;
-    el.type_str(text).await.map_err(|e| anyhow::anyhow!("fill type_str: {e}"))?;
+    el.type_str(text)
+        .await
+        .map_err(|e| anyhow::anyhow!("fill type_str: {e}"))?;
     if submit.unwrap_or(false) {
-        el.press_key("Enter").await.map_err(|e| anyhow::anyhow!("fill submit: {e}"))?;
+        el.press_key("Enter")
+            .await
+            .map_err(|e| anyhow::anyhow!("fill submit: {e}"))?;
     }
     Ok(json!({"ok": true}))
 }
@@ -690,12 +741,11 @@ async fn step_set_checked(
         .call_js_fn("function() { return this.checked; }", false)
         .await
         .map_err(|e| anyhow::anyhow!("set_checked get state: {e}"))?;
-    let current: Value = result
-        .result
-        .value
-        .unwrap_or(Value::Bool(false));
+    let current: Value = result.result.value.unwrap_or(Value::Bool(false));
     if current.as_bool() != Some(checked) {
-        el.click().await.map_err(|e| anyhow::anyhow!("set_checked click: {e}"))?;
+        el.click()
+            .await
+            .map_err(|e| anyhow::anyhow!("set_checked click: {e}"))?;
     }
     Ok(json!({"ok": true}))
 }
@@ -735,7 +785,10 @@ async fn step_fill_form(ctx: &StepContext<'_>, fields: &[Value]) -> Result<Value
         let ref_ = field.get("ref").and_then(|v| v.as_str());
         let selector = field.get("selector").and_then(|v| v.as_str());
         let value = field.get("value").and_then(|v| v.as_str()).unwrap_or("");
-        let type_ = field.get("type").and_then(|v| v.as_str()).unwrap_or("textbox");
+        let type_ = field
+            .get("type")
+            .and_then(|v| v.as_str())
+            .unwrap_or("textbox");
         match type_ {
             "checkbox" => {
                 let checked = value == "true" || value == "1";
@@ -892,11 +945,7 @@ async fn step_mouse_button(
     Ok(json!({"ok": true}))
 }
 
-async fn step_mouse_wheel(
-    ctx: &StepContext<'_>,
-    delta_x: f64,
-    delta_y: f64,
-) -> Result<Value> {
+async fn step_mouse_wheel(ctx: &StepContext<'_>, delta_x: f64, delta_y: f64) -> Result<Value> {
     use chromiumoxide::cdp::browser_protocol::input::{
         DispatchMouseEventParams, DispatchMouseEventType,
     };
@@ -941,8 +990,8 @@ async fn step_wait_for(
         return Ok(json!({"ok": true}));
     }
 
-    let deadline = tokio::time::Instant::now()
-        + std::time::Duration::from_millis(timeout_ms.max(200));
+    let deadline =
+        tokio::time::Instant::now() + std::time::Duration::from_millis(timeout_ms.max(200));
 
     loop {
         let body_text: Value = ctx
@@ -964,10 +1013,10 @@ async fn step_wait_for(
                     return Ok(json!({"ok": true}));
                 }
             }
-        } else if let Some(tg) = text_gone {
-            if !body.contains(tg) {
-                return Ok(json!({"ok": true}));
-            }
+        } else if let Some(tg) = text_gone
+            && !body.contains(tg)
+        {
+            return Ok(json!({"ok": true}));
         }
 
         // Check deadline before sleeping so we never overshoot by a full poll interval.
@@ -1083,13 +1132,13 @@ async fn step_verify_value(ctx: &StepContext<'_>, expected: &str) -> Result<Valu
     let expected_json = serde_json::to_string(expected)?;
     let result: Value = ctx
         .page
-        .evaluate(format!(
-            r#"(function() {{
+        .evaluate(
+            r#"(function() {
                 var el = document.activeElement || document.querySelector('input,textarea,select');
                 if (!el) return null;
                 return el.value !== undefined ? el.value : el.textContent;
-            }})()"#,
-        ))
+            })()"#,
+        )
         .await
         .map_err(|e| anyhow::anyhow!("verify_value evaluate: {e}"))?
         .into_value()?;
@@ -1132,11 +1181,7 @@ async fn step_run_code(ctx: &StepContext<'_>, code: &str) -> Result<Value> {
 
 // ── Tabs & Viewport ─────────────────────────────────────────────────────────
 
-async fn step_tabs(
-    ctx: &StepContext<'_>,
-    operation: &str,
-    _index: Option<usize>,
-) -> Result<Value> {
+async fn step_tabs(ctx: &StepContext<'_>, operation: &str, _index: Option<usize>) -> Result<Value> {
     match operation {
         "list" => {
             let url: Value = ctx
@@ -1157,9 +1202,12 @@ async fn step_tabs(
 async fn step_resize(ctx: &StepContext<'_>, width: u32, height: u32) -> Result<Value> {
     use chromiumoxide::cdp::browser_protocol::emulation::SetDeviceMetricsOverrideParams;
     ctx.page
-        .execute(
-            SetDeviceMetricsOverrideParams::new(width as i64, height as i64, 1.0_f64, false),
-        )
+        .execute(SetDeviceMetricsOverrideParams::new(
+            width as i64,
+            height as i64,
+            1.0_f64,
+            false,
+        ))
         .await
         .map_err(|e| anyhow::anyhow!("resize: {e}"))?;
     Ok(json!({"ok": true, "width": width, "height": height}))
@@ -1187,7 +1235,7 @@ async fn step_cookie_list(ctx: &StepContext<'_>, domain: Option<&str>) -> Result
         .result
         .cookies
         .iter()
-        .filter(|c| domain.map_or(true, |d| c.domain.contains(d)))
+        .filter(|c| domain.is_none_or(|d| c.domain.contains(d)))
         .map(|c| {
             json!({
                 "name": c.name,
@@ -1226,6 +1274,7 @@ async fn step_cookie_get(ctx: &StepContext<'_>, name: &str) -> Result<Value> {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn step_cookie_set(
     ctx: &StepContext<'_>,
     name: &str,
@@ -1283,7 +1332,11 @@ async fn step_cookie_clear(ctx: &StepContext<'_>) -> Result<Value> {
 
 /// `kind` is either `"local"` or `"session"`.
 fn storage_js_obj(kind: &str) -> &'static str {
-    if kind == "session" { "sessionStorage" } else { "localStorage" }
+    if kind == "session" {
+        "sessionStorage"
+    } else {
+        "localStorage"
+    }
 }
 
 async fn step_storage_get(ctx: &StepContext<'_>, kind: &str, key: &str) -> Result<Value> {
@@ -1298,7 +1351,12 @@ async fn step_storage_get(ctx: &StepContext<'_>, kind: &str, key: &str) -> Resul
     Ok(json!({"key": key, "value": val}))
 }
 
-async fn step_storage_set(ctx: &StepContext<'_>, kind: &str, key: &str, value: &str) -> Result<Value> {
+async fn step_storage_set(
+    ctx: &StepContext<'_>,
+    kind: &str,
+    key: &str,
+    value: &str,
+) -> Result<Value> {
     let key_json = serde_json::to_string(key)?;
     let val_json = serde_json::to_string(value)?;
     let obj = storage_js_obj(kind);
@@ -1388,8 +1446,8 @@ async fn step_set_storage_state(ctx: &StepContext<'_>, path: &str) -> Result<Val
     let bytes = tokio::fs::read(path)
         .await
         .map_err(|e| anyhow::anyhow!("set_storage_state read {path}: {e}"))?;
-    let state: Value =
-        serde_json::from_slice(&bytes).map_err(|e| anyhow::anyhow!("set_storage_state parse: {e}"))?;
+    let state: Value = serde_json::from_slice(&bytes)
+        .map_err(|e| anyhow::anyhow!("set_storage_state parse: {e}"))?;
 
     // Restore cookies.
     if let Some(cookies) = state.get("cookies").and_then(|v| v.as_array()) {
@@ -1466,9 +1524,8 @@ async fn step_handle_dialog(
     }
 
     // Try to dismiss a dialog that is already open.
-    match ctx.page.execute(params.clone()).await {
-        Ok(_) => return Ok(json!({"ok": true, "accept": accept})),
-        Err(_) => {} // No dialog open yet — wait for one below.
+    if ctx.page.execute(params.clone()).await.is_ok() {
+        return Ok(json!({"ok": true, "accept": accept}));
     }
 
     // Wait up to the global timeout for a dialog to appear.
@@ -1500,20 +1557,15 @@ async fn step_pdf_save(ctx: &StepContext<'_>, path: Option<&str>) -> Result<Valu
 
     // result.result.data is a Binary wrapping a base64 string.
     let b64: String = result.result.data.into();
-    let pdf_bytes = base64::Engine::decode(
-        &base64::engine::general_purpose::STANDARD,
-        b64.trim(),
-    )
-    .map_err(|e| anyhow::anyhow!("pdf_save base64 decode: {e}"))?;
+    let pdf_bytes = base64::Engine::decode(&base64::engine::general_purpose::STANDARD, b64.trim())
+        .map_err(|e| anyhow::anyhow!("pdf_save base64 decode: {e}"))?;
 
-    let out_path = path
-        .map(std::path::PathBuf::from)
-        .unwrap_or_else(|| {
-            std::env::temp_dir().join(format!(
-                "earl-pdf-{}.pdf",
-                chrono::Utc::now().timestamp_millis()
-            ))
-        });
+    let out_path = path.map(std::path::PathBuf::from).unwrap_or_else(|| {
+        std::env::temp_dir().join(format!(
+            "earl-pdf-{}.pdf",
+            chrono::Utc::now().timestamp_millis()
+        ))
+    });
 
     tokio::fs::write(&out_path, &pdf_bytes)
         .await
@@ -1526,7 +1578,10 @@ async fn step_pdf_save(ctx: &StepContext<'_>, path: Option<&str>) -> Result<Valu
 
 async fn step_generate_locator(_ctx: &StepContext<'_>, ref_: &str) -> Result<Value> {
     // Validate ref_ contains only safe characters for a CSS attribute value
-    if !ref_.chars().all(|c| c.is_alphanumeric() || c == '-' || c == '_') {
+    if !ref_
+        .chars()
+        .all(|c| c.is_alphanumeric() || c == '-' || c == '_')
+    {
         return Err(anyhow::anyhow!(
             "generate_locator: ref '{ref_}' contains characters unsafe for CSS attribute selector"
         ));
@@ -1609,15 +1664,17 @@ mod tests {
     fn generate_locator_rejects_unsafe_ref() {
         // Characters that would break a CSS attribute selector must be rejected.
         let unsafe_refs = [
-            "e\"42",     // double-quote breaks the attribute value
-            "e]42",      // bracket closes the selector early
-            "e[42",      // bracket opens a nested selector
-            "e 42",      // space is not a valid identifier character
-            "e<42>",     // angle brackets
-            "e;42",      // semicolons
+            "e\"42", // double-quote breaks the attribute value
+            "e]42",  // bracket closes the selector early
+            "e[42",  // bracket opens a nested selector
+            "e 42",  // space is not a valid identifier character
+            "e<42>", // angle brackets
+            "e;42",  // semicolons
         ];
         for bad in &unsafe_refs {
-            let is_safe = bad.chars().all(|c| c.is_alphanumeric() || c == '-' || c == '_');
+            let is_safe = bad
+                .chars()
+                .all(|c| c.is_alphanumeric() || c == '-' || c == '_');
             assert!(
                 !is_safe,
                 "expected '{bad}' to be rejected as unsafe for CSS attribute selector"
@@ -1627,7 +1684,9 @@ mod tests {
         // Safe refs must pass the same check.
         let safe_refs = ["e42", "my-ref", "some_id", "Abc123", "a-b_c"];
         for good in &safe_refs {
-            let is_safe = good.chars().all(|c| c.is_alphanumeric() || c == '-' || c == '_');
+            let is_safe = good
+                .chars()
+                .all(|c| c.is_alphanumeric() || c == '-' || c == '_');
             assert!(
                 is_safe,
                 "expected '{good}' to be accepted as safe for CSS attribute selector"
@@ -1691,7 +1750,9 @@ mod tests {
         use crate::schema::BrowserStep;
         let json = r#"{"action":"verify_text_visible","text":"Hello world"}"#;
         let step: BrowserStep = serde_json::from_str(json).unwrap();
-        assert!(matches!(step, BrowserStep::VerifyTextVisible { text, .. } if text == "Hello world"));
+        assert!(
+            matches!(step, BrowserStep::VerifyTextVisible { text, .. } if text == "Hello world")
+        );
     }
 
     #[test]
@@ -1699,9 +1760,7 @@ mod tests {
         use crate::schema::BrowserStep;
         let json = r#"{"action":"verify_list_visible","ref":"root","items":["Apple","Banana"]}"#;
         let step: BrowserStep = serde_json::from_str(json).unwrap();
-        assert!(
-            matches!(step, BrowserStep::VerifyListVisible { items, .. } if items.len() == 2)
-        );
+        assert!(matches!(step, BrowserStep::VerifyListVisible { items, .. } if items.len() == 2));
     }
 
     #[test]
@@ -1747,9 +1806,7 @@ mod tests {
         use crate::schema::BrowserStep;
         let json = r#"{"action":"local_storage_get","key":"auth_token"}"#;
         let step: BrowserStep = serde_json::from_str(json).unwrap();
-        assert!(
-            matches!(step, BrowserStep::LocalStorageGet { key, .. } if key == "auth_token")
-        );
+        assert!(matches!(step, BrowserStep::LocalStorageGet { key, .. } if key == "auth_token"));
     }
 
     #[test]
@@ -1775,7 +1832,14 @@ mod tests {
         use crate::schema::BrowserStep;
         let json = r#"{"action":"resize","width":1280,"height":720}"#;
         let step: BrowserStep = serde_json::from_str(json).unwrap();
-        assert!(matches!(step, BrowserStep::Resize { width: 1280, height: 720, .. }));
+        assert!(matches!(
+            step,
+            BrowserStep::Resize {
+                width: 1280,
+                height: 720,
+                ..
+            }
+        ));
     }
 
     #[test]
@@ -1793,9 +1857,7 @@ mod tests {
         use crate::schema::BrowserStep;
         let json = r#"{"action":"pdf_save","path":"/tmp/out.pdf"}"#;
         let step: BrowserStep = serde_json::from_str(json).unwrap();
-        assert!(
-            matches!(step, BrowserStep::PdfSave { path: Some(p), .. } if p == "/tmp/out.pdf")
-        );
+        assert!(matches!(step, BrowserStep::PdfSave { path: Some(p), .. } if p == "/tmp/out.pdf"));
     }
 
     #[test]
@@ -1821,7 +1883,9 @@ mod tests {
         use crate::schema::BrowserStep;
         let json = r#"{"action":"set_storage_state","path":"/tmp/state.json"}"#;
         let step: BrowserStep = serde_json::from_str(json).unwrap();
-        assert!(matches!(step, BrowserStep::SetStorageState { path, .. } if path == "/tmp/state.json"));
+        assert!(
+            matches!(step, BrowserStep::SetStorageState { path, .. } if path == "/tmp/state.json")
+        );
     }
 
     #[test]
@@ -1849,7 +1913,13 @@ mod tests {
         use crate::schema::BrowserStep;
         let json = r#"{"action":"network_requests","include_static":true}"#;
         let step: BrowserStep = serde_json::from_str(json).unwrap();
-        assert!(matches!(step, BrowserStep::NetworkRequests { include_static: true, .. }));
+        assert!(matches!(
+            step,
+            BrowserStep::NetworkRequests {
+                include_static: true,
+                ..
+            }
+        ));
     }
 
     #[test]
@@ -1857,9 +1927,7 @@ mod tests {
         use crate::schema::BrowserStep;
         let json = r#"{"action":"verify_value","ref":"e1","value":"expected"}"#;
         let step: BrowserStep = serde_json::from_str(json).unwrap();
-        assert!(
-            matches!(step, BrowserStep::VerifyValue { value, .. } if value == "expected")
-        );
+        assert!(matches!(step, BrowserStep::VerifyValue { value, .. } if value == "expected"));
     }
 
     #[test]
@@ -1867,8 +1935,13 @@ mod tests {
         use crate::schema::BrowserStep;
         let json = r#"{"action":"start_video","width":1280,"height":720}"#;
         let step: BrowserStep = serde_json::from_str(json).unwrap();
-        assert!(
-            matches!(step, BrowserStep::StartVideo { width: Some(1280), height: Some(720), .. })
-        );
+        assert!(matches!(
+            step,
+            BrowserStep::StartVideo {
+                width: Some(1280),
+                height: Some(720),
+                ..
+            }
+        ));
     }
 }

@@ -197,11 +197,14 @@ mod tests {
                 Ok(v.clone())
             }
         }
-        let op: crate::schema::BrowserOperationTemplate = serde_json::from_str(r#"{
+        let op: crate::schema::BrowserOperationTemplate = serde_json::from_str(
+            r#"{
             "browser": {
                 "steps": [{"action":"navigate","url":"https://example.com"}]
             }
-        }"#).unwrap();
+        }"#,
+        )
+        .unwrap();
         let ctx = serde_json::json!({});
         // This should NOT fail — action discriminant must be preserved
         let cmd = build_browser_request(&op, &ctx, &UppercaseRenderer).unwrap();

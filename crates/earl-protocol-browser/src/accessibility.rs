@@ -72,8 +72,14 @@ mod tests {
             },
         ];
         let (markdown, refs) = render_ax_tree(&nodes, 5000);
-        assert!(markdown.contains("button \"Login\" [ref=e1]"), "got: {markdown}");
-        assert!(markdown.contains("textbox \"Email\" [ref=e2]"), "got: {markdown}");
+        assert!(
+            markdown.contains("button \"Login\" [ref=e1]"),
+            "got: {markdown}"
+        );
+        assert!(
+            markdown.contains("textbox \"Email\" [ref=e2]"),
+            "got: {markdown}"
+        );
         assert_eq!(refs.get("e1"), Some(&1u64));
         assert_eq!(refs.get("e2"), Some(&2u64));
     }
@@ -89,7 +95,10 @@ mod tests {
             })
             .collect();
         let (markdown, refs) = render_ax_tree(&nodes, 5);
-        assert!(markdown.contains("truncated"), "expected truncation notice, got: {markdown}");
+        assert!(
+            markdown.contains("truncated"),
+            "expected truncation notice, got: {markdown}"
+        );
         assert_eq!(refs.len(), 5, "expected 5 refs, got {}", refs.len());
     }
 
@@ -108,13 +117,19 @@ mod tests {
         }];
         let (markdown, _) = render_ax_tree(&nodes, 5000);
         // Parent at depth 0, child at depth 1 (2-space indent)
-        assert!(markdown.contains("  - listitem"), "expected indented child, got: {markdown}");
+        assert!(
+            markdown.contains("  - listitem"),
+            "expected indented child, got: {markdown}"
+        );
     }
 
     #[test]
     fn empty_tree_returns_empty_string_and_empty_refs() {
         let (markdown, refs) = render_ax_tree(&[], 5000);
-        assert!(markdown.is_empty() || !markdown.contains("[ref="), "got: {markdown}");
+        assert!(
+            markdown.is_empty() || !markdown.contains("[ref="),
+            "got: {markdown}"
+        );
         assert!(refs.is_empty());
     }
 }

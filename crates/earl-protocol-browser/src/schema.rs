@@ -732,7 +732,9 @@ mod tests {
     fn deserialize_fill_step() {
         let json = r#"{"action":"fill","selector":"input[name=q]","text":"hello","submit":true}"#;
         let step: BrowserStep = serde_json::from_str(json).unwrap();
-        assert!(matches!(step, BrowserStep::Fill { text, submit: Some(true), .. } if text == "hello"));
+        assert!(
+            matches!(step, BrowserStep::Fill { text, submit: Some(true), .. } if text == "hello")
+        );
     }
 
     #[test]

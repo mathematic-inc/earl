@@ -30,10 +30,8 @@ impl SessionFile {
 
     pub fn save_to(&self, path: &Path) -> Result<()> {
         let dir = path.parent().unwrap_or(Path::new("."));
-        let tmp = tempfile::NamedTempFile::new_in(dir)
-            .context("creating temp session file")?;
-        serde_json::to_writer(&tmp, self)
-            .context("serializing session file")?;
+        let tmp = tempfile::NamedTempFile::new_in(dir).context("creating temp session file")?;
+        serde_json::to_writer(&tmp, self).context("serializing session file")?;
         tmp.persist(path)
             .map_err(|e| anyhow::anyhow!("persisting session file: {}", e.error))?;
         Ok(())
@@ -54,8 +52,7 @@ pub fn ensure_sessions_dir(dir: &Path) -> Result<()> {
     {
         use std::os::unix::fs::PermissionsExt;
         let perms = std::fs::Permissions::from_mode(0o700);
-        std::fs::set_permissions(dir, perms)
-            .context("setting sessions directory permissions")?;
+        std::fs::set_permissions(dir, perms).context("setting sessions directory permissions")?;
     }
     Ok(())
 }
@@ -157,7 +154,10 @@ mod tests {
         let loaded = loaded.unwrap();
         assert_eq!(loaded.pid, 12345);
         assert_eq!(loaded.target_id, "T42");
-        assert_eq!(loaded.websocket_url, "ws://127.0.0.1:9222/devtools/browser/xyz");
+        assert_eq!(
+            loaded.websocket_url,
+            "ws://127.0.0.1:9222/devtools/browser/xyz"
+        );
         assert!(!loaded.interrupted);
     }
 
