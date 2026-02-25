@@ -1,0 +1,168 @@
+---
+title: Browser
+icon: Monitor
+description: Automate Chrome from an Earl template.
+---
+
+The Browser protocol drives a headless Chrome instance using a sequence of steps defined in your template.
+
+## A complete example
+
+```hcl
+version    = 1
+provider   = "web"
+categories = ["browser"]
+
+command "snapshot_page" {
+  title       = "Snapshot page"
+  summary     = "Navigate to a URL and return the page's accessibility tree"
+  description = "Opens a URL in a headless browser and returns a text description of the page content."
+
+  annotations {
+    mode = "read"
+  }
+
+  param "url" {
+    type        = "string"
+    required    = true
+    description = "URL to open"
+  }
+
+  operation {
+    protocol = "browser"
+
+    browser {
+      headless              = true
+      timeout_ms            = 30000
+      on_failure_screenshot = true
+      steps = [
+        { action = "navigate", url = "{{ args.url }}" },
+        { action = "snapshot" },
+      ]
+    }
+  }
+
+  result {
+    decode = "json"
+    output = "{{ result.text }}"
+  }
+}
+```
+
+Run it:
+
+```bash
+earl call web.snapshot_page --url https://example.com
+```
+
+## Walk-through
+
+### browser block
+
+```hcl
+browser {
+  headless              = true
+  timeout_ms            = 30000
+  on_failure_screenshot = true
+  steps = [...]
+}
+```
+
+`headless = true` runs Chrome without a window. It is the default. `timeout_ms` is the global timeout for the entire command — if the steps haven't finished within that window, the command fails. `on_failure_screenshot = true` captures a screenshot when any step fails and attaches it to the error output, which helps debug layout or timing problems.
+
+### steps
+
+`steps` is an ordered list of inline objects. Each object needs an `action` field. Steps run in order and a failed step stops the command immediately. Two fields are available on every step regardless of action:
+
+- `optional = true` — skip the step on failure and continue to the next one
+- `timeout_ms` — overrides the command-level timeout for just this step
+
+### navigate and snapshot
+
+`navigate` opens the URL and waits for the page to load. `snapshot` reads the accessibility tree and returns a JSON object with this shape:
+
+```json
+{
+  "text": "...",
+  "raw": [...]
+}
+```
+
+Use `result.text` in the `result` block to get the plain-text description. The `raw` field contains the full structured tree.
+
+### ref handles
+
+The snapshot text includes `ref` handles next to interactive elements — for example, `button "Submit" ref=42`. When writing multi-step commands, pass a `ref` value to `click` or `fill` steps instead of a CSS selector. Refs are more stable than selectors on pages that generate dynamic class names or restructure the DOM between renders.
+
+### result
+
+```hcl
+result {
+  decode = "json"
+  output = "{{ result.text }}"
+}
+```
+
+The shape of the result depends on the last step's action. `snapshot` returns `{"text": "...", "raw": [...]}`. Decode as `"json"` and address fields directly in the output template.
+
+## Persistent session with login
+
+One-shot commands — navigate, snapshot, done — work fine without a session. When you need to log in first and then run further commands in the same browser context, use `session_id`.
+
+```hcl
+command "login_and_snapshot" {
+  title       = "Log in and snapshot"
+  summary     = "Log in to an app and return the dashboard accessibility tree"
+  description = "Logs in with the given credentials and returns the dashboard page. Uses a persistent session so subsequent commands stay logged in."
+
+  annotations {
+    mode    = "write"
+    secrets = ["myapp.password"]
+  }
+
+  param "username" {
+    type        = "string"
+    required    = true
+    description = "Login username"
+  }
+
+  param "session_id" {
+    type        = "string"
+    required    = false
+    default     = "main"
+    description = "Session identifier — reuse to stay logged in across commands"
+  }
+
+  operation {
+    protocol = "browser"
+
+    browser {
+      session_id            = "{{ args.session_id }}"
+      headless              = true
+      timeout_ms            = 60000
+      on_failure_screenshot = true
+      steps = [
+        { action = "navigate", url = "https://app.example.com/login" },
+        { action = "fill",     selector = "#username", text = "{{ args.username }}" },
+        { action = "fill",     selector = "#password", text = "{{ secrets['myapp.password'] }}" },
+        { action = "click",    selector = "button[type=submit]" },
+        { action = "wait_for", text = "Dashboard", timeout_ms = 10000 },
+        { action = "snapshot" },
+      ]
+    }
+  }
+
+  result {
+    decode = "json"
+    output = "{{ result.text }}"
+  }
+}
+```
+
+`session_id` keeps the browser instance alive between commands. A second command with the same `session_id` reconnects to the same instance, preserving cookies, localStorage, and page state. Omit it for one-shot commands that don't need to carry state forward.
+
+Secrets are available in step fields via `{{ secrets['key.name'] }}`. The actual secret value is resolved at runtime from the OS keychain and never appears in the template or in command output.
+
+---
+
+For the full step reference, see [Template Schema — Browser](/docs/template-schema#browser).
