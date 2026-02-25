@@ -160,6 +160,8 @@ impl OperationTemplate {
             OperationTemplate::Graphql(op) => Some(op.url.as_str()),
             #[cfg(feature = "grpc")]
             OperationTemplate::Grpc(op) => Some(op.url.as_str()),
+            #[cfg(feature = "browser")]
+            OperationTemplate::Browser(_) => None,
             _ => None,
         }
     }
