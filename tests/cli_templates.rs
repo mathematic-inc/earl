@@ -978,8 +978,7 @@ fn templates_list_json_write_mode_output_includes_expected_command() {
     let rows = parsed.as_array().unwrap();
     assert!(!rows.is_empty());
     assert_eq!(
-        rows[0]["command"],
-        "github.create_issue",
+        rows[0]["command"], "github.create_issue",
         "github.create_issue should be present in write-mode listings"
     );
 }

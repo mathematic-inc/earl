@@ -84,7 +84,10 @@ mod tests {
         use super::super::schema::{Annotations, CommandTemplate, OperationTemplate};
 
         let mut prod_vars = BTreeMap::new();
-        prod_vars.insert("base_url".to_string(), "https://api.example.com".to_string());
+        prod_vars.insert(
+            "base_url".to_string(),
+            "https://api.example.com".to_string(),
+        );
         let mut envs = BTreeMap::new();
         envs.insert("production".to_string(), prod_vars);
 
@@ -146,7 +149,12 @@ mod tests {
     #[cfg(feature = "bash")]
     fn catalog_preserves_provider_environment_default() {
         let catalog = catalog_with_provider_environments();
-        let envs = catalog.get("myservice.ping").unwrap().provider_environments.as_ref().unwrap();
+        let envs = catalog
+            .get("myservice.ping")
+            .unwrap()
+            .provider_environments
+            .as_ref()
+            .unwrap();
         assert_eq!(envs.default.as_deref(), Some("production"));
     }
 
@@ -154,8 +162,15 @@ mod tests {
     #[cfg(feature = "bash")]
     fn catalog_preserves_provider_environment_variables() {
         let catalog = catalog_with_provider_environments();
-        let envs = catalog.get("myservice.ping").unwrap().provider_environments.as_ref().unwrap();
-        assert_eq!(envs.environments["production"]["base_url"], "https://api.example.com");
+        let envs = catalog
+            .get("myservice.ping")
+            .unwrap()
+            .provider_environments
+            .as_ref()
+            .unwrap();
+        assert_eq!(
+            envs.environments["production"]["base_url"],
+            "https://api.example.com"
+        );
     }
-
 }

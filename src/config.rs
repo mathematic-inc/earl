@@ -394,7 +394,10 @@ clock_skew_seconds = 60
 
     #[test]
     fn jwt_config_audience_parsed_from_toml() {
-        assert_eq!(jwt_with_explicit_fields().audience, "https://api.example.com");
+        assert_eq!(
+            jwt_with_explicit_fields().audience,
+            "https://api.example.com"
+        );
     }
 
     #[test]
@@ -415,7 +418,10 @@ clock_skew_seconds = 60
 
     #[test]
     fn jwt_config_explicit_algorithms_parsed_from_toml() {
-        assert_eq!(jwt_with_explicit_fields().algorithms, vec!["RS256", "ES256"]);
+        assert_eq!(
+            jwt_with_explicit_fields().algorithms,
+            vec!["RS256", "ES256"]
+        );
     }
 
     #[test]

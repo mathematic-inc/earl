@@ -1302,7 +1302,11 @@ mod tests {
             .expect("response");
         let result = response.result.expect("result");
         let tools = result["tools"].as_array().expect("tools array");
-        assert!(tools.iter().any(|t| t["name"] == DISCOVERY_SEARCH_TOOL_NAME));
+        assert!(
+            tools
+                .iter()
+                .any(|t| t["name"] == DISCOVERY_SEARCH_TOOL_NAME)
+        );
     }
 
     #[tokio::test]

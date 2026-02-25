@@ -710,5 +710,4 @@ mod tests {
     fn path_traversal_in_azure_id_returns_error() {
         validate_azure_id("../../../etc/passwd", "tenant").unwrap_err();
     }
-
 }

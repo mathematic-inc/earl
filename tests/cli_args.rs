@@ -1,4 +1,4 @@
-use earl::expression::cli_args::{parse_cli_args, CliArgsError};
+use earl::expression::cli_args::{CliArgsError, parse_cli_args};
 use earl::template::schema::{ParamSpec, ParamType};
 
 fn s(v: &str) -> String {
@@ -93,7 +93,10 @@ fn parses_boolean_flag_without_value() {
     )
     .unwrap();
 
-    assert_eq!(expr.named_args[1], ("verbose".to_string(), serde_json::json!(true)));
+    assert_eq!(
+        expr.named_args[1],
+        ("verbose".to_string(), serde_json::json!(true))
+    );
 }
 
 #[test]
@@ -106,7 +109,10 @@ fn parses_boolean_flag_with_explicit_false() {
     )
     .unwrap();
 
-    assert_eq!(expr.named_args[1], ("verbose".to_string(), serde_json::json!(false)));
+    assert_eq!(
+        expr.named_args[1],
+        ("verbose".to_string(), serde_json::json!(false))
+    );
 }
 
 #[test]
