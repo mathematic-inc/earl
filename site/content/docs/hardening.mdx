@@ -8,9 +8,9 @@ This page covers the configuration knobs that matter before running Earl where o
 
 ## SSRF protection
 
-Earl blocks requests to private and loopback IP ranges in `security/ssrf.rs`. This runs on every outbound request — HTTP, GraphQL, gRPC, and OAuth token fetches. There is no configuration option to disable it.
+Earl blocks requests to private and loopback IP ranges in `security/ssrf.rs`. This runs on every outbound request — HTTP, GraphQL, gRPC, and OAuth token fetches.
 
-The blocked ranges:
+The blocked ranges by default:
 
 | Range                  | Description                                         |
 | ---------------------- | --------------------------------------------------- |
@@ -33,6 +33,29 @@ The blocked ranges:
 IPv4-mapped IPv6 addresses like `::ffff:10.0.0.1` are unwrapped and checked against the IPv4 blocked ranges.
 
 You can verify the behavior by trying to call a template pointed at a blocked address — Earl will return a "blocked potentially unsafe IP address" error before the connection is attempted.
+
+### Homelab and self-hosted services
+
+If you run Earl against services on your local network — Home Assistant, Frigate, OPNsense, Gitea, or similar — you can permit RFC 1918 private addresses and loopback with `allow_private_ips`:
+
+```toml
+[network]
+allow_private_ips = true
+```
+
+Cloud metadata endpoints (`169.254.169.254`, `fd00:ec2::254`, etc.) and all other hazardous ranges remain blocked regardless of this setting. The only ranges lifted by `allow_private_ips` are:
+
+| Range          | Description                 |
+| -------------- | --------------------------- |
+| 127.0.0.0/8    | IPv4 loopback               |
+| 10.0.0.0/8     | RFC 1918 private            |
+| 172.16.0.0/12  | RFC 1918 private            |
+| 192.168.0.0/16 | RFC 1918 private            |
+| ::1/128        | IPv6 loopback               |
+| fc00::/7       | IPv6 unique local (ULA)     |
+| fec0::/10      | IPv6 site-local             |
+
+Only set this in environments where the agent can't be used to pivot into infrastructure you don't intend to expose. On a shared or production host, keep the default (`false`).
 
 ## Network egress allowlist
 
