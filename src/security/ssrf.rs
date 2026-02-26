@@ -35,7 +35,8 @@ pub fn is_blocked_ip(ip: IpAddr, allow_private_ips: bool) -> bool {
 
             // When allow_private_ips is enabled, loopback and unique-local
             // (ULA, fc00::/7) addresses are permitted.
-            (!allow_private_ips && (v6.is_loopback() || v6.is_unique_local() || is_ipv6_site_local(v6)))
+            (!allow_private_ips
+                && (v6.is_loopback() || v6.is_unique_local() || is_ipv6_site_local(v6)))
                 || v6.is_unspecified()
                 || v6.is_multicast()
                 || v6.is_unicast_link_local()

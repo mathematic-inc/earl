@@ -5,10 +5,7 @@ use hickory_resolver::TokioResolver;
 
 use super::ssrf::ensure_safe_ip;
 
-pub async fn resolve_and_validate_host(
-    host: &str,
-    allow_private_ips: bool,
-) -> Result<Vec<IpAddr>> {
+pub async fn resolve_and_validate_host(host: &str, allow_private_ips: bool) -> Result<Vec<IpAddr>> {
     let resolver = TokioResolver::builder_tokio()
         .map_err(|e| anyhow::anyhow!("resolver setup failed: {e}"))?
         .build();
