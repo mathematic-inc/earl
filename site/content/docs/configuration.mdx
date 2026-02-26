@@ -280,6 +280,21 @@ earl secrets set myservice.client_secret
 
 ---
 
+## [network]
+
+Top-level network settings that apply to all outbound requests.
+
+```toml
+[network]
+allow_private_ips = false
+```
+
+| Field               | Type    | Default | Description                                                                                                                                         |
+| ------------------- | ------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `allow_private_ips` | boolean | `false` | Allow requests to RFC 1918 private addresses and loopback. Enable for homelab or self-hosted services. Cloud metadata endpoints remain blocked. |
+
+Set `allow_private_ips = true` when Earl needs to reach local services such as Home Assistant, Frigate, OPNsense, or Gitea running on your network. Cloud metadata endpoints (`169.254.169.254`, `fd00:ec2::254`, etc.) and other hazardous ranges remain blocked regardless. See [Hardening](/docs/hardening#homelab-and-self-hosted-services) for the full list of ranges that `allow_private_ips` affects.
+
 ## [[network.allow]]
 
 Restricts which hosts Earl can contact. Without any entries, Earl can reach any public IP (SSRF blocking of private ranges still applies regardless). With entries, any request to a host not matching at least one rule is rejected.
@@ -309,7 +324,7 @@ path_prefix = "/"
 
 `path_prefix = "/v2/"` allows only paths starting with `/v2/`. Use `"/"` to allow the full host.
 
-This is separate from SSRF blocking, which operates at the IP layer and cannot be disabled. The network allowlist operates at the URL layer and restricts outbound access to specific destinations. See [Hardening](/docs/hardening) for the full list of SSRF-blocked ranges.
+This is separate from SSRF blocking, which operates at the IP layer. The network allowlist operates at the URL layer and restricts outbound access to specific destinations. See [Hardening](/docs/hardening) for the full list of SSRF-blocked ranges.
 
 ### [network.proxy_profiles.*]
 
