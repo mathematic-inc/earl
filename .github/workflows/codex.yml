@@ -1,0 +1,62 @@
+name: Codex
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+  issues:
+    types: [opened, assigned]
+  pull_request_review:
+    types: [submitted]
+
+jobs:
+  codex:
+    if: |
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@codex')) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@codex')) ||
+      (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@codex')) ||
+      (github.event_name == 'issues' && (contains(github.event.issue.body, '@codex') || contains(github.event.issue.title, '@codex')))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ (github.event.pull_request.number && format('refs/pull/{0}/merge', github.event.pull_request.number)) || (github.event.issue.pull_request && format('refs/pull/{0}/merge', github.event.issue.number)) || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Run Codex
+        id: run_codex
+        uses: openai/codex-action@52fe01ec70a42f454c9d2ebd47598f9fd6893d56 # v1
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          permission-profile: ":read-only"
+          allow-users: jrandolf
+          prompt: |
+            A maintainer invoked Codex for ${{ github.repository }} from a ${{ github.event_name }} event.
+            Read the repository, follow the request below, and return a concise, actionable response.
+            Do not modify files.
+
+            Issue or pull request title: ${{ github.event.issue.title || github.event.pull_request.title }}
+            Issue body: ${{ github.event.issue.body }}
+            Comment or review body: ${{ github.event.comment.body || github.event.review.body }}
+
+      - name: Post Codex response
+        if: steps.run_codex.outputs['final-message'] != ''
+        uses: actions/github-script@v7
+        env:
+          CODEX_FINAL_MESSAGE: ${{ steps.run_codex.outputs['final-message'] }}
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: process.env.CODEX_FINAL_MESSAGE,
+            });
