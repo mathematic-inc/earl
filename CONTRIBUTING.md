@@ -12,7 +12,6 @@ proposal, so we use a discussion-first process.
 3. If we decide to proceed, a Mathematic maintainer or agent will open the pull
    request.
 
-Only Mathematic organization owners and members, repository collaborators, and
-approved maintenance bots may open pull requests. The approved bots are
-Renovate and Dependabot. Pull requests from other accounts close automatically.
-We still welcome ideas and bug reports through Discussions.
+GitHub restricts pull request creation to Mathematic maintainers and repository
+collaborators with write, maintain, or admin access, plus authorized maintenance
+agents. Everyone else should use Discussions for ideas and bug reports.
