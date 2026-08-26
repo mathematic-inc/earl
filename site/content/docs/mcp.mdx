@@ -68,13 +68,13 @@ Templates appear as native MCP tools. `earl call github.search_repos` becomes an
 
 Two tools are visible. The agent calls `earl.tool_search` first:
 
-```
+```text
 earl.tool_search("find open pull requests on GitHub")
 ```
 
 The tool returns a ranked list of matching template names. The agent picks one and calls `earl.tool_call`:
 
-```
+```text
 earl.tool_call("github.list_pull_requests", { "owner": "myorg", "repo": "myrepo", "state": "open" })
 ```
 

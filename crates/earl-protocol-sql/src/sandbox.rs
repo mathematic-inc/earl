@@ -63,7 +63,9 @@ pub async fn execute_query(
 
     // codeql[rust/cleartext-storage-database] - False positive: the connection URL (which may
     // contain credentials) is used to *connect* to the database, not to store data in it.
-    let mut sqlx_query = sqlx::query(query);
+    // The statement comes directly from the caller and all data values are
+    // bound separately below; SQLx 0.9 requires this audit to be explicit.
+    let mut sqlx_query = sqlx::query(sqlx::AssertSqlSafe(query));
     for param in params {
         sqlx_query = bind_json_param(sqlx_query, param);
     }
@@ -89,10 +91,10 @@ pub async fn execute_query(
     Ok(results)
 }
 
-fn bind_json_param<'q>(
-    query: sqlx::query::Query<'q, sqlx::Any, sqlx::any::AnyArguments<'q>>,
-    value: &'q Value,
-) -> sqlx::query::Query<'q, sqlx::Any, sqlx::any::AnyArguments<'q>> {
+fn bind_json_param(
+    query: sqlx::query::Query<'static, sqlx::Any, sqlx::any::AnyArguments>,
+    value: &Value,
+) -> sqlx::query::Query<'static, sqlx::Any, sqlx::any::AnyArguments> {
     match value {
         Value::Null => query.bind(None::<String>),
         Value::Bool(b) => query.bind(*b),

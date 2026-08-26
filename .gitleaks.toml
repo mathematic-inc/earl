@@ -1,0 +1,22 @@
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Vault token format test fixtures"
+condition = "AND"
+paths = ['''^src/secrets/resolvers/vault\.rs$''']
+regexes = [
+  '''^s\.test$''',
+  '''^hvs\.test$''',
+  '''^s\.XhzOVFgiTw3n3OYJqBiqIGfx$''',
+  '''^hvs\.CAESIBtR0QkDnWL0oFKj9iC8AAAA$''',
+]
+
+[[allowlists]]
+description = "External secret documentation examples"
+condition = "AND"
+paths = ['''^site/content/docs/external-secrets\.mdx$''']
+regexes = [
+  '''^eyJhbGciOiJFUzI1NiIsImtpZCI6\.\.\.$''',
+  '''^hvs\.CAESIBtR0QkD\.\.\.$''',
+]

@@ -112,10 +112,7 @@ function stripPrefix(tokens: string[]): string[] {
 }
 
 /** Parse `--key value` pairs from the remaining tokens starting at index `i`. */
-function parseFlags(
-  remaining: string[],
-  startIndex: number
-): Record<string, string> {
+function parseFlags(remaining: string[], startIndex: number): Record<string, string> {
   const args: Record<string, string> = {};
   let i = startIndex;
 
@@ -201,15 +198,12 @@ function parseCliCommand(input: string): ParseResult {
 export function CliImport({ onImport }: CliImportProps) {
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState("");
-  const [error, setError] = useState<string | undefined>(undefined);
+  const [error, setError] = useState<string | undefined>();
 
-  const handleChange = useCallback(
-    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      setValue(e.target.value);
-      setError(undefined);
-    },
-    []
-  );
+  const handleChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setValue(e.target.value);
+    setError(undefined);
+  }, []);
 
   const handleSubmit = useCallback(() => {
     try {
@@ -250,14 +244,12 @@ export function CliImport({ onImport }: CliImportProps) {
         <div className="space-y-3">
           <p className="text-muted-foreground text-xs">
             Paste an{" "}
-            <code className="rounded bg-muted px-1 py-0.5 font-mono text-[0.65rem]">
-              earl call
-            </code>{" "}
+            <code className="rounded bg-muted px-1 py-0.5 font-mono text-[0.65rem]">earl call</code>{" "}
             command to auto-fill the form.
           </p>
 
           <Textarea
-            aria-invalid={error !== undefined ? true : undefined}
+            aria-invalid={error === undefined ? undefined : true}
             className="font-mono text-xs"
             onChange={handleChange}
             placeholder="earl call provider.command --key value --key2 value2"

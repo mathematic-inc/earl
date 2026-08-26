@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -40,7 +41,7 @@ function ModeBadge({ mode }: { mode: Tool["mode"] }) {
         "uppercase tracking-wider",
         mode === "read"
           ? "border-emerald-300 bg-emerald-50 text-emerald-700"
-          : "border-red-300 bg-red-50 text-red-700"
+          : "border-red-300 bg-red-50 text-red-700",
       )}
     >
       {mode}
@@ -57,22 +58,14 @@ function CategoryBadge({ category }: { category: string }) {
 // Secrets status
 // ---------------------------------------------------------------------------
 
-function SecretsSection({
-  secrets,
-  status,
-}: {
-  secrets: string[];
-  status: SecretsStatus | null;
-}) {
+function SecretsSection({ secrets, status }: { secrets: string[]; status: SecretsStatus | null }) {
   if (secrets.length === 0) {
     return null;
   }
 
   return (
     <section className="space-y-2">
-      <h2 className="font-semibold text-foreground text-sm tracking-tight">
-        Secrets
-      </h2>
+      <h2 className="font-semibold text-foreground text-sm tracking-tight">Secrets</h2>
       <ul className="space-y-1.5">
         {secrets.map((name) => {
           const configured = status?.[name]?.configured ?? false;
@@ -81,7 +74,7 @@ function SecretsSection({
               <span
                 className={cn(
                   "inline-block size-2 shrink-0 rounded-full",
-                  configured ? "bg-emerald-500" : "bg-red-500"
+                  configured ? "bg-emerald-500" : "bg-red-500",
                 )}
               />
               <code className="font-mono text-xs">{name}</code>
@@ -112,14 +105,12 @@ function ParamRow({ param, index }: { param: ParamSpec; index: number }) {
     <div
       className={cn(
         "fade-in slide-in-from-bottom-1 flex animate-in flex-col gap-1 rounded-md px-3 py-2.5",
-        index % 2 === 0 ? "bg-muted/40" : "bg-transparent"
+        index % 2 === 0 ? "bg-muted/40" : "bg-transparent",
       )}
       style={{ animationDelay: `${delay}ms`, animationFillMode: "both" }}
     >
       <div className="flex items-center gap-2">
-        <code className="font-medium font-mono text-foreground text-sm">
-          {param.name}
-        </code>
+        <code className="font-medium font-mono text-foreground text-sm">{param.name}</code>
         <Badge className="font-mono text-[0.6rem]" variant="outline">
           {param.type}
         </Badge>
@@ -130,15 +121,12 @@ function ParamRow({ param, index }: { param: ParamSpec; index: number }) {
         )}
         {param.default !== undefined && (
           <span className="text-muted-foreground text-xs">
-            default:{" "}
-            <code className="font-mono">{JSON.stringify(param.default)}</code>
+            default: <code className="font-mono">{JSON.stringify(param.default)}</code>
           </span>
         )}
       </div>
       {param.description && (
-        <p className="text-muted-foreground text-sm leading-relaxed">
-          {param.description}
-        </p>
+        <p className="text-muted-foreground text-sm leading-relaxed">{param.description}</p>
       )}
     </div>
   );
@@ -150,7 +138,7 @@ function ParametersSection({ params }: { params: ParamSpec[] }) {
   }
 
   // Sort required params to the top, preserving relative order otherwise
-  const sorted = [...params].sort((a, b) => {
+  const sorted = [...params].toSorted((a, b) => {
     if (a.required && !b.required) {
       return -1;
     }
@@ -162,9 +150,7 @@ function ParametersSection({ params }: { params: ParamSpec[] }) {
 
   return (
     <section className="space-y-3">
-      <h2 className="font-semibold text-foreground text-sm tracking-tight">
-        Parameters
-      </h2>
+      <h2 className="font-semibold text-foreground text-sm tracking-tight">Parameters</h2>
       <div className="space-y-0.5">
         {sorted.map((p, i) => (
           <ParamRow index={i} key={p.name} param={p} />
@@ -181,9 +167,7 @@ function ParametersSection({ params }: { params: ParamSpec[] }) {
 function SourceSection({ source }: { source: Tool["source"] }) {
   return (
     <section className="space-y-2">
-      <h2 className="font-semibold text-foreground text-sm tracking-tight">
-        Source
-      </h2>
+      <h2 className="font-semibold text-foreground text-sm tracking-tight">Source</h2>
       <div className="flex items-center gap-2 text-muted-foreground text-sm">
         <Badge className="capitalize" variant="outline">
           {source.scope}
@@ -237,15 +221,10 @@ function EmptyState() {
           earl templates import &lt;source&gt;
         </pre>
         <p className="text-muted-foreground text-sm">
-          Or create a{" "}
-          <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">
-            .hcl
-          </code>{" "}
+          Or create a <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">.hcl</code>{" "}
           file in{" "}
-          <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">
-            ./templates/
-          </code>{" "}
-          to get started.
+          <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">./templates/</code> to
+          get started.
         </p>
       </div>
     </div>
@@ -262,11 +241,7 @@ const remarkPlugins = [remarkGfm];
 // Main component
 // ---------------------------------------------------------------------------
 
-export function CommandDocs({
-  tool,
-  loading,
-  onRefresh: _onRefresh,
-}: CommandDocsProps) {
+export function CommandDocs({ tool, loading, onRefresh: _onRefresh }: CommandDocsProps) {
   // Cross-fade state
   const [visible, setVisible] = useState(true);
   const [displayedTool, setDisplayedTool] = useState<Tool | null>(tool);
@@ -274,9 +249,7 @@ export function CommandDocs({
   const prevToolKey = useRef<string | null>(null);
 
   // Secrets status
-  const [secretsStatus, setSecretsStatus] = useState<SecretsStatus | null>(
-    null
-  );
+  const [secretsStatus, setSecretsStatus] = useState<SecretsStatus | null>(null);
 
   // Cross-fade on command switch
   useEffect(() => {
@@ -353,7 +326,7 @@ export function CommandDocs({
       <div
         className={cn(
           "p-10 transition-opacity",
-          visible ? "opacity-100 duration-150" : "opacity-0 duration-100"
+          visible ? "opacity-100 duration-150" : "opacity-0 duration-100",
         )}
       >
         {/* Header */}
@@ -382,18 +355,13 @@ export function CommandDocs({
         {/* Description */}
         {displayedTool.description && (
           <section className="prose prose-sm max-w-none prose-code:rounded prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:font-mono prose-a:text-primary prose-code:text-foreground prose-headings:text-foreground prose-p:text-muted-foreground text-foreground prose-code:before:content-none prose-code:after:content-none">
-            <Markdown remarkPlugins={remarkPlugins}>
-              {displayedTool.description}
-            </Markdown>
+            <Markdown remarkPlugins={remarkPlugins}>{displayedTool.description}</Markdown>
           </section>
         )}
 
         <div className="mt-8 space-y-8">
           {/* Secrets */}
-          <SecretsSection
-            secrets={displayedTool.secrets}
-            status={secretsStatus}
-          />
+          <SecretsSection secrets={displayedTool.secrets} status={secretsStatus} />
 
           {/* Parameters */}
           <ParametersSection params={displayedTool.params} />

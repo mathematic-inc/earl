@@ -65,8 +65,8 @@ needed command.
 
 Map the user's description to a protocol:
 
-| User mentions                                | Protocol  | Reference file                                                                                                                         |
-| -------------------------------------------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| User mentions                                | Protocol  | Reference file                                                                                                                                              |
+| -------------------------------------------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | REST, HTTP, API, endpoint, JSON API, webhook | `http`    | `../references/http-templates.md` ([raw](https://raw.githubusercontent.com/mathematic-inc/earl/main/skills/development/references/http-templates.md))       |
 | GraphQL, query/mutation (in API context)     | `graphql` | `../references/graphql-templates.md` ([raw](https://raw.githubusercontent.com/mathematic-inc/earl/main/skills/development/references/graphql-templates.md)) |
 | gRPC, protobuf, service mesh                 | `grpc`    | `../references/grpc-templates.md` ([raw](https://raw.githubusercontent.com/mathematic-inc/earl/main/skills/development/references/grpc-templates.md))       |
@@ -220,7 +220,7 @@ imports, read the imported file at `~/.config/earl/templates/<provider>.hcl` (ma
 or `%APPDATA%\earl\templates\<provider>.hcl` (Windows) to find them.
 Print a checklist:
 
-```
+```text
 Template ready. Set the required secrets in your terminal:
 
   earl secrets set <provider>.<key>

@@ -11,23 +11,25 @@ speaker-attributed transcripts, and produces downloadable audio/video files.
 ## Status Reference
 
 **Bot lifecycle status** (from `get_bot`):
-| Status | Meaning |
-|--------|---------|
-| `pending` | Bot created, not yet attempting to join |
-| `joining` | Bot is connecting to the meeting |
-| `joined` | Bot is in the meeting, recording NOT started |
-| `recording` | Bot is actively recording |
-| `stopped` | Recording stopped, processing in progress |
-| `done` | Bot left and all processing complete |
+
+| Status      | Meaning                                      |
+| ----------- | -------------------------------------------- |
+| `pending`   | Bot created, not yet attempting to join      |
+| `joining`   | Bot is connecting to the meeting             |
+| `joined`    | Bot is in the meeting, recording NOT started |
+| `recording` | Bot is actively recording                    |
+| `stopped`   | Recording stopped, processing in progress    |
+| `done`      | Bot left and all processing complete         |
 
 **Artifact status** (`media_shortcuts.*.status.code`):
-| Status | Meaning |
-|--------|---------|
-| `waiting` | Not started |
-| `processing` | Being generated |
-| `done` | Ready to retrieve |
-| `failed` | Generation failed — retry or contact support |
-| `deleted` | Artifact was removed |
+
+| Status       | Meaning                                      |
+| ------------ | -------------------------------------------- |
+| `waiting`    | Not started                                  |
+| `processing` | Being generated                              |
+| `done`       | Ready to retrieve                            |
+| `failed`     | Generation failed — retry or contact support |
+| `deleted`    | Artifact was removed                         |
 
 ---
 
@@ -35,7 +37,7 @@ speaker-attributed transcripts, and produces downloadable audio/video files.
 
 Creating a bot does NOT start recording. The full sequence is async:
 
-```
+```text
 create_bot → [wait: pending→joining→joined] → start_recording → [meeting runs] → leave_call/stop_recording → [wait: processing] → get_transcript → download_transcript
 ```
 

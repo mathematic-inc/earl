@@ -1,23 +1,27 @@
 {
   "compilerOptions": {
-    "baseUrl": ".",
-    "target": "ES2024",
-    "lib": ["dom", "dom.iterable", "ES2024"],
+    "target": "ESNext",
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
     "forceConsistentCasingInFileNames": true,
     "noEmit": true,
     "esModuleInterop": true,
-    "module": "esnext",
-    "moduleResolution": "bundler",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "verbatimModuleSyntax": true,
+    "allowArbitraryExtensions": true,
+    "noUncheckedSideEffectImports": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "react-jsx",
     "incremental": true,
+    "noImplicitOverride": true,
+    "noUncheckedIndexedAccess": true,
     "paths": {
       "@/*": ["./*"],
-      "fumadocs-mdx:collections/*": [".source/*"]
+      "fumadocs-mdx:collections/*": ["./.source/*"]
     },
     "plugins": [
       {

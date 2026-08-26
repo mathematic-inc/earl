@@ -1,21 +1,14 @@
 "use client";
 
-import {
-  AlertTriangle,
-  Check,
-  Clock,
-  Copy,
-  HardDrive,
-  Play,
-  RefreshCw,
-} from "lucide-react";
+import { AlertTriangle, Check, Clock, Copy, HardDrive, Play, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+
 import { JsonView } from "@/components/json-view";
 import { Button } from "@/components/ui/button";
 import type { ApiError, ExecuteResponse, ExecutionState } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-const MAC_RE = /mac/i;
+const MAC_RE = /mac/iv;
 
 // ---------------------------------------------------------------------------
 // Props
@@ -74,7 +67,7 @@ function formatTiming(ms: number): string {
   return `${(ms / 1000).toFixed(2)}s`;
 }
 
-const BIND_ERROR_PARAM_RE = /parameter[:\s]+(\w+)/i;
+const BIND_ERROR_PARAM_RE = /parameter[:\s]+(\w+)/iv;
 
 /**
  * Extract param name from a `bind_error` message.
@@ -82,7 +75,7 @@ const BIND_ERROR_PARAM_RE = /parameter[:\s]+(\w+)/i;
  */
 function extractBindErrorParam(message: string): string | null {
   const match = message.match(BIND_ERROR_PARAM_RE);
-  return match ? match[1] : null;
+  return match?.[1] ?? null;
 }
 
 /** Whether the error signals a write-confirmation prompt. */
@@ -155,7 +148,7 @@ function StatusBadge({ status }: { status: number }) {
     <span
       className={cn(
         "inline-flex items-center rounded-full border px-2 py-0.5 font-mono font-semibold text-[0.625rem]",
-        statusColor(status)
+        statusColor(status),
       )}
     >
       {status}
@@ -201,7 +194,7 @@ function SuccessView({
         return String(data);
       }
     },
-    [response]
+    [response],
   );
 
   return (
@@ -241,21 +234,16 @@ function SuccessView({
                 "rounded-md px-2 py-0.5 text-[0.6rem] transition-colors",
                 activeTab === tab
                   ? "bg-muted text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
+                  : "text-muted-foreground hover:text-foreground",
               )}
               key={tab}
               onClick={() => setActiveTab(tab)}
               type="button"
             >
-              {tab === "human"
-                ? "Human"
-                : tab.charAt(0).toUpperCase() + tab.slice(1)}
+              {tab === "human" ? "Human" : tab.charAt(0).toUpperCase() + tab.slice(1)}
             </button>
           ))}
-          <CopyButton
-            label="Copy tab content"
-            text={tabContentText(activeTab)}
-          />
+          <CopyButton label="Copy tab content" text={tabContentText(activeTab)} />
         </div>
       </div>
 
@@ -263,7 +251,7 @@ function SuccessView({
       <div
         className={cn(
           "flex-1 overflow-auto p-3 transition-all duration-200",
-          bodyVisible ? "opacity-100" : "opacity-0"
+          bodyVisible ? "opacity-100" : "opacity-0",
         )}
       >
         {activeTab === "raw" && <JsonView data={response.result} />}
@@ -347,12 +335,7 @@ function ErrorView({
           </div>
           <p className="mt-1 text-red-300/80">{message}</p>
           {onRefreshTools && (
-            <Button
-              className="mt-2 w-fit"
-              onClick={onRefreshTools}
-              size="sm"
-              variant="outline"
-            >
+            <Button className="mt-2 w-fit" onClick={onRefreshTools} size="sm" variant="outline">
               <RefreshCw className="size-3" />
               Refresh commands
             </Button>
@@ -400,20 +383,14 @@ function ErrorView({
 // Main export
 // ---------------------------------------------------------------------------
 
-export function ResponseView({
-  execution,
-  onRefreshTools,
-  stale,
-  isHttp,
-}: ResponseViewProps) {
+export function ResponseView({ execution, onRefreshTools, stale, isHttp }: ResponseViewProps) {
   if (execution.status === "idle") {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-2 text-muted-foreground">
         <Play className="size-5 opacity-30" />
         <p className="text-xs">Run to see results</p>
         <p className="text-[0.6rem] opacity-60">
-          {MAC_RE.test(navigator.userAgent) ? "\u2318" : "Ctrl"}+Enter or click
-          Execute above
+          {MAC_RE.test(navigator.userAgent) ? "\u2318" : "Ctrl"}+Enter or click Execute above
         </p>
       </div>
     );
@@ -424,11 +401,7 @@ export function ResponseView({
     if (execution.previousResponse) {
       return (
         <div className="pointer-events-none relative h-full opacity-50">
-          <SuccessView
-            isHttp={isHttp}
-            response={execution.previousResponse}
-            timing={0}
-          />
+          <SuccessView isHttp={isHttp} response={execution.previousResponse} timing={0} />
         </div>
       );
     }

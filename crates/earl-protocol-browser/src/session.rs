@@ -134,7 +134,7 @@ pub async fn acquire_session_lock(session_id: &str) -> Result<tokio::fs::File> {
         .await
         .context("opening session lock file")?;
 
-    match file.try_lock_exclusive() {
+    match file.try_lock() {
         Ok(()) => Ok(file),
         Err(_) => {
             // Try to read the PID from the lock file content (best-effort).

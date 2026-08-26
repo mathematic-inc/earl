@@ -30,7 +30,7 @@ Translate your task into a short search query (e.g. "list github pull requests",
 
 **MCP discovery path:**
 
-```
+```text
 earl.tool_search(query="<intent>", limit=5)
 ```
 
@@ -81,7 +81,7 @@ earl call provider.command --yes --json --param value   ✗
 
 **MCP discovery path:**
 
-```
+```text
 earl.tool_call(name="provider.command", arguments={"param": "value"})
 ```
 
@@ -106,22 +106,22 @@ page of results), ask the user whether to fetch the next page. Do not paginate a
 
 ### Fix inline
 
-| Error | Fix |
-|-------|-----|
-| `--yes` / `--json` after command name | Retry with flags before command name |
-| Type mismatch (string where number expected) | Coerce if unambiguous; otherwise ask human |
-| `no such command` | Re-search with a broader query |
-| `address not allowed` | Report: this endpoint is blocked by Earl's network policy. Stop. |
-| `HCL parse error` / `template error` | Report: the template is broken. Stop. Suggest `troubleshoot-earl`. |
+| Error                                        | Fix                                                                |
+| -------------------------------------------- | ------------------------------------------------------------------ |
+| `--yes` / `--json` after command name        | Retry with flags before command name                               |
+| Type mismatch (string where number expected) | Coerce if unambiguous; otherwise ask human                         |
+| `no such command`                            | Re-search with a broader query                                     |
+| `address not allowed`                        | Report: this endpoint is blocked by Earl's network policy. Stop.   |
+| `HCL parse error` / `template error`         | Report: the template is broken. Stop. Suggest `troubleshoot-earl`. |
 
 ### Pause for human
 
-| Error | What to do |
-|-------|------------|
-| HTTP 401 / 403 | Run `earl secrets list`, identify the missing or expired key |
-| Secret not set | Print `earl secrets set <key>` for the human to run. Wait for confirmation before retrying. |
-| OAuth required | Print `earl auth login <profile>`. Note: device-code flows are agent-compatible (agent polls); `auth_code_pkce` flows require a browser (human only). |
-| `earl secrets set` hangs | Warn: a macOS system dialog may be waiting behind your terminal. Click "Always Allow." |
+| Error                    | What to do                                                                                                                                            |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| HTTP 401 / 403           | Run `earl secrets list`, identify the missing or expired key                                                                                          |
+| Secret not set           | Print `earl secrets set <key>` for the human to run. Wait for confirmation before retrying.                                                           |
+| OAuth required           | Print `earl auth login <profile>`. Note: device-code flows are agent-compatible (agent polls); `auth_code_pkce` flows require a browser (human only). |
+| `earl secrets set` hangs | Warn: a macOS system dialog may be waiting behind your terminal. Click "Always Allow."                                                                |
 
 ### Escalate
 

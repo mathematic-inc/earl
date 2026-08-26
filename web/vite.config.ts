@@ -1,9 +1,10 @@
 import { fileURLToPath, URL } from "node:url";
+
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig, type Plugin } from "vite";
 
-const EARL_TOKEN_RE = /earl-token"\s+content="([^"]+)"/;
+const EARL_TOKEN_RE = /earl-token"\s+content="([^"]+)"/v;
 
 function earlTokenPlugin(): Plugin {
   const target = process.env.EARL_API_URL || "http://localhost:3000";
@@ -17,9 +18,9 @@ function earlTokenPlugin(): Plugin {
         try {
           const res = await fetch(target);
           const html = await res.text();
-          const match = html.match(EARL_TOKEN_RE);
-          if (match) {
-            cachedToken = match[1];
+          const token = html.match(EARL_TOKEN_RE)?.[1];
+          if (token) {
+            cachedToken = token;
           }
         } catch {
           // earl backend not running
@@ -50,10 +51,7 @@ export default defineConfig({
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
       "./files": fileURLToPath(
-        new URL(
-          "./node_modules/@fontsource-variable/inter/files",
-          import.meta.url
-        )
+        new URL("./node_modules/@fontsource-variable/inter/files", import.meta.url),
       ),
     },
   },

@@ -1,12 +1,5 @@
 // Mirrors ParamType enum from crates/earl-core/src/schema.rs
-export type ParamType =
-  | "string"
-  | "integer"
-  | "number"
-  | "boolean"
-  | "null"
-  | "array"
-  | "object";
+export type ParamType = "string" | "integer" | "number" | "boolean" | "null" | "array" | "object";
 
 // Mirrors ParamSpec struct from crates/earl-core/src/schema.rs
 export interface ParamSpec {

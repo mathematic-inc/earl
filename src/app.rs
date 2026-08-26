@@ -237,7 +237,7 @@ async fn run_templates(command: TemplateSubcommand, json_mode: bool, cfg: Config
                 println!("{}", serde_json::to_string_pretty(&rows)?);
             } else {
                 let mut table = Table::new();
-                table.load_preset(UTF8_FULL).set_header([
+                table.load_style(UTF8_FULL).set_header([
                     "Command",
                     "Mode",
                     "Categories",
@@ -273,7 +273,7 @@ async fn run_templates(command: TemplateSubcommand, json_mode: bool, cfg: Config
             } else {
                 let mut table = Table::new();
                 table
-                    .load_preset(UTF8_FULL)
+                    .load_style(UTF8_FULL)
                     .set_header(["Score", "Command", "Summary"]);
                 for hit in results {
                     table.add_row(vec![
@@ -381,7 +381,7 @@ fn run_secrets(command: SecretsSubcommand) -> Result<()> {
             } else {
                 let mut table = Table::new();
                 table
-                    .load_preset(UTF8_FULL)
+                    .load_style(UTF8_FULL)
                     .set_header(["Key", "Created", "Updated"]);
                 for meta in entries {
                     table.add_row(vec![

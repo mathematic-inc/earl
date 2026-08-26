@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react";
+
 import type { ApiError, ExecuteResponse, HistoryEntry } from "@/lib/types";
 
 const STORAGE_KEY = "earl-history";
@@ -29,7 +30,7 @@ export function useHistory() {
       command: string,
       args: Record<string, unknown>,
       response?: ExecuteResponse,
-      error?: ApiError
+      error?: ApiError,
     ) => {
       const entry: HistoryEntry = {
         id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -49,7 +50,7 @@ export function useHistory() {
         return next;
       });
     },
-    []
+    [],
   );
 
   const clearHistory = useCallback(() => {

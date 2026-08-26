@@ -10,7 +10,7 @@ Earl has seven subcommands: `call`, `templates`, `secrets`, `auth`, `mcp`, `doct
 
 Execute a provider command.
 
-```
+```text
 earl call [--yes] [--json] [--env <name>] <provider.command> [--param value ...]
 ```
 
@@ -47,7 +47,7 @@ Parameter names correspond to `param` blocks in the template. Required parameter
 
 Any command annotated `mode = "write"` pauses and asks before running:
 
-```
+```text
 Command `github.create_issue` is write-enabled.
 Type YES to continue:
 ```
@@ -79,7 +79,7 @@ earl call --json github.search_repos --query "rust" | jq '.items[].full_name'
 
 Work with template files.
 
-```
+```text
 earl templates [--json] <subcommand>
 ```
 
@@ -262,7 +262,7 @@ earl auth logout myprofile
 
 Run Earl as an MCP server. Templates appear as MCP tools.
 
-```
+```text
 earl mcp <stdio|http> [flags]
 ```
 

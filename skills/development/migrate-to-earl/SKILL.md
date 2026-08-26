@@ -104,7 +104,7 @@ or `%APPDATA%\earl\templates\<provider>.hcl` (Windows) to find them.
 
 Print the checklist of required secrets for the imported templates:
 
-```
+```text
 Before replacing call sites, set the required secrets in your terminal:
 
   earl secrets set <provider>.<key>
@@ -188,9 +188,7 @@ subprocess.run(["earl", "call", "--yes", "--json", "github.get_repo", "--owner",
 execSync(`curl -H "Authorization: Bearer ${token}" ${url}`);
 
 // After (Node.js):
-execSync(
-  `earl call --yes --json github.get_repo --owner ${owner} --repo ${repo}`,
-);
+execSync(`earl call --yes --json github.get_repo --owner ${owner} --repo ${repo}`);
 ```
 
 For flagged complex pipelines, add a comment but leave the original:

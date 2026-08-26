@@ -60,7 +60,7 @@ With `stream = true`, Earl reads the response body line by line instead of buffe
 
 SSE responses look like this on the wire:
 
-```
+```text
 data: {"id":"1","delta":"Hello"}
 data: {"id":"2","delta":" world"}
 data: [DONE]
@@ -118,7 +118,7 @@ command "stream_completion" {
 }
 ```
 
-The `data: ` prefix is stripped before decoding, so `result` is the parsed JSON payload. The `[DONE]` terminator fails JSON parsing and is skipped — no template handling needed.
+The `data:` prefix is stripped before decoding, so `result` is the parsed JSON payload. The `[DONE]` terminator fails JSON parsing and is skipped — no template handling needed.
 
 If you need to handle all lines in the template (including terminators), use `decode = "text"` instead:
 
@@ -133,7 +133,7 @@ result {
 
 NDJSON responses send one JSON object per line, with no SSE envelope:
 
-```
+```text
 {"id":1,"event":"order.created","amount":9900}
 {"id":2,"event":"order.updated","amount":9900}
 ```

@@ -1,11 +1,8 @@
 import { ChevronRight, Search, Terminal } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
 import { Badge } from "@/components/ui/badge";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   Command,
   CommandDialog,
@@ -18,12 +15,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type { ToolsState } from "@/hooks/use-tools";
 import type { ProviderGroup, Tool } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -103,12 +95,8 @@ function SidebarEmpty() {
   return (
     <div className="flex flex-col items-center justify-center gap-2 p-8 text-center">
       <Terminal className="size-8 text-muted-foreground/50" />
-      <p className="font-medium text-muted-foreground text-sm">
-        No tools loaded
-      </p>
-      <p className="text-muted-foreground/70 text-xs">
-        Check your configuration and reload.
-      </p>
+      <p className="font-medium text-muted-foreground text-sm">No tools loaded</p>
+      <p className="text-muted-foreground/70 text-xs">Check your configuration and reload.</p>
     </div>
   );
 }
@@ -129,8 +117,9 @@ function IconRail({
             <TooltipTrigger
               className="flex size-8 items-center justify-center rounded-md font-semibold text-muted-foreground text-xs uppercase hover:bg-muted hover:text-foreground"
               onClick={() => {
-                if (group.tools.length > 0) {
-                  onSelect(group.tools[0].key);
+                const key = group.tools[0]?.key;
+                if (key) {
+                  onSelect(key);
                 }
               }}
             >
@@ -166,7 +155,7 @@ function ToolItem({
         className={cn(
           "group/item relative flex w-full items-center gap-2 rounded-md px-2 py-1 text-left text-[0.8rem] transition-all duration-120 hover:translate-x-0.5",
           isActive ? "bg-accent text-accent-foreground" : "hover:bg-muted",
-          isFocused && !isActive && "bg-muted/60"
+          isFocused && !isActive && "bg-muted/60",
         )}
         onClick={() => onSelect(tool.key)}
         onMouseEnter={onMouseEnter}
@@ -176,7 +165,7 @@ function ToolItem({
         <span
           className={cn(
             "absolute inset-y-1 left-0 w-0.5 rounded-full bg-primary transition-all duration-200 ease-out",
-            isActive ? "opacity-100" : "opacity-0"
+            isActive ? "opacity-100" : "opacity-0",
           )}
         />
 
@@ -219,7 +208,7 @@ function ProviderGroupSection({
         <ChevronRight
           className={cn(
             "size-3.5 shrink-0 text-muted-foreground transition-transform duration-200",
-            isOpen && "rotate-90"
+            isOpen && "rotate-90",
           )}
         />
         <span className="flex-1 text-left font-medium text-muted-foreground text-xs uppercase tracking-wider">
@@ -273,11 +262,8 @@ export function Sidebar({ state, selectedKey, onSelect }: SidebarProps) {
   const [cmdOpen, setCmdOpen] = useState(false);
 
   // --- Collapsed groups ---
-  const [manuallyToggled, setManuallyToggled] =
-    useState<Set<string>>(readPersistedGroups);
-  const [autoExpandedProvider, setAutoExpandedProvider] = useState<
-    string | null
-  >(null);
+  const [manuallyToggled, setManuallyToggled] = useState<Set<string>>(readPersistedGroups);
+  const [autoExpandedProvider, setAutoExpandedProvider] = useState<string | null>(null);
 
   // --- Keyboard focus ---
   const [focusedKey, setFocusedKey] = useState<string | null>(null);
@@ -296,9 +282,7 @@ export function Sidebar({ state, selectedKey, onSelect }: SidebarProps) {
     }
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
-        setIsCollapsedWidth(
-          entry.contentRect.width < COLLAPSED_WIDTH_THRESHOLD
-        );
+        setIsCollapsedWidth(entry.contentRect.width < COLLAPSED_WIDTH_THRESHOLD);
       }
     });
     observer.observe(el);
@@ -322,7 +306,7 @@ export function Sidebar({ state, selectedKey, onSelect }: SidebarProps) {
 
   const totalFilteredCount = useMemo(
     () => filteredGroups.reduce((sum, g) => sum + g.tools.length, 0),
-    [filteredGroups]
+    [filteredGroups],
   );
 
   // --- Group open/close logic ---
@@ -336,7 +320,7 @@ export function Sidebar({ state, selectedKey, onSelect }: SidebarProps) {
       }
       return true;
     },
-    [manuallyToggled, autoExpandedProvider]
+    [manuallyToggled, autoExpandedProvider],
   );
 
   // Build a flat list of visible (non-collapsed) tool keys for keyboard nav
@@ -358,9 +342,7 @@ export function Sidebar({ state, selectedKey, onSelect }: SidebarProps) {
     if (!selectedKey || state.status !== "loaded") {
       return;
     }
-    const ownerGroup = groups.find((g) =>
-      g.tools.some((t) => t.key === selectedKey)
-    );
+    const ownerGroup = groups.find((g) => g.tools.some((t) => t.key === selectedKey));
     if (ownerGroup) {
       setAutoExpandedProvider(ownerGroup.provider);
       // If the selected tool's group was manually collapsed, un-collapse it
@@ -398,18 +380,18 @@ export function Sidebar({ state, selectedKey, onSelect }: SidebarProps) {
       const currentIdx = focusedKey ? visibleKeys.indexOf(focusedKey) : -1;
       let nextIdx: number;
       if (direction === "down") {
-        nextIdx =
-          currentIdx === -1 || currentIdx >= visibleKeys.length - 1
-            ? 0
-            : currentIdx + 1;
+        nextIdx = currentIdx === -1 || currentIdx >= visibleKeys.length - 1 ? 0 : currentIdx + 1;
       } else {
         nextIdx = currentIdx <= 0 ? visibleKeys.length - 1 : currentIdx - 1;
       }
       const nextKey = visibleKeys[nextIdx];
+      if (!nextKey) {
+        return;
+      }
       setFocusedKey(nextKey);
       itemRefs.current.get(nextKey)?.scrollIntoView({ block: "nearest" });
     },
-    [visibleKeys, focusedKey]
+    [visibleKeys, focusedKey],
   );
 
   // Keyboard navigation on the container
@@ -455,10 +437,7 @@ export function Sidebar({ state, selectedKey, onSelect }: SidebarProps) {
 
   if (state.status === "error") {
     return (
-      <div
-        className="flex h-full items-center justify-center p-4"
-        ref={containerRef}
-      >
+      <div className="flex h-full items-center justify-center p-4" ref={containerRef}>
         <p className="text-destructive text-sm">{state.error}</p>
       </div>
     );
@@ -508,7 +487,7 @@ export function Sidebar({ state, selectedKey, onSelect }: SidebarProps) {
         </div>
         {search.trim() && (
           <p className="mt-1 text-[0.65rem] text-muted-foreground">
-            {totalFilteredCount} result{totalFilteredCount !== 1 ? "s" : ""}
+            {totalFilteredCount} result{totalFilteredCount === 1 ? "" : "s"}
           </p>
         )}
       </div>
@@ -558,9 +537,7 @@ export function Sidebar({ state, selectedKey, onSelect }: SidebarProps) {
                     value={`${tool.provider} ${tool.title} ${tool.key}`}
                   >
                     <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                      <span className="truncate font-medium text-xs">
-                        {tool.title}
-                      </span>
+                      <span className="truncate font-medium text-xs">{tool.title}</span>
                       <span className="truncate font-mono text-[0.6rem] text-muted-foreground">
                         {tool.provider}.{tool.command}
                       </span>

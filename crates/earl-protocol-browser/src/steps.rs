@@ -774,33 +774,27 @@ async fn step_press_key(ctx: &StepContext<'_>, key: &str) -> Result<Value> {
     };
     use chromiumoxide::keys;
 
-    let key_def = keys::get_key_definition(key)
+    let key = keys::get_key_definition(key)
         .ok_or_else(|| anyhow::anyhow!("press_key: unknown key '{key}'"))?;
-
-    let mut cmd = DispatchKeyEventParams::builder();
-
-    let key_down_type = if let Some(txt) = key_def.text {
-        cmd = cmd.text(txt);
+    let mut command = DispatchKeyEventParams::builder()
+        .key(key.key)
+        .code(key.code);
+    let key_down_type = if let Some(text) = key.text {
+        command = command.text(text);
         DispatchKeyEventType::KeyDown
-    } else if key_def.key.len() == 1 {
-        cmd = cmd.text(key_def.key);
+    } else if key.key.len() == 1 {
+        command = command.text(key.key);
         DispatchKeyEventType::KeyDown
     } else {
         DispatchKeyEventType::RawKeyDown
     };
 
-    cmd = cmd
-        .key(key_def.key)
-        .code(key_def.code)
-        .windows_virtual_key_code(key_def.key_code)
-        .native_virtual_key_code(key_def.key_code);
-
     ctx.page
-        .execute(cmd.clone().r#type(key_down_type).build().unwrap())
+        .execute(command.clone().r#type(key_down_type).build().unwrap())
         .await
         .map_err(|e| anyhow::anyhow!("press_key key_down: {e}"))?;
     ctx.page
-        .execute(cmd.r#type(DispatchKeyEventType::KeyUp).build().unwrap())
+        .execute(command.r#type(DispatchKeyEventType::KeyUp).build().unwrap())
         .await
         .map_err(|e| anyhow::anyhow!("press_key key_up: {e}"))?;
 
@@ -1049,6 +1043,10 @@ async fn step_mouse_wheel(ctx: &StepContext<'_>, delta_x: f64, delta_y: f64) -> 
         )
         .await
         .map_err(|e| anyhow::anyhow!("mouse_wheel: {e}"))?;
+    ctx.page
+        .evaluate("new Promise(resolve => requestAnimationFrame(() => resolve(true)))")
+        .await
+        .map_err(|e| anyhow::anyhow!("mouse_wheel wait for frame: {e}"))?;
     Ok(json!({"ok": true}))
 }
 
@@ -1073,12 +1071,30 @@ async fn step_wait_for(
         tokio::time::Instant::now() + std::time::Duration::from_millis(timeout_ms.max(200));
 
     loop {
-        let body_text: Value = ctx
+        if tokio::time::Instant::now() >= deadline {
+            return Err(BrowserError::Timeout {
+                step: ctx.step_index,
+                action: "wait_for".into(),
+                timeout_ms,
+            }
+            .into());
+        }
+
+        let body_text: Value = match ctx
             .page
             .evaluate("document.body ? document.body.innerText : ''")
             .await
-            .map_err(|e| anyhow::anyhow!("wait_for evaluate: {e}"))?
-            .into_value()?;
+        {
+            Ok(result) => result.into_value()?,
+            Err(chromiumoxide::error::CdpError::Chrome(error))
+                if error.code == -32000
+                    && error.message == "Cannot find context with specified id" =>
+            {
+                tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+                continue;
+            }
+            Err(error) => return Err(anyhow::anyhow!("wait_for evaluate: {error}")),
+        };
         let body = body_text.as_str().unwrap_or("");
 
         if let Some(t) = text {

@@ -75,7 +75,7 @@ mod tests {
 
 **Integration tests** live under `tests/` at the crate root. Each file is compiled as a separate crate, so only the public API is accessible:
 
-```
+```text
 crate/
   src/
   tests/
@@ -85,14 +85,14 @@ crate/
 
 **Doc tests** appear in `///` doc comments and serve as both documentation and tests:
 
-```rust
+````rust
 /// Encodes a value as base64.
 ///
 /// ```
 /// assert_eq!(encode("hello"), "aGVsbG8=");
 /// ```
 pub fn encode(s: &str) -> String { ... }
-```
+````
 
 ## Writing Unit Tests
 
