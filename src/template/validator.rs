@@ -373,10 +373,8 @@ fn validate_body(command_name: &str, body: &BodyTemplate) -> Result<()> {
                 validate_part(command_name, part)?;
             }
         }
-        BodyTemplate::FileStream { path, .. } => {
-            if path.trim().is_empty() {
-                bail!("command {command_name} file_stream body path must not be empty");
-            }
+        BodyTemplate::FileStream { path, .. } if path.trim().is_empty() => {
+            bail!("command {command_name} file_stream body path must not be empty");
         }
         _ => {}
     }
