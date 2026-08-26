@@ -77,6 +77,19 @@ See [How Earl Works](https://mathematic-inc.github.io/earl/docs/how-earl-works) 
 - [Commands](https://mathematic-inc.github.io/earl/docs/commands) — complete CLI reference
 - [Troubleshooting](https://mathematic-inc.github.io/earl/docs/troubleshooting) — keychain errors, template validation, MCP issues
 
+## Contributing
+
+Start with a [Discussion](../../discussions/new), not a pull request. A
+Mathematic maintainer will review the proposal. If we decide to implement it, a
+maintainer or one of our AI agents will open the pull request. GitHub restricts
+pull request creation to Mathematic maintainers and repository collaborators
+with write, maintain, or admin access, plus authorized maintenance agents.
+
+When Mathematic implements a proposal, the implementation pull request will
+link to the Discussion and credit the proposal's original author.
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the full policy.
+
 ## License
 
 Apache-2.0
