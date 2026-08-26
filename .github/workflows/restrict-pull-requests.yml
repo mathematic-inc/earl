@@ -1,0 +1,28 @@
+name: Restrict pull requests
+
+on:
+  pull_request_target:
+    types: [opened, reopened]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  close-outside-pull-request:
+    if: >-
+      ${{
+        github.event.pull_request.author_association != 'OWNER' &&
+        github.event.pull_request.author_association != 'MEMBER' &&
+        github.event.pull_request.author_association != 'COLLABORATOR' &&
+        github.event.pull_request.user.login != 'renovate[bot]' &&
+        github.event.pull_request.user.login != 'dependabot[bot]'
+      }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Close outside pull request
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          gh pr close "$PR_URL" --comment \
+            "This repository uses a discussion-first contribution process. Please open a Discussion at https://github.com/${GITHUB_REPOSITORY}/discussions/new and wait for a maintainer to review it. If we decide to proceed, a Mathematic maintainer or agent will open the pull request."

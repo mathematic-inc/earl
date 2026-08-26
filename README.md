@@ -77,6 +77,16 @@ See [How Earl Works](https://mathematic-inc.github.io/earl/docs/how-earl-works) 
 - [Commands](https://mathematic-inc.github.io/earl/docs/commands) — complete CLI reference
 - [Troubleshooting](https://mathematic-inc.github.io/earl/docs/troubleshooting) — keychain errors, template validation, MCP issues
 
+## Contributing
+
+Start with a [Discussion](../../discussions/new), not a pull request. A
+Mathematic maintainer will review the proposal. If we decide to implement it, a
+maintainer or one of our AI agents will open the pull request. Only Mathematic
+organization owners and members, repository collaborators, Renovate, and
+Dependabot may open pull requests; other pull requests close automatically.
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the full policy.
+
 ## License
 
 Apache-2.0
