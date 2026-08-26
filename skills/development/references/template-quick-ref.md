@@ -101,14 +101,14 @@ operation {
 
 ## Body Block Kinds (HTTP only)
 
-| Kind                | Fields                      | Use case                  |
-| ------------------- | --------------------------- | ------------------------- |
-| `json`              | `value` (object/map)        | JSON request body         |
-| `form_urlencoded`   | `fields` (object/map)       | URL-encoded form data     |
-| `raw_text`          | `value` (string)            | Raw text body             |
-| `raw_bytes_base64`  | `value` (string)            | Raw bytes (base64)        |
-| `multipart`         | `parts` (array)             | File uploads, mixed parts |
-| `file_stream`       | `path`, `content_type`      | Stream a local file       |
+| Kind               | Fields                 | Use case                  |
+| ------------------ | ---------------------- | ------------------------- |
+| `json`             | `value` (object/map)   | JSON request body         |
+| `form_urlencoded`  | `fields` (object/map)  | URL-encoded form data     |
+| `raw_text`         | `value` (string)       | Raw text body             |
+| `raw_bytes_base64` | `value` (string)       | Raw bytes (base64)        |
+| `multipart`        | `parts` (array)        | File uploads, mixed parts |
+| `file_stream`      | `path`, `content_type` | Stream a local file       |
 
 ## Parameter Types
 

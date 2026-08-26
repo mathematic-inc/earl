@@ -1,12 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
+
 import { CommandDocs } from "@/components/command-docs";
 import { Playground } from "@/components/playground";
 import { Sidebar } from "@/components/sidebar";
-import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from "@/components/ui/resizable";
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { Toaster } from "@/components/ui/sonner";
 import { useTools } from "@/hooks/use-tools";
 
@@ -52,16 +49,12 @@ export default function App() {
 
   // Auto-select first tool if none selected and tools loaded
   useEffect(() => {
-    if (
-      toolsState.status === "loaded" &&
-      !selectedKey &&
-      toolsState.tools.length > 0
-    ) {
+    if (toolsState.status === "loaded" && !selectedKey && toolsState.tools.length > 0) {
       const hashCommand = getHashCommand();
       const key =
         hashCommand && toolsState.tools.some((t) => t.key === hashCommand)
           ? hashCommand
-          : toolsState.tools[0].key;
+          : toolsState.tools[0]!.key;
       setSelectedKey(key);
       setHash(key);
     }
@@ -101,17 +94,8 @@ export default function App() {
   return (
     <div className="h-screen w-screen overflow-hidden">
       <ResizablePanelGroup className="h-full" orientation="horizontal">
-        <ResizablePanel
-          collapsedSize={3}
-          collapsible
-          defaultSize="18%"
-          minSize="14%"
-        >
-          <Sidebar
-            onSelect={handleSelectCommand}
-            selectedKey={selectedKey}
-            state={toolsState}
-          />
+        <ResizablePanel collapsedSize={3} collapsible defaultSize="18%" minSize="14%">
+          <Sidebar onSelect={handleSelectCommand} selectedKey={selectedKey} state={toolsState} />
         </ResizablePanel>
 
         <ResizableHandle />

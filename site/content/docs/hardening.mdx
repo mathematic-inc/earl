@@ -45,15 +45,15 @@ allow_private_ips = true
 
 Cloud metadata endpoints (`169.254.169.254`, `fd00:ec2::254`, etc.) and all other hazardous ranges remain blocked regardless of this setting. The only ranges lifted by `allow_private_ips` are:
 
-| Range          | Description                 |
-| -------------- | --------------------------- |
-| 127.0.0.0/8    | IPv4 loopback               |
-| 10.0.0.0/8     | RFC 1918 private            |
-| 172.16.0.0/12  | RFC 1918 private            |
-| 192.168.0.0/16 | RFC 1918 private            |
-| ::1/128        | IPv6 loopback               |
-| fc00::/7       | IPv6 unique local (ULA)     |
-| fec0::/10      | IPv6 site-local             |
+| Range          | Description             |
+| -------------- | ----------------------- |
+| 127.0.0.0/8    | IPv4 loopback           |
+| 10.0.0.0/8     | RFC 1918 private        |
+| 172.16.0.0/12  | RFC 1918 private        |
+| 192.168.0.0/16 | RFC 1918 private        |
+| ::1/128        | IPv6 loopback           |
+| fc00::/7       | IPv6 unique local (ULA) |
+| fec0::/10      | IPv6 site-local         |
 
 Only set this in environments where the agent can't be used to pivot into infrastructure you don't intend to expose. On a shared or production host, keep the default (`false`).
 
@@ -87,7 +87,7 @@ Setting an allowlist is the most effective way to limit what a compromised templ
 
 Write mode is the default. Any command without `mode = "read"` in its annotations prompts before executing:
 
-```
+```text
 Command `github.create_issue` is write-enabled.
 Type YES to continue:
 ```

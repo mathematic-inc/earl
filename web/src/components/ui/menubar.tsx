@@ -4,6 +4,7 @@ import { Menu as MenuPrimitive } from "@base-ui/react/menu";
 import { Menubar as MenubarPrimitive } from "@base-ui/react/menubar";
 import { CheckIcon } from "lucide-react";
 import type { ComponentProps } from "react";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,10 +25,7 @@ import { cn } from "@/lib/utils";
 function Menubar({ className, ...props }: MenubarPrimitive.Props) {
   return (
     <MenubarPrimitive
-      className={cn(
-        "flex h-9 items-center rounded-lg border bg-background p-1",
-        className
-      )}
+      className={cn("flex h-9 items-center rounded-lg border bg-background p-1", className)}
       data-slot="menubar"
       {...props}
     />
@@ -42,21 +40,16 @@ function MenubarGroup({ ...props }: ComponentProps<typeof DropdownMenuGroup>) {
   return <DropdownMenuGroup data-slot="menubar-group" {...props} />;
 }
 
-function MenubarPortal({
-  ...props
-}: ComponentProps<typeof DropdownMenuPortal>) {
+function MenubarPortal({ ...props }: ComponentProps<typeof DropdownMenuPortal>) {
   return <DropdownMenuPortal data-slot="menubar-portal" {...props} />;
 }
 
-function MenubarTrigger({
-  className,
-  ...props
-}: ComponentProps<typeof DropdownMenuTrigger>) {
+function MenubarTrigger({ className, ...props }: ComponentProps<typeof DropdownMenuTrigger>) {
   return (
     <DropdownMenuTrigger
       className={cn(
         "flex select-none items-center rounded-[calc(var(--radius-md)-2px)] px-2 py-[calc(--spacing(0.85))] font-medium text-xs/relaxed outline-hidden hover:bg-muted aria-expanded:bg-muted",
-        className
+        className,
       )}
       data-slot="menubar-trigger"
       {...props}
@@ -77,7 +70,7 @@ function MenubarContent({
       alignOffset={alignOffset}
       className={cn(
         "data-open:fade-in-0 data-open:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-[side=inline-start]:slide-in-from-end-2 data-[side=inline-end]:slide-in-from-start-2 min-w-32 rounded-lg bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10 duration-100 data-open:animate-in",
-        className
+        className,
       )}
       data-slot="menubar-content"
       sideOffset={sideOffset}
@@ -96,7 +89,7 @@ function MenubarItem({
     <DropdownMenuItem
       className={cn(
         "group/menubar-item min-h-7 gap-2 rounded-md px-2 py-1 text-xs/relaxed focus:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-inset:ps-7.5 data-[variant=destructive]:text-destructive data-disabled:opacity-50 data-[variant=destructive]:focus:bg-destructive/10 data-[variant=destructive]:focus:text-destructive dark:data-[variant=destructive]:focus:bg-destructive/20 [&_svg:not([class*='size-'])]:size-3.5 data-[variant=destructive]:*:[svg]:text-destructive!",
-        className
+        className,
       )}
       data-inset={inset}
       data-slot="menubar-item"
@@ -120,7 +113,7 @@ function MenubarCheckboxItem({
       checked={checked}
       className={cn(
         "relative flex min-h-7 cursor-default select-none items-center gap-2 rounded-md py-1.5 ps-7.5 pe-2 text-xs outline-hidden focus:bg-accent focus:text-accent-foreground focus:**:text-accent-foreground data-disabled:pointer-events-none data-inset:ps-7.5 data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0",
-        className
+        className,
       )}
       data-inset={inset}
       data-slot="menubar-checkbox-item"
@@ -136,9 +129,7 @@ function MenubarCheckboxItem({
   );
 }
 
-function MenubarRadioGroup({
-  ...props
-}: ComponentProps<typeof DropdownMenuRadioGroup>) {
+function MenubarRadioGroup({ ...props }: ComponentProps<typeof DropdownMenuRadioGroup>) {
   return <DropdownMenuRadioGroup data-slot="menubar-radio-group" {...props} />;
 }
 
@@ -154,7 +145,7 @@ function MenubarRadioItem({
     <MenuPrimitive.RadioItem
       className={cn(
         "relative flex min-h-7 cursor-default select-none items-center gap-2 rounded-md py-1.5 ps-7.5 pe-2 text-xs outline-hidden focus:bg-accent focus:text-accent-foreground focus:**:text-accent-foreground data-disabled:pointer-events-none data-inset:ps-7.5 data-disabled:opacity-50 [&_svg:not([class*='size-'])]:size-3.5 [&_svg]:pointer-events-none [&_svg]:shrink-0",
-        className
+        className,
       )}
       data-inset={inset}
       data-slot="menubar-radio-item"
@@ -179,10 +170,7 @@ function MenubarLabel({
 }) {
   return (
     <DropdownMenuLabel
-      className={cn(
-        "px-2 py-1.5 text-muted-foreground text-xs data-inset:ps-7.5",
-        className
-      )}
+      className={cn("px-2 py-1.5 text-muted-foreground text-xs data-inset:ps-7.5", className)}
       data-inset={inset}
       data-slot="menubar-label"
       {...props}
@@ -190,10 +178,7 @@ function MenubarLabel({
   );
 }
 
-function MenubarSeparator({
-  className,
-  ...props
-}: ComponentProps<typeof DropdownMenuSeparator>) {
+function MenubarSeparator({ className, ...props }: ComponentProps<typeof DropdownMenuSeparator>) {
   return (
     <DropdownMenuSeparator
       className={cn("-mx-1 my-1 h-px bg-border/50", className)}
@@ -203,15 +188,12 @@ function MenubarSeparator({
   );
 }
 
-function MenubarShortcut({
-  className,
-  ...props
-}: ComponentProps<typeof DropdownMenuShortcut>) {
+function MenubarShortcut({ className, ...props }: ComponentProps<typeof DropdownMenuShortcut>) {
   return (
     <DropdownMenuShortcut
       className={cn(
         "ms-auto text-[0.625rem] text-muted-foreground tracking-widest group-focus/menubar-item:text-accent-foreground",
-        className
+        className,
       )}
       data-slot="menubar-shortcut"
       {...props}
@@ -234,7 +216,7 @@ function MenubarSubTrigger({
     <DropdownMenuSubTrigger
       className={cn(
         "min-h-7 gap-2 rounded-md px-2 py-1 text-xs focus:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-open:bg-accent data-inset:ps-7.5 data-open:text-accent-foreground [&_svg:not([class*='size-'])]:size-3.5",
-        className
+        className,
       )}
       data-inset={inset}
       data-slot="menubar-sub-trigger"
@@ -243,15 +225,12 @@ function MenubarSubTrigger({
   );
 }
 
-function MenubarSubContent({
-  className,
-  ...props
-}: ComponentProps<typeof DropdownMenuSubContent>) {
+function MenubarSubContent({ className, ...props }: ComponentProps<typeof DropdownMenuSubContent>) {
   return (
     <DropdownMenuSubContent
       className={cn(
         "data-closed:fade-out-0 data-open:fade-in-0 data-closed:zoom-out-95 data-open:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 min-w-32 rounded-lg bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10 duration-100 data-closed:animate-out data-open:animate-in",
-        className
+        className,
       )}
       data-slot="menubar-sub-content"
       {...props}

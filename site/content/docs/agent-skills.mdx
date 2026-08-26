@@ -18,13 +18,13 @@ curl -fsSL https://raw.githubusercontent.com/mathematic-inc/earl/main/skills/<ca
 
 Replace `<category>` with `development` or `runtime`, and `<skill-name>` with the skill you want. Then in a new agent session:
 
-```
+```text
 Use the <skill-name> skill to <goal>.
 ```
 
 If you'd rather not install the file, paste this into your agent:
 
-```
+```text
 Fetch https://raw.githubusercontent.com/mathematic-inc/earl/main/skills/<category>/<skill-name>/SKILL.md
 and follow the skill to <goal>.
 ```
@@ -41,7 +41,7 @@ Development skills are human-initiated. You invoke them when setting up, extendi
 
 Installs Earl, writes MCP config for every detected agent platform, and sets up context breadcrumbs. The full walkthrough is at [Agent-Assisted Setup](/docs/agent-assisted-setup).
 
-```
+```text
 Use the setup-earl skill to install and configure Earl for this project.
 ```
 
@@ -57,7 +57,7 @@ Guides the agent through writing a new Earl template for an API you specify. The
 
 The result is a committed `.hcl` file ready to use. The agent does not guess at auth — it asks you for the token or walks you through `earl secrets set`.
 
-```
+```text
 Use the create-template skill to build an Earl template for the Linear API.
 ```
 
@@ -73,7 +73,7 @@ Points the agent at a codebase and converts existing API calls to Earl templates
 
 Useful when you have a repo full of inline `curl` commands and want them all going through Earl's security layer. The agent leaves the original calls commented out rather than deleted, so you can review the diff before committing.
 
-```
+```text
 Use the migrate-to-earl skill to convert all curl and gh calls in this repo to Earl templates.
 ```
 
@@ -83,7 +83,7 @@ Prevents the agent platform from bypassing Earl with raw CLI tools. It writes ru
 
 Run this after `setup-earl` when you want to actually enforce Earl as the only network path:
 
-```
+```text
 Use the secure-agent skill to lock down this project so the agent only uses Earl for API calls.
 ```
 
@@ -91,7 +91,7 @@ Use the secure-agent skill to lock down this project so the agent only uses Earl
 
 Diagnoses Earl problems step by step. The agent runs `earl doctor`, checks keychain access, validates template files, inspects MCP config, and suggests fixes for whatever it finds. Start here when something isn't working and you don't know where to look.
 
-```
+```text
 Use the troubleshoot-earl skill to figure out why earl call is failing.
 ```
 

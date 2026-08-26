@@ -1,14 +1,8 @@
 "use client";
 
 import { AlertTriangle, Play, Square } from "lucide-react";
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useReducer,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
+
 import { CliImport } from "@/components/cli-import";
 import { CodeExamples } from "@/components/code-examples";
 import { HistoryDrawer } from "@/components/history-drawer";
@@ -28,19 +22,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-
 import { useHistory } from "@/hooks/use-history";
 import { ApiClientError, executeCommand, validateParams } from "@/lib/api";
-import type {
-  ApiError,
-  ExecuteResponse,
-  ExecutionState,
-  HistoryEntry,
-  Tool,
-} from "@/lib/types";
+import type { ApiError, ExecuteResponse, ExecutionState, HistoryEntry, Tool } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-const MAC_RE = /mac/i;
+const MAC_RE = /mac/iv;
 
 // ---------------------------------------------------------------------------
 // Props
@@ -67,10 +54,7 @@ type ExecAction =
   | { type: "error"; error: ApiError; timing?: number }
   | { type: "reset" };
 
-function execReducer(
-  _state: ExecutionState,
-  action: ExecAction
-): ExecutionState {
+function execReducer(_state: ExecutionState, action: ExecAction): ExecutionState {
   switch (action.type) {
     case "start":
       return {
@@ -102,10 +86,7 @@ function execReducer(
 // ---------------------------------------------------------------------------
 
 /** Build default values from param specs + initialParams overlay. */
-function buildDefaults(
-  tool: Tool,
-  initialParams: Record<string, string>
-): Record<string, unknown> {
+function buildDefaults(tool: Tool, initialParams: Record<string, string>): Record<string, unknown> {
   const values: Record<string, unknown> = {};
   for (const p of tool.params) {
     if (p.default !== undefined) {
@@ -123,7 +104,7 @@ function buildDefaults(
 function handleErrorSideEffects(
   apiError: ApiError,
   setErrors: React.Dispatch<React.SetStateAction<Record<string, string>>>,
-  setWriteDialogOpen: React.Dispatch<React.SetStateAction<boolean>>
+  setWriteDialogOpen: React.Dispatch<React.SetStateAction<boolean>>,
 ) {
   if (apiError.error.code === "bind_error") {
     const param = extractBindErrorParam(apiError.error.message);
@@ -212,7 +193,7 @@ function WriteConfirmDialog({
 }) {
   const argSummary = useMemo(() => {
     const entries = Object.entries(args).filter(
-      ([, v]) => v !== undefined && v !== null && v !== ""
+      ([, v]) => v !== undefined && v !== null && v !== "",
     );
     if (entries.length === 0) {
       return "No arguments";
@@ -229,8 +210,8 @@ function WriteConfirmDialog({
           <DialogTitle>Confirm Write Operation</DialogTitle>
           <DialogDescription>
             <span className="font-mono font-semibold">{tool.key}</span> is a{" "}
-            <span className="font-semibold text-amber-400">write</span> command.
-            This may modify data.
+            <span className="font-semibold text-amber-400">write</span> command. This may modify
+            data.
           </DialogDescription>
         </DialogHeader>
 
@@ -264,12 +245,7 @@ function WriteConfirmDialog({
 // Main component
 // ---------------------------------------------------------------------------
 
-export function Playground({
-  tool,
-  loading,
-  initialParams,
-  onParamsChange,
-}: PlaygroundProps) {
+export function Playground({ tool, loading, initialParams, onParamsChange }: PlaygroundProps) {
   // ----- Form state -----
   const [formValues, setFormValues] = useState<Record<string, unknown>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -303,8 +279,7 @@ export function Playground({
   const containerRef = useRef<HTMLDivElement>(null);
 
   // ----- Last URL from successful execution (for cURL examples) -----
-  const lastUrl =
-    execution.status === "success" ? execution.response.url : undefined;
+  const lastUrl = execution.status === "success" ? execution.response.url : undefined;
 
   // ----- Stable ref for initialParams (only used on first mount per command) -----
   const initialParamsRef = useRef(initialParams);
@@ -325,8 +300,7 @@ export function Playground({
     if (tool) {
       // Restore cached values or build from defaults
       const cached = formCacheRef.current.get(tool.key);
-      const nextValues =
-        cached ?? buildDefaults(tool, initialParamsRef.current);
+      const nextValues = cached ?? buildDefaults(tool, initialParamsRef.current);
       setFormValues(nextValues);
       setErrors({});
       dispatch({ type: "reset" });
@@ -336,7 +310,6 @@ export function Playground({
 
     prevToolKeyRef.current = newKey;
     // Only run when the tool identity changes
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tool?.key, tool]);
 
   // -----------------------------------------------------------------------
@@ -351,7 +324,7 @@ export function Playground({
         setIsStale(true);
       }
     },
-    [onParamsChange]
+    [onParamsChange],
   );
 
   // -----------------------------------------------------------------------
@@ -400,7 +373,6 @@ export function Playground({
         clearTimeout(validateTimerRef.current);
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tool?.key, formValues, tool]);
 
   // -----------------------------------------------------------------------
@@ -424,8 +396,7 @@ export function Playground({
       }
 
       const controller = new AbortController();
-      const previousResponse =
-        execution.status === "success" ? execution.response : undefined;
+      const previousResponse = execution.status === "success" ? execution.response : undefined;
 
       dispatch({
         type: "start",
@@ -442,7 +413,7 @@ export function Playground({
             args: formValues,
             confirm_write: confirmWrite || undefined,
           },
-          controller.signal
+          controller.signal,
         );
 
         const timing = Date.now() - startTime;
@@ -468,7 +439,7 @@ export function Playground({
         handleErrorSideEffects(apiError, setErrors, setWriteDialogOpen);
       }
     },
-    [tool, formValues, execution, addEntry]
+    [tool, formValues, execution, addEntry],
   );
 
   const handleExecute = useCallback(() => {
@@ -524,7 +495,7 @@ export function Playground({
         onParamsChange(nextValues);
       }
     },
-    [tool, formValues, onParamsChange]
+    [tool, formValues, onParamsChange],
   );
 
   // -----------------------------------------------------------------------
@@ -552,7 +523,7 @@ export function Playground({
         dispatch({ type: "error", error: entry.error });
       }
     },
-    [tool, onParamsChange]
+    [tool, onParamsChange],
   );
 
   // -----------------------------------------------------------------------
@@ -587,7 +558,7 @@ export function Playground({
               "rounded-full px-1.5 py-0.5 font-medium text-[0.55rem]",
               tool.mode === "read"
                 ? "bg-emerald-500/15 text-emerald-400"
-                : "bg-amber-500/15 text-amber-400"
+                : "bg-amber-500/15 text-amber-400",
             )}
           >
             {tool.mode}
@@ -644,11 +615,7 @@ export function Playground({
 
       {/* ---- Response pane (fills remaining space) ---- */}
       <div aria-live="polite" className="min-h-0 flex-1">
-        <ResponseView
-          execution={execution}
-          isHttp={tool.protocol === "http"}
-          stale={isStale}
-        />
+        <ResponseView execution={execution} isHttp={tool.protocol === "http"} stale={isStale} />
       </div>
 
       {/* ---- History drawer (pinned to bottom) ---- */}

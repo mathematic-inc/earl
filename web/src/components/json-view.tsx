@@ -2,6 +2,7 @@
 
 import { Check, Copy } from "lucide-react";
 import { type JSX, useCallback, useState } from "react";
+
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -92,15 +93,11 @@ function JsonArray({
   if (collapsed) {
     return (
       <span>
-        <button
-          className="cursor-pointer hover:opacity-70"
-          onClick={toggle}
-          type="button"
-        >
+        <button className="cursor-pointer hover:opacity-70" onClick={toggle} type="button">
           <Punctuation>[</Punctuation>
           <span className="text-muted-foreground">
             {" "}
-            {items.length} item{items.length !== 1 ? "s" : ""}{" "}
+            {items.length} item{items.length === 1 ? "" : "s"}{" "}
           </span>
           <Punctuation>]</Punctuation>
         </button>
@@ -110,11 +107,7 @@ function JsonArray({
 
   return (
     <span>
-      <button
-        className="cursor-pointer hover:opacity-70"
-        onClick={toggle}
-        type="button"
-      >
+      <button className="cursor-pointer hover:opacity-70" onClick={toggle} type="button">
         <Punctuation>[</Punctuation>
       </button>
       <div className="pl-4">
@@ -153,15 +146,11 @@ function JsonObject({
   if (collapsed) {
     return (
       <span>
-        <button
-          className="cursor-pointer hover:opacity-70"
-          onClick={toggle}
-          type="button"
-        >
+        <button className="cursor-pointer hover:opacity-70" onClick={toggle} type="button">
           <Punctuation>{"{"}</Punctuation>
           <span className="text-muted-foreground">
             {" "}
-            {entries.length} key{entries.length !== 1 ? "s" : ""}{" "}
+            {entries.length} key{entries.length === 1 ? "" : "s"}{" "}
           </span>
           <Punctuation>{"}"}</Punctuation>
         </button>
@@ -171,11 +160,7 @@ function JsonObject({
 
   return (
     <span>
-      <button
-        className="cursor-pointer hover:opacity-70"
-        onClick={toggle}
-        type="button"
-      >
+      <button className="cursor-pointer hover:opacity-70" onClick={toggle} type="button">
         <Punctuation>{"{"}</Punctuation>
       </button>
       <div className="pl-4">
@@ -193,11 +178,7 @@ function JsonObject({
   );
 }
 
-export function JsonView({
-  data,
-  className,
-  maxInitialDepth = 3,
-}: JsonViewProps) {
+export function JsonView({ data, className, maxInitialDepth = 3 }: JsonViewProps) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = useCallback(() => {
@@ -250,9 +231,7 @@ export function JsonView({
               )}
             </Button>
           </div>
-          <pre className="whitespace-pre-wrap break-all text-foreground">
-            {data}
-          </pre>
+          <pre className="whitespace-pre-wrap break-all text-foreground">{data}</pre>
         </div>
       );
     }
@@ -264,31 +243,20 @@ export function JsonView({
     typeof parsedData === "number" ||
     typeof parsedData === "boolean"
   ) {
-    content = (
-      <JsonValue depth={0} maxDepth={maxInitialDepth} value={parsedData} />
-    );
+    content = <JsonValue depth={0} maxDepth={maxInitialDepth} value={parsedData} />;
   } else if (Array.isArray(parsedData) || isPlainObject(parsedData)) {
-    content = (
-      <JsonValue depth={0} maxDepth={maxInitialDepth} value={parsedData} />
-    );
+    content = <JsonValue depth={0} maxDepth={maxInitialDepth} value={parsedData} />;
   } else {
     // Fallback for non-JSON values
     content = (
-      <pre className="whitespace-pre-wrap break-all text-foreground">
-        {String(parsedData)}
-      </pre>
+      <pre className="whitespace-pre-wrap break-all text-foreground">{String(parsedData)}</pre>
     );
   }
 
   return (
     <div className={cn("relative font-mono text-sm", className)}>
       <div className="absolute top-2 right-2 z-10">
-        <Button
-          aria-label="Copy to clipboard"
-          onClick={handleCopy}
-          size="icon-xs"
-          variant="ghost"
-        >
+        <Button aria-label="Copy to clipboard" onClick={handleCopy} size="icon-xs" variant="ghost">
           {copied ? (
             <Check className="size-3.5 text-emerald-400" />
           ) : (

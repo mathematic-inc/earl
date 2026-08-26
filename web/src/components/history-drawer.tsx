@@ -13,13 +13,10 @@ import {
   XCircle,
 } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import type { HistoryEntry } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -117,10 +114,7 @@ function EntryStatusBadge({ status }: { status: number | null }) {
 
   if (status >= 200 && status < 300) {
     return (
-      <Badge
-        className="gap-1 bg-emerald-500/20 text-[0.6rem] text-emerald-400"
-        variant="secondary"
-      >
+      <Badge className="gap-1 bg-emerald-500/20 text-[0.6rem] text-emerald-400" variant="secondary">
         <CheckCircle2 className="size-2.5" />
         {status}
       </Badge>
@@ -128,10 +122,7 @@ function EntryStatusBadge({ status }: { status: number | null }) {
   }
 
   return (
-    <Badge
-      className="gap-1 bg-amber-500/20 text-[0.6rem] text-amber-400"
-      variant="secondary"
-    >
+    <Badge className="gap-1 bg-amber-500/20 text-[0.6rem] text-amber-400" variant="secondary">
       {status}
     </Badge>
   );
@@ -141,16 +132,10 @@ function EntryStatusBadge({ status }: { status: number | null }) {
 // Diff view
 // ---------------------------------------------------------------------------
 
-function DiffView({
-  previous,
-  current,
-}: {
-  previous: HistoryEntry;
-  current: HistoryEntry;
-}) {
+function DiffView({ previous, current }: { previous: HistoryEntry; current: HistoryEntry }) {
   const lines = useMemo(
     () => computeDiff(serialiseResponse(previous), serialiseResponse(current)),
-    [previous, current]
+    [previous, current],
   );
 
   return (
@@ -161,7 +146,7 @@ function DiffView({
             "whitespace-pre-wrap px-1",
             line.type === "added" && "bg-emerald-500/20 text-emerald-300",
             line.type === "removed" && "bg-red-500/20 text-red-300",
-            line.type === "unchanged" && "text-muted-foreground"
+            line.type === "unchanged" && "text-muted-foreground",
           )}
           key={`${line.type}-${String(i)}`}
         >
@@ -192,7 +177,7 @@ function HistoryEntryRow({
 
   const relativeTime = useMemo(
     () => formatDistanceToNow(entry.timestamp, { addSuffix: true }),
-    [entry.timestamp]
+    [entry.timestamp],
   );
 
   const handleClick = useCallback(() => {
@@ -204,7 +189,7 @@ function HistoryEntryRow({
       e.stopPropagation();
       onReplay(entry);
     },
-    [entry, onReplay]
+    [entry, onReplay],
   );
 
   const handleToggleDiff = useCallback((e: React.MouseEvent) => {
@@ -228,9 +213,7 @@ function HistoryEntryRow({
         <EntryStatusBadge status={entry.status} />
 
         {/* Relative timestamp */}
-        <span className="shrink-0 text-[0.6rem] text-muted-foreground">
-          {relativeTime}
-        </span>
+        <span className="shrink-0 text-[0.6rem] text-muted-foreground">{relativeTime}</span>
 
         {/* Actions */}
         <span className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
@@ -269,11 +252,7 @@ function HistoryEntryRow({
 // Main export
 // ---------------------------------------------------------------------------
 
-export function HistoryDrawer({
-  entries,
-  onReplay,
-  onClear,
-}: HistoryDrawerProps) {
+export function HistoryDrawer({ entries, onReplay, onClear }: HistoryDrawerProps) {
   const [open, setOpen] = useState(false);
 
   /**
@@ -313,11 +292,7 @@ export function HistoryDrawer({
             </Badge>
           )}
           <span className="flex-1" />
-          {open ? (
-            <ChevronDown className="size-3.5" />
-          ) : (
-            <ChevronUp className="size-3.5" />
-          )}
+          {open ? <ChevronDown className="size-3.5" /> : <ChevronUp className="size-3.5" />}
         </CollapsibleTrigger>
 
         {/* Collapsible content */}

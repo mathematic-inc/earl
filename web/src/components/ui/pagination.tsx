@@ -1,9 +1,6 @@
-import {
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  MoreHorizontalIcon,
-} from "lucide-react";
+import { ChevronLeftIcon, ChevronRightIcon, MoreHorizontalIcon } from "lucide-react";
 import type { ComponentProps } from "react";
+
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -37,12 +34,7 @@ type PaginationLinkProps = {
 } & Pick<ComponentProps<typeof Button>, "size"> &
   ComponentProps<"a">;
 
-function PaginationLink({
-  className,
-  isActive,
-  size = "icon",
-  ...props
-}: PaginationLinkProps) {
+function PaginationLink({ className, isActive, size = "icon", ...props }: PaginationLinkProps) {
   return (
     <Button
       className={cn(className)}
@@ -103,7 +95,7 @@ function PaginationEllipsis({ className, ...props }: ComponentProps<"span">) {
       aria-hidden
       className={cn(
         "flex size-7 items-center justify-center [&_svg:not([class*='size-'])]:size-3.5",
-        className
+        className,
       )}
       data-slot="pagination-ellipsis"
       {...props}

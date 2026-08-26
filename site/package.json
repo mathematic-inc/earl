@@ -2,23 +2,22 @@
   "name": "site",
   "version": "0.0.0",
   "private": true,
-  "license": "Apache-2.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/mathematic-inc/earl.git",
     "directory": "site"
   },
+  "license": "Apache-2.0",
   "scripts": {
-    "rustdoc": "cd .. && cargo doc --workspace --no-deps && mkdir -p site/public/rustdoc && cp -r target/doc/* site/public/rustdoc/",
     "prebuild": "pnpm run rustdoc",
     "build": "next build",
     "dev": "next dev",
+    "postinstall": "fumadocs-mdx",
+    "rustdoc": "cd .. && cargo doc --workspace --no-deps && mkdir -p site/public/rustdoc && cp -r target/doc/* site/public/rustdoc/",
     "start": "next start",
-    "types:check": "fumadocs-mdx && next typegen && tsc --noEmit",
-    "postinstall": "fumadocs-mdx"
+    "types:check": "fumadocs-mdx && next typegen && tsc --noEmit"
   },
   "dependencies": {
-    "@orama/orama": "catalog:",
     "fumadocs-core": "catalog:",
     "fumadocs-mdx": "catalog:",
     "fumadocs-ui": "catalog:",
@@ -26,7 +25,8 @@
     "next": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "tailwind-merge": "catalog:"
+    "tailwind-merge": "catalog:",
+    "zbsearch": "catalog:"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "catalog:",

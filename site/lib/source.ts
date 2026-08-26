@@ -1,5 +1,6 @@
-import { docs } from "fumadocs-mdx:collections/server";
 import { type InferPageType, loader } from "fumadocs-core/source";
+import { docs } from "fumadocs-mdx:collections/server";
+
 import { icons } from "./icons";
 
 export const source = loader({

@@ -41,10 +41,7 @@ function isWideField(spec: ParamSpec): boolean {
 
 function validateField(spec: ParamSpec, value: unknown): string | undefined {
   // Check required
-  if (
-    spec.required &&
-    (value === undefined || value === null || value === "")
-  ) {
+  if (spec.required && (value === undefined || value === null || value === "")) {
     return "Required";
   }
 
@@ -115,13 +112,13 @@ function StringField({
       const err = validateField(spec, v);
       onErrorChange(spec.name, err);
     },
-    [spec, onValueChange, onErrorChange]
+    [spec, onValueChange, onErrorChange],
   );
 
   return (
     <Input
-      aria-describedby={error !== undefined ? errorId : undefined}
-      aria-invalid={error !== undefined ? true : undefined}
+      aria-describedby={error === undefined ? undefined : errorId}
+      aria-invalid={error === undefined ? undefined : true}
       aria-required={spec.required ? true : undefined}
       id={fieldId}
       onChange={handleChange}
@@ -165,24 +162,20 @@ function NumberField({
       const err = validateField(spec, v);
       onErrorChange(spec.name, err);
     },
-    [spec, onValueChange, onErrorChange]
+    [spec, onValueChange, onErrorChange],
   );
 
   return (
     <Input
-      aria-describedby={error !== undefined ? errorId : undefined}
-      aria-invalid={error !== undefined ? true : undefined}
+      aria-describedby={error === undefined ? undefined : errorId}
+      aria-invalid={error === undefined ? undefined : true}
       aria-required={spec.required ? true : undefined}
       id={fieldId}
       onChange={handleChange}
       placeholder={spec.description ?? ""}
       ref={inputRef}
       type="number"
-      value={
-        typeof value === "string" || typeof value === "number"
-          ? String(value)
-          : ""
-      }
+      value={typeof value === "string" || typeof value === "number" ? String(value) : ""}
     />
   );
 }
@@ -202,16 +195,10 @@ function BooleanField({
     (checked: boolean) => {
       onValueChange(spec.name, checked);
     },
-    [spec.name, onValueChange]
+    [spec.name, onValueChange],
   );
 
-  return (
-    <Switch
-      checked={Boolean(value)}
-      id={fieldId}
-      onCheckedChange={handleChange}
-    />
-  );
+  return <Switch checked={Boolean(value)} id={fieldId} onCheckedChange={handleChange} />;
 }
 
 function JsonField({
@@ -238,7 +225,7 @@ function JsonField({
       const err = validateField(spec, v);
       onErrorChange(spec.name, err);
     },
-    [spec, onValueChange, onErrorChange]
+    [spec, onValueChange, onErrorChange],
   );
 
   const handleFormat = useCallback(() => {
@@ -258,8 +245,8 @@ function JsonField({
   return (
     <div className="space-y-1.5">
       <Textarea
-        aria-describedby={error !== undefined ? errorId : undefined}
-        aria-invalid={error !== undefined ? true : undefined}
+        aria-describedby={error === undefined ? undefined : errorId}
+        aria-invalid={error === undefined ? undefined : true}
         aria-required={spec.required ? true : undefined}
         className="min-h-[80px] font-mono text-xs"
         id={fieldId}
@@ -324,12 +311,7 @@ function ParamField({
         );
       case "boolean":
         return (
-          <BooleanField
-            fieldId={fieldId}
-            onValueChange={onValueChange}
-            spec={spec}
-            value={value}
-          />
+          <BooleanField fieldId={fieldId} onValueChange={onValueChange} spec={spec} value={value} />
         );
       case "array":
       case "object":
@@ -345,14 +327,7 @@ function ParamField({
           />
         );
       case "null":
-        return (
-          <Input
-            disabled
-            id={fieldId}
-            placeholder={spec.description ?? ""}
-            value="null"
-          />
-        );
+        return <Input disabled id={fieldId} placeholder={spec.description ?? ""} value="null" />;
       default:
         return null;
     }
@@ -393,29 +368,24 @@ export function ParamForm({
     (name: string, value: unknown) => {
       onChange({ ...values, [name]: value });
     },
-    [values, onChange]
+    [values, onChange],
   );
 
   const handleErrorChange = useCallback(
     (name: string, error: string | undefined) => {
       if (error === undefined) {
         const next = { ...errors };
-        // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
         delete next[name];
         onErrorsChange(next);
       } else {
         onErrorsChange({ ...errors, [name]: error });
       }
     },
-    [errors, onErrorsChange]
+    [errors, onErrorsChange],
   );
 
   if (sorted.length === 0) {
-    return (
-      <p className="text-muted-foreground text-xs">
-        This command has no parameters.
-      </p>
-    );
+    return <p className="text-muted-foreground text-xs">This command has no parameters.</p>;
   }
 
   const autoFocusIndex = autoFocus
@@ -424,7 +394,7 @@ export function ParamForm({
           spec.required &&
           (values[spec.name] === undefined ||
             values[spec.name] === null ||
-            values[spec.name] === "")
+            values[spec.name] === ""),
       )
     : -1;
 

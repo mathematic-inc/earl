@@ -87,7 +87,7 @@ earl secrets list
 
 If required secrets are missing, print the checklist:
 
-```
+```text
 Run in your terminal:
   earl secrets set <provider>.<key>
 

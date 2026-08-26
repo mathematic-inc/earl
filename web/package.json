@@ -2,22 +2,23 @@
   "name": "earl-web",
   "version": "0.0.0",
   "private": true,
-  "license": "Apache-2.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/mathematic-inc/earl.git",
     "directory": "web"
   },
+  "license": "Apache-2.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "dev": "vite",
+    "preview": "vite preview",
+    "types:check": "tsc -b"
   },
   "dependencies": {
     "@base-ui/react": "catalog:",
     "@fontsource-variable/inter": "catalog:",
-    "@tailwindcss/vite": "^4.2.1",
+    "@tailwindcss/vite": "^4.3.3",
     "@tanstack/react-virtual": "catalog:",
     "@vitejs/plugin-react": "catalog:",
     "class-variance-authority": "catalog:",
@@ -42,7 +43,8 @@
     "vaul": "catalog:"
   },
   "devDependencies": {
-    "@tailwindcss/typography": "^0.5.19",
+    "@tailwindcss/typography": "^0.5.20",
+    "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "typescript": "catalog:",

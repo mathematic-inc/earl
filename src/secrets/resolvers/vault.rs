@@ -383,14 +383,14 @@ mod tests {
 
     #[test]
     fn legacy_format_vault_token_passes_header_safety_check() {
-        // Vault tokens look like: s.XhzOVFgiTw3n3OYJqBiqIGfx
-        assert!(is_header_safe("s.XhzOVFgiTw3n3OYJqBiqIGfx"));
+        // Legacy Vault tokens use an `s.` prefix.
+        assert!(is_header_safe("s.test"));
     }
 
     #[test]
     fn hvs_format_vault_token_passes_header_safety_check() {
-        // Vault tokens look like: hvs.XXXX
-        assert!(is_header_safe("hvs.CAESIBtR0QkDnWL0oFKj9iC8AAAA"));
+        // Modern Vault tokens use an `hvs.` prefix.
+        assert!(is_header_safe("hvs.test"));
     }
 
     #[test]

@@ -24,7 +24,7 @@ pub struct ChromeGuard {
 
 impl Drop for ChromeGuard {
     fn drop(&mut self) {
-        use fs4::fs_std::FileExt;
+        use fs4::FileExt;
         // Best-effort unlock; ignore errors during drop.
         let _ = self._file.unlock();
     }
@@ -44,14 +44,14 @@ pub async fn chrome_lock() -> ChromeGuard {
     // File-based advisory lock — serializes across separate test binaries.
     let lock_path = std::env::temp_dir().join("earl_browser_tests.lock");
     let file = tokio::task::spawn_blocking(move || -> std::io::Result<std::fs::File> {
-        use fs4::fs_std::FileExt;
+        use fs4::FileExt;
         let f = std::fs::OpenOptions::new()
             .read(true)
             .write(true)
             .create(true)
             .truncate(false)
             .open(&lock_path)?;
-        f.lock_exclusive()?;
+        f.lock()?;
         Ok(f)
     })
     .await

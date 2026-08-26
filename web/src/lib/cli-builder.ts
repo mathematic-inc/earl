@@ -1,13 +1,13 @@
 import type { ParamSpec } from "./types";
 
-const SHELL_SPECIAL_RE = /[\s"'\\$`!#&|;()<>]/;
+const SHELL_SPECIAL_RE = /[\s"'\\$`!#\u0026\|;\(\)<>]/v;
 
 function shellQuote(s: string): string {
   if (s === "") {
     return '""';
   }
   if (SHELL_SPECIAL_RE.test(s)) {
-    return `'${s.replace(/'/g, "'\\''")}'`;
+    return `'${s.replaceAll("'", "'\\''")}'`;
   }
   return s;
 }
@@ -28,7 +28,7 @@ function formatValue(value: unknown): string {
 export function buildCliExample(
   commandKey: string,
   args: Record<string, unknown>,
-  params: ParamSpec[]
+  params: ParamSpec[],
 ): string {
   const parts = [`earl call ${commandKey}`];
 
@@ -39,10 +39,7 @@ export function buildCliExample(
     }
 
     // Skip if value equals the default
-    if (
-      param.default !== undefined &&
-      JSON.stringify(value) === JSON.stringify(param.default)
-    ) {
+    if (param.default !== undefined && JSON.stringify(value) === JSON.stringify(param.default)) {
       continue;
     }
 

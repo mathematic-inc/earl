@@ -3,18 +3,18 @@ name = "earl-core"
 version = "0.5.1"
 edition.workspace = true
 description = "Shared types and traits for earl protocol crates"
-license.workspace = true
-repository.workspace = true
-homepage.workspace = true
 documentation.workspace = true
-keywords = ["ai", "agent", "protocol", "sandboxing"]
+homepage.workspace = true
+repository.workspace = true
+license.workspace = true
+keywords = ["agent", "ai", "protocol", "sandboxing"]
 categories = ["network-programming"]
 
 [dependencies]
 anyhow = "1.0"
-rkyv = { version = "0.8", features = ["std", "bytecheck"] }
-base64 = "0.22"
-reqwest = { version = "0.13.2", default-features = false, features = ["rustls"] }
+base64 = "0.23"
+reqwest = { version = "0.13.4", default-features = false, features = ["rustls"] }
+rkyv = { version = "0.8", features = ["bytecheck", "std"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tokio = { version = "1", features = ["sync"] }

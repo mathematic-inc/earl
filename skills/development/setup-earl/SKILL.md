@@ -141,7 +141,7 @@ agent has home directory write access, it can write directly.
 **Non-MCP agents (Codex, etc.):** Skip the JSON config. Instead, add to the agent's system
 prompt or CLAUDE.md:
 
-```
+```text
 You have access to Earl, an AI-safe CLI for calling APIs and services.
 Use: earl call --yes --json provider.command --param value
 Discover commands: earl templates list --json

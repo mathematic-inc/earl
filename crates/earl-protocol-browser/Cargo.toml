@@ -3,33 +3,44 @@ name = "earl-protocol-browser"
 version = "0.5.1"
 edition.workspace = true
 description = "Browser automation protocol for earl (chromiumoxide)"
-license.workspace = true
-repository.workspace = true
-homepage.workspace = true
 documentation.workspace = true
-keywords = ["browser", "automation", "agent", "chromium"]
+homepage.workspace = true
+repository.workspace = true
+license.workspace = true
+keywords = ["agent", "automation", "browser", "chromium"]
 categories = ["web-programming"]
 
 [dependencies]
 anyhow = "1.0"
-base64 = "0.22"
-chrono = { version = "0.4", features = ["serde"] }
+base64 = "0.23"
 chromiumoxide = { version = "0.9", default-features = false, features = ["bytes"] }
+chrono = { version = "0.4", features = ["serde"] }
 directories = "6.0"
-earl-core = { version = "0.5.1", path = "../earl-core" }
-fs4 = { version = "0.12", features = ["tokio"] }
+earl-core = { path = "../earl-core", version = "0.5.1" }
+fs4 = { version = "1.1", features = ["tokio"] }
 futures = "0.3"
-rkyv = { version = "0.8", features = ["std", "bytecheck"] }
+rkyv = { version = "0.8", features = ["bytecheck", "std"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-tempfile = "3.19"
+tempfile = "3.27"
 thiserror = "2.0"
-tokio = { version = "1", features = ["rt-multi-thread", "time", "sync", "io-util"] }
+tokio = { version = "1", features = ["io-util", "rt-multi-thread", "sync", "time"] }
 tracing = "0.1"
-which = "7.0"
-
-[target.'cfg(unix)'.dependencies]
-libc = "0.2"
+which = "8.0"
 
 [dev-dependencies]
-tokio = { version = "1", features = ["rt-multi-thread", "time", "sync", "io-util", "net", "macros", "test-util"] }
+tokio = {
+  version = "1",
+  features = [
+    "io-util",
+    "macros",
+    "net",
+    "rt-multi-thread",
+    "sync",
+    "test-util",
+    "time",
+  ]
+}
+
+[target."cfg(unix)".dependencies]
+libc = "0.2"

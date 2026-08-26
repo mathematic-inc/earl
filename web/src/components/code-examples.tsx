@@ -1,14 +1,8 @@
 "use client";
 
 import { Check, ChevronDown, Code, Copy } from "lucide-react";
-import {
-  useCallback,
-  useDeferredValue,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { buildCliExample, buildCurlExample } from "@/lib/cli-builder";
@@ -95,7 +89,7 @@ export function CodeExamples({ tool, args, lastUrl }: CodeExamplesProps) {
 
   const cliSnippet = useMemo(
     () => buildCliExample(tool.key, deferredArgs, tool.params),
-    [tool.key, tool.params, deferredArgs]
+    [tool.key, tool.params, deferredArgs],
   );
 
   const curlSnippet = useMemo(() => {
@@ -121,10 +115,7 @@ export function CodeExamples({ tool, args, lastUrl }: CodeExamplesProps) {
         <Code className="size-3" />
         Code
         <ChevronDown
-          className={cn(
-            "ml-auto size-3 transition-transform duration-150",
-            open && "rotate-180"
-          )}
+          className={cn("ml-auto size-3 transition-transform duration-150", open && "rotate-180")}
         />
       </button>
 
@@ -150,28 +141,20 @@ export function CodeExamples({ tool, args, lastUrl }: CodeExamplesProps) {
                 />
               </div>
 
-              <TabsContent
-                className="mt-2 overflow-auto rounded-md bg-muted/30 p-3"
-                value="cli"
-              >
+              <TabsContent className="mt-2 overflow-auto rounded-md bg-muted/30 p-3" value="cli">
                 <pre className="whitespace-pre-wrap break-all font-mono text-foreground text-xs">
                   {cliSnippet}
                 </pre>
               </TabsContent>
 
               {showCurl && (
-                <TabsContent
-                  className="mt-2 overflow-auto rounded-md bg-muted/30 p-3"
-                  value="curl"
-                >
+                <TabsContent className="mt-2 overflow-auto rounded-md bg-muted/30 p-3" value="curl">
                   {curlSnippet ? (
                     <pre className="whitespace-pre-wrap break-all font-mono text-foreground text-xs">
                       {curlSnippet}
                     </pre>
                   ) : (
-                    <p className="text-muted-foreground text-xs italic">
-                      Execute to see cURL
-                    </p>
+                    <p className="text-muted-foreground text-xs italic">Execute to see cURL</p>
                   )}
                 </TabsContent>
               )}
@@ -187,13 +170,7 @@ export function CodeExamples({ tool, args, lastUrl }: CodeExamplesProps) {
 // CopyCurlButton – single-click cURL copy for the response metadata bar
 // ---------------------------------------------------------------------------
 
-export function CopyCurlButton({
-  url,
-  method,
-}: {
-  url: string;
-  method: string;
-}) {
+export function CopyCurlButton({ url, method }: { url: string; method: string }) {
   const curlSnippet = buildCurlExample(url, method);
   const { copied, copy } = useCopy();
 
@@ -204,11 +181,7 @@ export function CopyCurlButton({
       size="xs"
       variant="ghost"
     >
-      {copied ? (
-        <Check className="size-2.5 text-emerald-400" />
-      ) : (
-        <Copy className="size-2.5" />
-      )}
+      {copied ? <Check className="size-2.5 text-emerald-400" /> : <Copy className="size-2.5" />}
       cURL
     </Button>
   );

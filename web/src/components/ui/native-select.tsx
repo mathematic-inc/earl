@@ -1,21 +1,18 @@
 import { ChevronDownIcon } from "lucide-react";
 import type { ComponentProps } from "react";
+
 import { cn } from "@/lib/utils";
 
 type NativeSelectProps = Omit<ComponentProps<"select">, "size"> & {
   size?: "sm" | "default";
 };
 
-function NativeSelect({
-  className,
-  size = "default",
-  ...props
-}: NativeSelectProps) {
+function NativeSelect({ className, size = "default", ...props }: NativeSelectProps) {
   return (
     <div
       className={cn(
         "group/native-select relative w-fit has-[select:disabled]:opacity-50",
-        className
+        className,
       )}
       data-size={size}
       data-slot="native-select-wrapper"
@@ -39,17 +36,8 @@ function NativeSelectOption({ ...props }: ComponentProps<"option">) {
   return <option data-slot="native-select-option" {...props} />;
 }
 
-function NativeSelectOptGroup({
-  className,
-  ...props
-}: ComponentProps<"optgroup">) {
-  return (
-    <optgroup
-      className={cn(className)}
-      data-slot="native-select-optgroup"
-      {...props}
-    />
-  );
+function NativeSelectOptGroup({ className, ...props }: ComponentProps<"optgroup">) {
+  return <optgroup className={cn(className)} data-slot="native-select-optgroup" {...props} />;
 }
 
 export { NativeSelect, NativeSelectOptGroup, NativeSelectOption };

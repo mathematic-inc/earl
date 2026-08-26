@@ -3,18 +3,18 @@ name = "earl-protocol-bash"
 version = "0.5.1"
 edition.workspace = true
 description = "Bash sandboxed execution protocol for earl"
-license.workspace = true
-repository.workspace = true
-homepage.workspace = true
 documentation.workspace = true
-keywords = ["bash", "agent", "sandboxing", "security"]
+homepage.workspace = true
+repository.workspace = true
+license.workspace = true
+keywords = ["agent", "bash", "sandboxing", "security"]
 categories = ["command-line-utilities"]
 
 [dependencies]
 anyhow = "1.0"
-rkyv = { version = "0.8", features = ["std", "bytecheck"] }
-earl-core = { version = "0.5.1", path = "../earl-core" }
+earl-core = { path = "../earl-core", version = "0.5.1" }
 libc = "0.2"
+rkyv = { version = "0.8", features = ["bytecheck", "std"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-tokio = { version = "1", features = ["process", "io-util", "time", "rt"] }
+tokio = { version = "1", features = ["io-util", "process", "rt", "time"] }
