@@ -8,7 +8,6 @@ import { cn } from "@/lib/utils";
 
 function ItemGroup({ className, ...props }: ComponentProps<"div">) {
   return (
-    // biome-ignore lint/a11y/useSemanticElements: ItemGroup uses role="list" because children are not <li> elements
     <div
       className={cn(
         "group/item-group flex w-full flex-col gap-4 has-data-[size=sm]:gap-2.5 has-data-[size=xs]:gap-2",

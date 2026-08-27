@@ -72,7 +72,6 @@ function Field({
   ...props
 }: React.ComponentProps<"div"> & VariantProps<typeof fieldVariants>) {
   return (
-    // biome-ignore lint/a11y/useSemanticElements: field grouping requires role="group" for accessibility
     <div
       className={cn(fieldVariants({ orientation }), className)}
       data-orientation={orientation}

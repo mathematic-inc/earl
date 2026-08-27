@@ -1,6 +1,5 @@
 "use client";
 
-// biome-ignore lint/performance/noNamespaceImport: react-resizable-panels uses namespace export pattern
 import * as ResizablePrimitive from "react-resizable-panels";
 
 import { cn } from "@/lib/utils";
