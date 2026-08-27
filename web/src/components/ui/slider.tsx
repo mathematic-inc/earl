@@ -48,7 +48,6 @@ function Slider({
           <SliderPrimitive.Thumb
             className="block size-4 shrink-0 select-none rounded-md border border-primary bg-white shadow-sm ring-ring/30 transition-colors hover:ring-4 focus-visible:outline-hidden focus-visible:ring-4 disabled:pointer-events-none disabled:opacity-50"
             data-slot="slider-thumb"
-            // biome-ignore lint/suspicious/noArrayIndexKey: slider thumbs are identified by index position
             key={`thumb-${index}`}
           />
         ))}

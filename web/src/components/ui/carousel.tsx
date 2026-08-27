@@ -129,7 +129,6 @@ function Carousel({
         canScrollNext,
       }}
     >
-      {/* biome-ignore lint/a11y/useAriaPropsSupportedByRole: aria-roledescription="carousel" is standard WAI-ARIA carousel pattern */}
       <section
         aria-roledescription="carousel"
         className={cn("relative", className)}
@@ -160,7 +159,6 @@ function CarouselItem({ className, ...props }: ComponentProps<"div">) {
   const { orientation } = useCarousel();
 
   return (
-    // biome-ignore lint/a11y/useSemanticElements: WAI-ARIA carousel pattern requires role="group" with aria-roledescription="slide"
     <div
       aria-roledescription="slide"
       className={cn(

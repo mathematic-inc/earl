@@ -107,11 +107,9 @@ function Calendar({
         ...classNames,
       }}
       components={{
-        // biome-ignore lint/correctness/noNestedComponentDefinitions: component override for react-day-picker
         Root: ({ className, rootRef, ...props }) => {
           return <div className={cn(className)} data-slot="calendar" ref={rootRef} {...props} />;
         },
-        // biome-ignore lint/correctness/noNestedComponentDefinitions: component override for react-day-picker
         Chevron: ({ className, orientation, ...props }) => {
           if (orientation === "left") {
             return (
@@ -127,9 +125,7 @@ function Calendar({
 
           return <ChevronDownIcon className={cn("size-4", className)} {...props} />;
         },
-        // biome-ignore lint/correctness/noNestedComponentDefinitions: component override for react-day-picker, needs locale from closure
         DayButton: ({ ...props }) => <CalendarDayButton locale={locale} {...props} />,
-        // biome-ignore lint/correctness/noNestedComponentDefinitions: component override for react-day-picker
         WeekNumber: ({ children, ...props }) => {
           return (
             <td {...props}>
