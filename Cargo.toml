@@ -26,7 +26,12 @@ license = "Apache-2.0"
 [dependencies]
 anyhow = "1.0"
 aws-config = { version = "1", optional = true }
-aws-sdk-secretsmanager = { version = "1", optional = true }
+aws-sdk-secretsmanager = {
+  version = "1",
+  default-features = false,
+  features = ["default-https-client", "rt-tokio"],
+  optional = true,
+}
 axum = "0.8"
 base64 = "0.23"
 chrono = { version = "0.4", features = ["serde"] }
