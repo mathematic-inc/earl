@@ -26,12 +26,7 @@ license = "Apache-2.0"
 [dependencies]
 anyhow = "1.0"
 aws-config = { version = "1", optional = true }
-aws-sdk-secretsmanager = {
-  version = "1",
-  default-features = false,
-  features = ["default-https-client", "rt-tokio"],
-  optional = true,
-}
+aws-sdk-secretsmanager = { version = "1", default-features = false, features = ["default-https-client", "rt-tokio"], optional = true }
 axum = "0.8"
 base64 = "0.23"
 chrono = { version = "0.4", features = ["serde"] }
@@ -53,31 +48,10 @@ jsonwebtoken = "11"
 keyring = "4.1.6"
 mime_guess = "2.0"
 minijinja = { version = "2.24", features = ["json", "loader"] }
-oauth2 = {
-  version = "5.0",
-  default-features = false,
-  features = [
-    "pkce-plain",
-    "reqwest",
-    "rustls-tls",
-  ]
-}
+oauth2 = { version = "5.0", default-features = false, features = ["pkce-plain", "reqwest", "rustls-tls"] }
 percent-encoding = "2.3.2"
 regex = "1.13"
-reqwest = {
-  version = "0.13.4",
-  features = [
-    "brotli",
-    "deflate",
-    "form",
-    "gzip",
-    "json",
-    "multipart",
-    "query",
-    "rustls",
-    "zstd",
-  ]
-}
+reqwest = { version = "0.13.4", features = ["brotli", "deflate", "form", "gzip", "json", "multipart", "query", "rustls", "zstd"] }
 rkyv = { version = "0.8", features = ["bytecheck", "std"] }
 rpassword = "7.5.4"
 scraper = "0.27.0"
