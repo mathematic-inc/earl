@@ -14,20 +14,7 @@ categories = ["network-programming", "web-programming"]
 anyhow = "1.0"
 base64 = "0.23"
 earl-core = { path = "../earl-core", version = "0.5.1" }
-reqwest = {
-  version = "0.13.4",
-  features = [
-    "brotli",
-    "deflate",
-    "form",
-    "gzip",
-    "json",
-    "multipart",
-    "query",
-    "rustls",
-    "zstd",
-  ]
-}
+reqwest = { version = "0.13.4", features = ["brotli", "deflate", "form", "gzip", "json", "multipart", "query", "rustls", "zstd"] }
 rkyv = { version = "0.8", features = ["bytecheck", "std"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
