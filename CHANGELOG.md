@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.6.0](https://github.com/mathematic-inc/earl/compare/v0.5.2...v0.6.0) (2026-08-27)
+
+
+### ⚠ BREAKING CHANGES
+
+* migrate repository to mathematic-inc and relicense to Apache-2.0 ([#72](https://github.com/mathematic-inc/earl/issues/72))
+
+### Features
+
+* Migrate repository to mathematic-inc and relicense to Apache-2.0 ([#72](https://github.com/mathematic-inc/earl/issues/72)) ([9c10f8e](https://github.com/mathematic-inc/earl/commit/9c10f8ee2f4ead5e88d9ecd543ce23d00e2877cd))
+
+
+### Bug Fixes
+
+* **deps:** Resolve dependabot updates ([be95b84](https://github.com/mathematic-inc/earl/commit/be95b843dc1d081214b71236c9968849b160381f))
+* **release:** Coordinate workspace publication ([57bdc4a](https://github.com/mathematic-inc/earl/commit/57bdc4a851eefed3264242bd72d006ce710ec557))
+* **release:** Normalize crate dependency metadata ([437f40b](https://github.com/mathematic-inc/earl/commit/437f40b91e5be64a5d509f7f51cefa02c47c92bb))
+* **release:** Support dependency metadata parsing ([e9aa3d6](https://github.com/mathematic-inc/earl/commit/e9aa3d63704cb5edc899431fa5b77b4043ebaff5))
+* Satisfy current clippy lint ([f6c4cbc](https://github.com/mathematic-inc/earl/commit/f6c4cbc2d41cce5c19de46d3e250497859f255ae))
+
 ## [0.5.2](https://github.com/mathematic-inc/earl/compare/v0.5.1...v0.5.2) (2026-02-26)
 
 ### Features
