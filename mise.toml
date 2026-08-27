@@ -26,6 +26,7 @@ rust = { version = "1.98.0", profile = "minimal", components = [
 shellcheck = "0.11.0"
 shfmt = "3.13.1"
 tombi = "1.4.1"
+ty = "0.0.74"
 typos = "1.49.0"
 uv = "0.12.6"
 zizmor = "1.29.0"

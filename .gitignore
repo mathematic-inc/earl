@@ -1,5 +1,9 @@
 /target
 
+# Python
+__pycache__/
+*.py[cod]
+
 # IDE
 .vscode/
 

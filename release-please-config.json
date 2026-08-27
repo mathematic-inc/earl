@@ -8,24 +8,6 @@
       "release-type": "rust",
       "changelog-path": "CHANGELOG.md",
       "include-component-in-tag": false
-    },
-    "crates/earl-core": {
-      "release-type": "rust"
-    },
-    "crates/earl-protocol-http": {
-      "release-type": "rust"
-    },
-    "crates/earl-protocol-grpc": {
-      "release-type": "rust"
-    },
-    "crates/earl-protocol-bash": {
-      "release-type": "rust"
-    },
-    "crates/earl-protocol-sql": {
-      "release-type": "rust"
-    },
-    "crates/earl-protocol-browser": {
-      "release-type": "rust"
     }
   },
   "plugins": ["sentence-case"]
