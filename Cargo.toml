@@ -2,6 +2,7 @@
 name = "earl"
 version = "0.5.2"
 edition.workspace = true
+rust-version.workspace = true
 description = "AI-safe CLI for AI agents"
 documentation.workspace = true
 readme = "README.md"
@@ -14,10 +15,19 @@ build = "build.rs"
 
 [workspace]
 resolver = "3"
-members = [".", "crates/*"]
+members = [
+  ".",
+  "crates/earl-core",
+  "crates/earl-protocol-bash",
+  "crates/earl-protocol-browser",
+  "crates/earl-protocol-grpc",
+  "crates/earl-protocol-http",
+  "crates/earl-protocol-sql",
+]
 
 [workspace.package]
 edition = "2024"
+rust-version = "1.96"
 documentation = "https://mathematic-inc.github.io/earl"
 homepage = "https://github.com/mathematic-inc/earl"
 repository = "https://github.com/mathematic-inc/earl"
@@ -34,12 +44,12 @@ clap = { version = "4.6", features = ["derive"] }
 clap_complete = "4.6"
 comfy-table = "8.0"
 directories = "6.0"
-earl-core = { path = "crates/earl-core", version = "0.5.1" }
-earl-protocol-bash = { path = "crates/earl-protocol-bash", version = "0.5.1", optional = true }
-earl-protocol-browser = { path = "crates/earl-protocol-browser", version = "0.5.1", optional = true }
-earl-protocol-grpc = { path = "crates/earl-protocol-grpc", version = "0.5.1", optional = true }
-earl-protocol-http = { path = "crates/earl-protocol-http", version = "0.5.1", optional = true }
-earl-protocol-sql = { path = "crates/earl-protocol-sql", version = "0.5.1", optional = true }
+earl-core = { path = "crates/earl-core", version = "0.5.2" }
+earl-protocol-bash = { path = "crates/earl-protocol-bash", version = "0.5.2", optional = true }
+earl-protocol-browser = { path = "crates/earl-protocol-browser", version = "0.5.2", optional = true }
+earl-protocol-grpc = { path = "crates/earl-protocol-grpc", version = "0.5.2", optional = true }
+earl-protocol-http = { path = "crates/earl-protocol-http", version = "0.5.2", optional = true }
+earl-protocol-sql = { path = "crates/earl-protocol-sql", version = "0.5.2", optional = true }
 fastembed = { version = "6.0", optional = true }
 hcl = { package = "hcl-rs", version = "0.19.8" }
 hickory-resolver = "0.26"

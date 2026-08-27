@@ -1,7 +1,8 @@
 [package]
 name = "earl-protocol-http"
-version = "0.5.1"
+version = "0.5.2"
 edition.workspace = true
+rust-version.workspace = true
 description = "HTTP and GraphQL execution protocol for earl"
 documentation.workspace = true
 homepage.workspace = true
@@ -13,7 +14,7 @@ categories = ["network-programming", "web-programming"]
 [dependencies]
 anyhow = "1.0"
 base64 = "0.23"
-earl-core = { path = "../earl-core", version = "0.5.1" }
+earl-core = { path = "../earl-core", version = "0.5.2" }
 reqwest = { version = "0.13.4", features = ["brotli", "deflate", "form", "gzip", "json", "multipart", "query", "rustls", "zstd"] }
 rkyv = { version = "0.8", features = ["bytecheck", "std"] }
 serde = { version = "1.0", features = ["derive"] }
