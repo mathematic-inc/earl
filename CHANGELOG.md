@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.1](https://github.com/mathematic-inc/earl/compare/v0.6.0...v0.6.1) (2026-08-27)
+
+
+### Bug Fixes
+
+* **release:** Make artifact builds portable ([de3cfe4](https://github.com/mathematic-inc/earl/commit/de3cfe4bf2e3bc62b5cb64a18ffd35c15c1b79d1))
+
 ## [0.6.0](https://github.com/mathematic-inc/earl/compare/v0.5.2...v0.6.0) (2026-08-27)
 
 
