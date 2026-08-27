@@ -29,18 +29,7 @@ tracing = "0.1"
 which = "8.0"
 
 [dev-dependencies]
-tokio = {
-  version = "1",
-  features = [
-    "io-util",
-    "macros",
-    "net",
-    "rt-multi-thread",
-    "sync",
-    "test-util",
-    "time",
-  ]
-}
+tokio = { version = "1", features = ["io-util", "macros", "net", "rt-multi-thread", "sync", "test-util", "time"] }
 
 [target."cfg(unix)".dependencies]
 libc = "0.2"
