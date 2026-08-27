@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.3](https://github.com/mathematic-inc/earl/compare/v0.6.2...v0.6.3) (2026-08-27)
+
+
+### Bug Fixes
+
+* **release:** Provision Node for crate publication ([d2aa523](https://github.com/mathematic-inc/earl/commit/d2aa52312232e1ffc08a0a36c8b5cfdfc19a1e41))
+
 ## [0.6.2](https://github.com/mathematic-inc/earl/compare/v0.6.1...v0.6.2) (2026-08-27)
 
 
