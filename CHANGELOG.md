@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.2](https://github.com/mathematic-inc/earl/compare/v0.6.1...v0.6.2) (2026-08-27)
+
+
+### Bug Fixes
+
+* **release:** Align release test environment ([f2556b0](https://github.com/mathematic-inc/earl/commit/f2556b025544ddbc6fe70561fdd8912b9ecf5ad6))
+
 ## [0.6.1](https://github.com/mathematic-inc/earl/compare/v0.6.0...v0.6.1) (2026-08-27)
 
 
