@@ -29,7 +29,7 @@ Secrets stay in the OS keychain. They aren't in tool arguments, tool description
 curl -fsSL https://raw.githubusercontent.com/mathematic-inc/earl/main/scripts/install.sh | bash
 
 # Import a provider template
-earl templates import https://raw.githubusercontent.com/mathematic-inc/earl/main/examples/github.hcl
+earl templates import https://raw.githubusercontent.com/mathematic-inc/earl/main/examples/3p/github.hcl
 
 # Store a secret — prompts for the value, not echoed
 earl secrets set github.token
