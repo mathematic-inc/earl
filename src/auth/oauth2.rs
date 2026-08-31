@@ -82,12 +82,6 @@ impl OAuthManager {
                 Ok(token) => token,
                 Err(err) => {
                     if profile.device_authorization_url.is_some() {
-                        // codeql[rust/cleartext-logging] - False positive: only `profile.name`
-                        // (the config key, not a secret) and the error message are logged here.
-                        eprintln!(
-                            "auth code flow failed for `{}`; trying device flow fallback",
-                            profile.name
-                        );
                         self.login_device_code(&profile).await?
                     } else {
                         return Err(err);
