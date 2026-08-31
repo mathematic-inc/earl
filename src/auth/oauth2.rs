@@ -88,11 +88,6 @@ impl OAuthManager {
                             "auth code flow failed for `{}`; trying device flow fallback",
                             profile.name
                         );
-                        tracing::debug!(
-                            profile = %profile.name,
-                            error = format!("{err:#}"),
-                            "auth code flow error details"
-                        );
                         self.login_device_code(&profile).await?
                     } else {
                         return Err(err);
