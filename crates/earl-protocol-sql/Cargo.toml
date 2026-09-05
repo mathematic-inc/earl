@@ -1,6 +1,6 @@
 [package]
 name = "earl-protocol-sql"
-version = "0.6.3"
+version = "0.6.4"
 edition.workspace = true
 rust-version.workspace = true
 description = "SQL execution protocol for earl (sqlx)"
@@ -13,7 +13,7 @@ categories = ["database"]
 
 [dependencies]
 anyhow = "1.0"
-earl-core = { path = "../earl-core", version = "0.6.3" }
+earl-core = { path = "../earl-core", version = "0.6.4" }
 rkyv = { version = "0.8", features = ["bytecheck", "std"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
