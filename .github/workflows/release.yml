@@ -255,6 +255,7 @@ jobs:
             --field tag="${{ needs.meta.outputs.tag }}"
 
   attest-provenance:
+    environment: release
     name: Attest Build Provenance
     needs:
       - meta

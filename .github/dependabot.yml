@@ -20,6 +20,10 @@ updates:
 
   - package-ecosystem: npm
     directory: /
+    groups:
+      fumadocs:
+        patterns:
+          - "fumadocs-*"
     schedule:
       interval: weekly
     cooldown:
