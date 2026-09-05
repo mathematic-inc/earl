@@ -14,6 +14,7 @@ permissions:
 
 jobs:
   release-please:
+    environment: release
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
