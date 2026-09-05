@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.6.4](https://github.com/mathematic-inc/earl/compare/v0.6.3...v0.6.4) (2026-09-05)
+
+
+### Bug Fixes
+
+* **auth:** Remove OAuth fallback diagnostic ([#99](https://github.com/mathematic-inc/earl/issues/99)) ([0065dd3](https://github.com/mathematic-inc/earl/commit/0065dd338b8ed5ffd078e16ed442d2d066f62ea5))
+* **auth:** Stop logging OAuth error details ([#97](https://github.com/mathematic-inc/earl/issues/97)) ([e617a1e](https://github.com/mathematic-inc/earl/commit/e617a1e6b0ea359ec28a09be9ccc11dd93768061))
+* **ci:** Secure dependencies and protect release workflows ([#104](https://github.com/mathematic-inc/earl/issues/104)) ([4480b3d](https://github.com/mathematic-inc/earl/commit/4480b3dbf2b6cf8201c93863b4d4d072845d59d3))
+
 ## [0.6.3](https://github.com/mathematic-inc/earl/compare/v0.6.2...v0.6.3) (2026-08-27)
 
 
