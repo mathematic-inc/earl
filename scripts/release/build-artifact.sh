@@ -41,6 +41,9 @@ rustup target add "$TARGET"
 CARGO_ARGS=(--locked --release --target "$TARGET")
 if [[ "$TARGET" == *"windows"* ]]; then
 	CARGO_ARGS+=(--no-default-features --features "http,graphql,grpc,sql")
+elif [[ "$TARGET" == "x86_64-apple-darwin" ]]; then
+	# ONNX Runtime does not distribute Intel macOS libraries.
+	CARGO_ARGS+=(--no-default-features --features "http,graphql,grpc,bash,browser,sql")
 elif [[ "$TARGET" == *"musl"* || "$TARGET" == "aarch64-unknown-linux-gnu" ]]; then
 	CARGO_ARGS+=(--no-default-features --features "http,graphql,grpc,bash,sql")
 fi

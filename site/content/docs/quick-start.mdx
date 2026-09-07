@@ -14,13 +14,21 @@ This gets you from zero to a working Earl setup: installed, first call returning
 curl -fsSL https://raw.githubusercontent.com/mathematic-inc/earl/main/scripts/install.sh | bash
 ```
 
-**macOS / Linux — cargo:**
+**cargo-binstall — prebuilt executables:**
 
 ```bash
-cargo install earl
+cargo binstall --disable-strategies compile earl
 ```
 
-Requires Rust toolchain plus Node.js and pnpm (Earl embeds web playground assets at compile time).
+**mise — direct GitHub releases:**
+
+```toml
+[tools]
+"github:mathematic-inc/earl" = "latest"
+```
+
+Run `mise install`. These installations do not require Rust, Node.js, or pnpm.
+Archives cover x64 and ARM64 on macOS, Linux GNU, Linux musl, and Windows.
 
 **Windows:**
 

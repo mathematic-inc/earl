@@ -109,3 +109,9 @@ jobs:
         run: pnpm turbo run types:check
       - name: Audit dependencies
         run: pnpm audit --audit-level high
+
+  prebuilt:
+    permissions:
+      contents: read
+    name: Verify prebuilt distribution
+    uses: ./.github/workflows/prebuilt.yml

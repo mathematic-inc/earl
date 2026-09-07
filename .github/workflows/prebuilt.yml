@@ -1,0 +1,220 @@
+name: Prebuilt binaries
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        type: string
+        default: ""
+      verify-install:
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  CARGO_TERM_COLOR: always
+  MANIFEST: Cargo.toml
+  CARGO_PACKAGE: earl
+  BINARY_NAME: earl
+  RELEASE_PREFIX: v
+
+jobs:
+  build:
+    if: ${{ !inputs.verify-install }}
+    permissions:
+      contents: read
+    name: Build ${{ matrix.target }}
+    runs-on: ${{ matrix.build_runner }}
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix: &targets
+        include:
+          - target: x86_64-apple-darwin
+            runner: macos-15-intel
+            build_runner: macos-15-intel
+          - target: aarch64-apple-darwin
+            runner: macos-15
+            build_runner: macos-15
+          - target: x86_64-unknown-linux-gnu
+            runner: ubuntu-22.04
+            build_runner: ubuntu-22.04
+          - target: aarch64-unknown-linux-gnu
+            runner: ubuntu-22.04-arm
+            build_runner: ubuntu-22.04-arm
+          - target: x86_64-unknown-linux-musl
+            runner: ubuntu-22.04
+            build_runner: ubuntu-22.04
+          - target: aarch64-unknown-linux-musl
+            runner: ubuntu-22.04-arm
+            build_runner: ubuntu-22.04-arm
+          - target: x86_64-pc-windows-msvc
+            runner: windows-2025
+            build_runner: ubuntu-22.04
+          - target: aarch64-pc-windows-msvc
+            runner: windows-11-arm
+            build_runner: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ inputs.ref || github.sha }}
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+        with:
+          install_args: rust
+          cache: false
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          key: release-${{ matrix.target }}
+      - name: Install Linux build dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y build-essential pkg-config musl-tools libdbus-1-dev
+      - name: Configure target linking
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          target_env="$(printf '%s' "$TARGET" | tr '[:lower:]-' '[:upper:]_')"
+          if [[ "$TARGET" == *musl ]]; then
+            echo "CARGO_TARGET_${target_env}_RUSTFLAGS=-C target-feature=+crt-static"
+            echo "CARGO_TARGET_${target_env}_LINKER=musl-gcc"
+            echo "CC_${TARGET//-/_}=musl-gcc"
+          elif [[ "$TARGET" == *windows* ]]; then
+            echo "CARGO_TARGET_${target_env}_RUSTFLAGS=-C target-feature=+crt-static"
+          fi >> "$GITHUB_ENV"
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
+      - name: Install Windows cross compiler
+        if: contains(matrix.target, 'windows')
+        run: |
+          sudo apt-get install -y llvm
+          cargo install cargo-xwin@0.23.1 --locked
+      - name: Build and package executable
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          version="$(awk -F'"' '/^version = / { print $2; exit }' "$MANIFEST")"
+          test -n "$version"
+          build_tool=cargo
+          if [[ "$TARGET" == *windows* ]]; then
+            build_tool=xwin
+          fi
+          scripts/release/build-artifact.sh --target "$TARGET" --version "$version" --build-tool "$build_tool"
+
+          cd dist
+          for archive in *.tar.gz *.zip; do
+            [[ -f "$archive" ]] || continue
+            if command -v sha256sum >/dev/null 2>&1; then
+              sha256sum "$archive" > "$archive.sha256"
+            else
+              shasum -a 256 "$archive" > "$archive.sha256"
+            fi
+          done
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: binary-${{ matrix.target }}
+          path: dist/*
+          if-no-files-found: error
+
+  smoke:
+    if: ${{ !inputs.verify-install }}
+    permissions:
+      contents: read
+    needs: build
+    name: Run archive ${{ matrix.target }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix: *targets
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: binary-${{ matrix.target }}
+          path: dist
+      - name: Verify checksum and run extracted executable
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          cd dist
+          mkdir unpack
+          if [[ "$TARGET" == *windows* ]]; then
+            archive=("$CARGO_PACKAGE"-*.zip)
+            binary="$BINARY_NAME.exe"
+          else
+            archive=("$CARGO_PACKAGE"-*.tar.gz)
+            binary="$BINARY_NAME"
+          fi
+          test "${#archive[@]}" -eq 1
+          if command -v sha256sum >/dev/null 2>&1; then
+            sha256sum -c "${archive[0]}.sha256"
+          else
+            shasum -a 256 -c "${archive[0]}.sha256"
+          fi
+          if [[ "$TARGET" == *windows* ]]; then
+            7z x "${archive[0]}" -ounpack
+          else
+            tar -xzf "${archive[0]}" -C unpack
+          fi
+          if [[ "$CARGO_PACKAGE" == protoc-gen-* || "$CARGO_PACKAGE" == sqlc-gen-sqlx ]]; then
+            "unpack/$binary" < /dev/null > smoke.out
+          else
+            "unpack/$binary" --help > smoke.out
+          fi
+          test -s smoke.out
+
+  install:
+    if: inputs.verify-install
+    permissions:
+      contents: read
+    name: Install without compiling ${{ matrix.target }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix: *targets
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ inputs.ref || github.sha }}
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+        with:
+          install_args: cargo-binstall
+          cache: false
+      - name: Install published binaries through binstall and mise
+        env:
+          TARGET: ${{ matrix.target }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="$(awk -F'"' '/^version = / { print $2; exit }' "$MANIFEST")"
+          test -n "$version"
+          binary="$BINARY_NAME"
+          archive="$CARGO_PACKAGE-$version-$TARGET.tar.gz"
+          if [[ "$TARGET" == *windows* ]]; then
+            binary="$binary.exe"
+            archive="$CARGO_PACKAGE-$version-$TARGET.zip"
+          fi
+          cargo-binstall "$CARGO_PACKAGE@$version" --no-confirm --disable-telemetry \
+            --disable-strategies compile,quick-install --targets "$TARGET" \
+            --install-path "$RUNNER_TEMP/binstall" --no-track
+          mise install-into \
+            "github:${GITHUB_REPOSITORY}[asset_pattern=${archive}]@${RELEASE_PREFIX}${version}" \
+            "$RUNNER_TEMP/mise"
+          for prefix in "$RUNNER_TEMP/binstall" "$RUNNER_TEMP/mise"; do
+            if [[ "$CARGO_PACKAGE" == protoc-gen-* || "$CARGO_PACKAGE" == sqlc-gen-sqlx ]]; then
+              "$prefix/$binary" < /dev/null > "$RUNNER_TEMP/smoke.out"
+            else
+              "$prefix/$binary" --help > "$RUNNER_TEMP/smoke.out"
+            fi
+            test -s "$RUNNER_TEMP/smoke.out"
+          done
+          cmp "$RUNNER_TEMP/binstall/$binary" "$RUNNER_TEMP/mise/$binary"
