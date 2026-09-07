@@ -45,7 +45,8 @@ set `cargo.binstall_only = true` to reject source compilation.
 | Platform | Architectures | Archive |
 | --- | --- | --- |
 | macOS | x64, ARM64 | `.tar.gz` |
-| Linux GNU (glibc 2.35 or newer) | x64, ARM64 | `.tar.gz` |
+| Linux GNU (glibc 2.39 or newer) | x64 | `.tar.gz` |
+| Linux GNU (glibc 2.35 or newer) | ARM64 | `.tar.gz` |
 | Linux musl | x64, ARM64 | `.tar.gz` |
 | Windows MSVC | x64, ARM64 | `.zip` |
 
