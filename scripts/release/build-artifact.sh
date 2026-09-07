@@ -85,7 +85,11 @@ if [[ "$TARGET" == *"windows"* ]]; then
 	ARCHIVE="earl-${VERSION}-${TARGET}.zip"
 	(
 		cd "target/$TARGET/release"
-		zip -q "$OLDPWD/$OUTPUT_DIR/$ARCHIVE" "$BINARY_NAME"
+		if command -v zip >/dev/null 2>&1; then
+			zip -q "$OLDPWD/$OUTPUT_DIR/$ARCHIVE" "$BINARY_NAME"
+		else
+			7z a -tzip "$OLDPWD/$OUTPUT_DIR/$ARCHIVE" "$BINARY_NAME"
+		fi
 	)
 else
 	ARCHIVE="earl-${VERSION}-${TARGET}.tar.gz"

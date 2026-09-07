@@ -59,7 +59,7 @@ jobs:
             build_runner: ubuntu-22.04
           - target: aarch64-pc-windows-msvc
             runner: windows-11-arm
-            build_runner: ubuntu-22.04
+            build_runner: windows-11-arm
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -93,7 +93,7 @@ jobs:
           node-version-file: .node-version
           package-manager-cache: false
       - name: Install Windows cross compiler
-        if: contains(matrix.target, 'windows')
+        if: contains(matrix.target, 'windows') && runner.os == 'Linux'
         run: |
           sudo apt-get install -y llvm
           cargo install cargo-xwin@0.23.1 --locked
@@ -104,7 +104,7 @@ jobs:
           version="$(awk -F'"' '/^version = / { print $2; exit }' "$MANIFEST")"
           test -n "$version"
           build_tool=cargo
-          if [[ "$TARGET" == *windows* ]]; then
+          if [[ "$TARGET" == *windows* && "$RUNNER_OS" == Linux ]]; then
             build_tool=xwin
           fi
           scripts/release/build-artifact.sh --target "$TARGET" --version "$version" --build-tool "$build_tool"
