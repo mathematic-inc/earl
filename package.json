@@ -15,7 +15,7 @@
     "fix": "oxlint --fix --deny-warnings . && oxfmt --write .",
     "format": "oxfmt --write .",
     "lint": "oxlint --deny-warnings .",
-    "prepare": "if [ -z \"$CI\" ] && command -v hk >/dev/null 2>&1; then hk install; fi",
+    "prepare": "node -e \"if (!process.env.CI) { const result = require('node:child_process').spawnSync('hk', ['install'], { stdio: 'inherit' }); if (result.error?.code !== 'ENOENT') process.exit(result.status ?? 1); }\"",
     "types:check": "turbo run types:check"
   },
   "devDependencies": {
