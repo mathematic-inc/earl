@@ -82,7 +82,7 @@ jobs:
           target_env="$(printf '%s' "$TARGET" | tr '[:lower:]-' '[:upper:]_')"
           if [[ "$TARGET" == *musl ]]; then
             echo "CARGO_TARGET_${target_env}_RUSTFLAGS=-C target-feature=+crt-static"
-            echo "CARGO_TARGET_${target_env}_LINKER=musl-gcc"
+            # Rust supplies its musl runtime; musl-gcc is for C dependencies.
             echo "CC_${TARGET//-/_}=musl-gcc"
           elif [[ "$TARGET" == *windows* ]]; then
             echo "CARGO_TARGET_${target_env}_RUSTFLAGS=-C target-feature=+crt-static"
