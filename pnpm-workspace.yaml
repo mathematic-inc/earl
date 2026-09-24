@@ -9,6 +9,9 @@ allowBuilds:
 
 overrides:
   postcss@8.5.23: 8.5.26
+  hono: 4.13.5
+  js-yaml: 4.3.2
+  sharp: 0.35.4
 
 catalog:
   "@base-ui/react": ^1.7.0
