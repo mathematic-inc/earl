@@ -38,7 +38,7 @@ then follow the skill to set up Earl for this project.
 
 The skill runs in five phases.
 
-**Install.** The agent checks whether `earl` is on PATH. If not, it picks an install method based on the OS — install script for macOS/Linux, PowerShell for Windows, or `cargo install earl` — then runs `earl doctor` to verify.
+**Install.** The agent checks whether `earl` is on PATH. If not, it picks an install method based on the OS — install script for macOS/Linux, PowerShell for Windows, or `cargo binstall --disable-strategies compile earl` — then runs `earl doctor` to verify.
 
 **Demo.** The agent imports the `system` example template and runs `earl call --yes --json system.list_files --path .`. You see something work before anything else is configured.
 

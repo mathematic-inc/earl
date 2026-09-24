@@ -41,6 +41,9 @@ rustup target add "$TARGET"
 CARGO_ARGS=(--locked --release --target "$TARGET")
 if [[ "$TARGET" == *"windows"* ]]; then
 	CARGO_ARGS+=(--no-default-features --features "http,graphql,grpc,sql")
+elif [[ "$TARGET" == "x86_64-apple-darwin" ]]; then
+	# ONNX Runtime does not distribute Intel macOS libraries.
+	CARGO_ARGS+=(--no-default-features --features "http,graphql,grpc,bash,browser,sql")
 elif [[ "$TARGET" == *"musl"* || "$TARGET" == "aarch64-unknown-linux-gnu" ]]; then
 	CARGO_ARGS+=(--no-default-features --features "http,graphql,grpc,bash,sql")
 fi
@@ -82,7 +85,11 @@ if [[ "$TARGET" == *"windows"* ]]; then
 	ARCHIVE="earl-${VERSION}-${TARGET}.zip"
 	(
 		cd "target/$TARGET/release"
-		zip -q "$OLDPWD/$OUTPUT_DIR/$ARCHIVE" "$BINARY_NAME"
+		if command -v zip >/dev/null 2>&1; then
+			zip -q "$OLDPWD/$OUTPUT_DIR/$ARCHIVE" "$BINARY_NAME"
+		else
+			7z a -tzip "$OLDPWD/$OUTPUT_DIR/$ARCHIVE" "$BINARY_NAME"
+		fi
 	)
 else
 	ARCHIVE="earl-${VERSION}-${TARGET}.tar.gz"

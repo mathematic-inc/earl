@@ -62,6 +62,10 @@ Darwin)
 	;;
 Linux)
 	OS_PART="unknown-linux-gnu"
+	# musl ldd exits nonzero for --version on some distributions.
+	if [[ "$(ldd --version 2>&1 || true)" == *musl* ]]; then
+		OS_PART="unknown-linux-musl"
+	fi
 	;;
 *)
 	echo "unsupported OS: $OS" >&2
