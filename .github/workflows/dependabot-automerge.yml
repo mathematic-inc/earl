@@ -13,7 +13,7 @@ jobs:
   strict-gate:
     name: Strict Dependabot gate
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 90
     permissions:
       checks: read
       contents: read
@@ -32,7 +32,7 @@ jobs:
             exit 0
           fi
 
-          for attempt in $(seq 1 50); do
+          for attempt in $(seq 1 160); do
             current_head=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq .head.sha)
             if [[ "$current_head" != "$PR_HEAD_SHA" ]]; then
               echo 'Pull request head changed; the new run must establish its own gate.' >&2
@@ -65,7 +65,7 @@ jobs:
               exit 0
             fi
 
-            echo "Strict checks are not yet all successful (attempt $attempt/50)."
+            echo "Strict checks are not yet all successful (attempt $attempt/160)."
             sleep 30
           done
 
