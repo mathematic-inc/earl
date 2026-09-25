@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.5](https://github.com/mathematic-inc/earl/compare/v0.6.4...v0.6.5) (2026-09-25)
+
+
+### Bug Fixes
+
+* **deps:** Remediate vulnerable transitive packages ([#128](https://github.com/mathematic-inc/earl/issues/128)) ([1e53fae](https://github.com/mathematic-inc/earl/commit/1e53fae946a89ba503ccb1ce25c2c75018b83e38))
+
 ## [0.6.4](https://github.com/mathematic-inc/earl/compare/v0.6.3...v0.6.4) (2026-09-05)
 
 
