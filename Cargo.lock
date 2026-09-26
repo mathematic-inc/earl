@@ -1910,7 +1910,7 @@ checksum = "92773504d58c093f6de2459af4af33faa518c13451eb8f2b5698ed3d36e7c813"
 
 [[package]]
 name = "earl"
-version = "0.6.4"
+version = "0.6.5"
 dependencies = [
  "anyhow",
  "assert_cmd",
@@ -1970,7 +1970,7 @@ dependencies = [
 
 [[package]]
 name = "earl-core"
-version = "0.6.4"
+version = "0.6.5"
 dependencies = [
  "anyhow",
  "base64 0.23.1",
@@ -1984,7 +1984,7 @@ dependencies = [
 
 [[package]]
 name = "earl-protocol-bash"
-version = "0.6.4"
+version = "0.6.5"
 dependencies = [
  "anyhow",
  "earl-core",
@@ -1997,7 +1997,7 @@ dependencies = [
 
 [[package]]
 name = "earl-protocol-browser"
-version = "0.6.4"
+version = "0.6.5"
 dependencies = [
  "anyhow",
  "base64 0.23.1",
@@ -2020,7 +2020,7 @@ dependencies = [
 
 [[package]]
 name = "earl-protocol-grpc"
-version = "0.6.4"
+version = "0.6.5"
 dependencies = [
  "anyhow",
  "earl-core",
@@ -2043,7 +2043,7 @@ dependencies = [
 
 [[package]]
 name = "earl-protocol-http"
-version = "0.6.4"
+version = "0.6.5"
 dependencies = [
  "anyhow",
  "base64 0.23.1",
@@ -2058,7 +2058,7 @@ dependencies = [
 
 [[package]]
 name = "earl-protocol-sql"
-version = "0.6.4"
+version = "0.6.5"
 dependencies = [
  "anyhow",
  "earl-core",
